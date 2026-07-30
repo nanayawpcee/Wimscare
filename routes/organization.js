@@ -1,9 +1,9 @@
-const fs = require('fs');
 const express = require('express');
 const Organization = require('../models/Organization');
 const License = require('../models/License');
 const { protect, requireRoles, requireOrg, requireFeature } = require('../middleware/auth');
-const { logoUpload, processLogo, resolveUploadPath } = require('../middleware/upload');
+const { logoUpload, processLogo } = require('../middleware/upload');
+const storage = require('../utils/storage');
 const { audit } = require('../utils/audit');
 
 const router = express.Router();
@@ -94,7 +94,7 @@ router.get('/logo', async (req, res, next) => {
   try {
     const org = await Organization.findById(req.orgId).select('facility.logoPath');
     if (!org || !org.facility || !org.facility.logoPath) return res.status(404).json({ error: 'No logo uploaded' });
-    res.sendFile(resolveUploadPath(org.facility.logoPath));
+    storage.serveInline(org.facility.logoPath, res);
   } catch (err) {
     next(err);
   }
@@ -114,7 +114,7 @@ router.post(
       const old = org.facility && org.facility.logoPath;
       org.set('facility.logoPath', relPath);
       await org.save();
-      if (old) fs.unlink(resolveUploadPath(old), () => {});
+      if (old) storage.remove(old);
       audit(req, 'organization.logo_update', { entityType: 'Organization', entityId: org._id });
       res.json({ logoPath: relPath });
     } catch (err) {
@@ -130,7 +130,7 @@ router.delete('/logo', requireRoles('admin'), requireFeature('customBranding'), 
     const old = org.facility && org.facility.logoPath;
     org.set('facility.logoPath', undefined);
     await org.save();
-    if (old) fs.unlink(resolveUploadPath(old), () => {});
+    if (old) storage.remove(old);
     audit(req, 'organization.logo_remove', { entityType: 'Organization', entityId: org._id });
     res.json({ message: 'Logo removed' });
   } catch (err) {

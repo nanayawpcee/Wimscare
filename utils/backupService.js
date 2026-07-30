@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const Backup = require('../models/Backup');
+const storage = require('./storage');
 
 // Every tenant-scoped collection that participates in backup/restore.
 const ORG_MODELS = () => ({
@@ -18,12 +19,6 @@ const ORG_MODELS = () => ({
   reversalrequests: require('../models/ReversalRequest'),
   licenses: require('../models/License'),
 });
-
-function backupDir() {
-  const dir = path.resolve(process.env.BACKUP_DIR || path.join(__dirname, '..', 'backups'));
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
 
 const UPLOAD_ROOT = path.join(__dirname, '..', 'uploads');
 
@@ -53,27 +48,30 @@ async function createOrgBackup(organizationId, { trigger = 'manual', createdBy =
     counts.push({ name, count: docs.length });
   }
 
-  // Uploaded files (claim documents, receipts, avatars, brand logos) live
-  // under uploads/<orgId>; embed them (base64, gzipped with the rest) so a
-  // restore round-trips attachments, not just database rows.
-  const orgUploadDir = path.join(UPLOAD_ROOT, String(organizationId));
+  // Uploaded files (claim documents, receipts, avatars, brand logos) are only
+  // embedded when running in local-disk mode, where they'd otherwise live
+  // solely on this ephemeral machine. In Blob mode the files already persist
+  // independently in cloud storage, so there's nothing to snapshot here.
   payload.files = [];
-  if (fs.existsSync(orgUploadDir)) {
-    for (const { rel, abs } of walkFiles(orgUploadDir)) {
-      payload.files.push({ path: rel, data: fs.readFileSync(abs).toString('base64') });
+  if (!storage.blobEnabled()) {
+    const orgUploadDir = path.join(UPLOAD_ROOT, String(organizationId));
+    if (fs.existsSync(orgUploadDir)) {
+      for (const { rel, abs } of walkFiles(orgUploadDir)) {
+        payload.files.push({ path: rel, data: fs.readFileSync(abs).toString('base64') });
+      }
     }
   }
   counts.push({ name: 'files', count: payload.files.length });
 
   const fileName = `org-${org.code || organizationId}-${new Date().toISOString().replace(/[:.]/g, '-')}.json.gz`;
-  const filePath = path.join(backupDir(), fileName);
-  fs.writeFileSync(filePath, zlib.gzipSync(JSON.stringify(payload)));
+  const gzipped = zlib.gzipSync(JSON.stringify(payload));
+  const filePath = await storage.save(null, 'backups', gzipped, { fileName, contentType: 'application/gzip' });
 
   return Backup.create({
     organizationId,
     fileName,
     filePath,
-    sizeBytes: fs.statSync(filePath).size,
+    sizeBytes: gzipped.length,
     scope: 'organization',
     trigger,
     collections: counts,
@@ -84,7 +82,7 @@ async function createOrgBackup(organizationId, { trigger = 'manual', createdBy =
 // Restore an organization's data from a backup file.
 // Replaces current tenant data with the snapshot (destructive, admin-confirmed).
 async function restoreOrgBackup(backupDoc, organizationId) {
-  const raw = zlib.gunzipSync(fs.readFileSync(backupDoc.filePath)).toString('utf8');
+  const raw = zlib.gunzipSync(await storage.readBuffer(backupDoc.filePath)).toString('utf8');
   const payload = JSON.parse(raw);
   if (payload.format !== 'wimscare-org-backup') throw new Error('Unrecognized backup format');
   if (String(payload.organization._id) !== String(organizationId)) {
@@ -100,10 +98,10 @@ async function restoreOrgBackup(backupDoc, organizationId) {
     restored.push({ name, count: docs.length });
   }
 
-  // v2 backups carry the uploads tree; replace the org's files with the
-  // snapshot. v1 backups have no files key — leave current files alone
-  // rather than deleting attachments the snapshot knows nothing about.
-  if (Array.isArray(payload.files)) {
+  // Embedded files only exist on disk-mode backups (see createOrgBackup) and
+  // only make sense to replay back onto local disk — in Blob mode the live
+  // files were never touched by backup/restore, so there's nothing to do.
+  if (!storage.blobEnabled() && Array.isArray(payload.files) && payload.files.length) {
     const orgUploadDir = path.join(UPLOAD_ROOT, String(organizationId));
     fs.rmSync(orgUploadDir, { recursive: true, force: true });
     for (const file of payload.files) {
@@ -117,4 +115,4 @@ async function restoreOrgBackup(backupDoc, organizationId) {
   return restored;
 }
 
-module.exports = { createOrgBackup, restoreOrgBackup, backupDir };
+module.exports = { createOrgBackup, restoreOrgBackup };

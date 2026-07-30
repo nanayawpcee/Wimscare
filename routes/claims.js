@@ -1,13 +1,12 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const Claim = require('../models/Claim');
 const ClaimType = require('../models/ClaimType');
 const LedgerEntry = require('../models/LedgerEntry');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
 const { protect, requireRoles, requireOrg, orgFilter } = require('../middleware/auth');
-const { claimDocs, resolveUploadPath } = require('../middleware/upload');
+const { claimDocs } = require('../middleware/upload');
+const storage = require('../utils/storage');
 const { sendClaimStatusEmail, sendClaimInfoRequestEmail } = require('../utils/email');
 const { audit } = require('../utils/audit');
 const { hasPermission } = require('../utils/permissions');
@@ -269,16 +268,19 @@ router.post('/:id/documents', loadClaim, claimDocs.array('documents', 10), async
       return res.status(400).json({ error: 'Documents can no longer be added to this claim' });
     }
     const labels = [].concat(req.body.labels || []);
-    (req.files || []).forEach((f, i) => {
+    const files = req.files || [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const stored = await storage.save(req.orgId, 'claims', f.buffer, { originalName: f.originalname, contentType: f.mimetype });
       claim.documents.push({
         label: labels[i] || f.originalname,
         originalName: f.originalname,
-        path: path.relative(path.join(__dirname, '..'), f.path),
+        path: stored,
         mimeType: f.mimetype,
         size: f.size,
       });
-    });
-    pushTimeline(claim, req.user._id, `Uploaded ${req.files.length} document(s)`);
+    }
+    pushTimeline(claim, req.user._id, `Uploaded ${files.length} document(s)`);
     await claim.save();
     res.json({ claim });
   } catch (err) {
@@ -287,10 +289,14 @@ router.post('/:id/documents', loadClaim, claimDocs.array('documents', 10), async
 });
 
 // GET /api/claims/:id/documents/:docId/download
-router.get('/:id/documents/:docId/download', loadClaim, (req, res) => {
-  const doc = req.claim.documents.id(req.params.docId);
-  if (!doc) return res.status(404).json({ error: 'Document not found' });
-  res.download(resolveUploadPath(doc.path), doc.originalName || 'document');
+router.get('/:id/documents/:docId/download', loadClaim, async (req, res, next) => {
+  try {
+    const doc = req.claim.documents.id(req.params.docId);
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+    await storage.serveDownload(doc.path, doc.originalName || 'document', res);
+  } catch (err) {
+    next(err);
+  }
 });
 
 // DELETE /api/claims/:id/documents/:docId — remove a document before the
@@ -304,11 +310,11 @@ router.delete('/:id/documents/:docId', loadClaim, async (req, res, next) => {
     }
     const doc = claim.documents.id(req.params.docId);
     if (!doc) return res.status(404).json({ error: 'Document not found' });
-    const filePath = resolveUploadPath(doc.path);
+    const docPath = doc.path;
     doc.deleteOne();
     pushTimeline(claim, req.user._id, 'Document removed', doc.originalName);
     await claim.save();
-    fs.unlink(filePath, () => {});
+    storage.remove(docPath);
     res.json({ claim });
   } catch (err) {
     next(err);

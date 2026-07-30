@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Organization = require('../models/Organization');
 const { protect, requireRoles, requireOrg, orgFilter } = require('../middleware/auth');
 const { receipt } = require('../middleware/upload');
+const storage = require('../utils/storage');
 const { sendContributionReceiptEmail } = require('../utils/email');
 const { audit } = require('../utils/audit');
 const { getDefaultFundAccount } = require('../utils/fundAccounts');
@@ -150,6 +151,10 @@ router.post('/', requireRoles('admin', 'supervisor', 'accountant'), receipt.sing
       }
     }
 
+    const receiptPath = req.file
+      ? await storage.save(req.orgId, 'receipts', req.file.buffer, { originalName: req.file.originalname, contentType: req.file.mimetype })
+      : undefined;
+
     const contribution = await Contribution.create({
       organizationId: req.orgId,
       receiptNumber: await Contribution.nextReceiptNumber(req.orgId),
@@ -163,7 +168,7 @@ router.post('/', requireRoles('admin', 'supervisor', 'accountant'), receipt.sing
       contributionDate: contributionDate ? new Date(contributionDate) : new Date(),
       status: ['paid', 'pending', 'review'].includes(status) ? status : 'paid',
       recordedBy: req.user._id,
-      receiptPath: req.file ? require('path').relative(require('path').join(__dirname, '..'), req.file.path) : undefined,
+      receiptPath,
     });
 
     if (contribution.status === 'paid') {

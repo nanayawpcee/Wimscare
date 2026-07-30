@@ -3,6 +3,7 @@ const Backup = require('../models/Backup');
 const { protect, requirePermission, requireOrg, orgFilter } = require('../middleware/auth');
 const { createOrgBackup, restoreOrgBackup } = require('../utils/backupService');
 const { audit } = require('../utils/audit');
+const storage = require('../utils/storage');
 
 const router = express.Router();
 
@@ -34,7 +35,7 @@ router.get('/:id/download', async (req, res, next) => {
   try {
     const backup = await Backup.findOne(orgFilter(req, { _id: req.params.id }));
     if (!backup) return res.status(404).json({ error: 'Backup not found' });
-    res.download(backup.filePath, backup.fileName);
+    await storage.serveDownload(backup.filePath, backup.fileName, res);
   } catch (err) {
     next(err);
   }

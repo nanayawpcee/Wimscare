@@ -10,6 +10,7 @@ const Contribution = require('../models/Contribution');
 const Claim = require('../models/Claim');
 const { protect, requireSuperadmin } = require('../middleware/auth');
 const { createOrgBackup } = require('../utils/backupService');
+const storage = require('../utils/storage');
 const { sendActivationEmail } = require('../utils/email');
 const { audit } = require('../utils/audit');
 const { getCurrent, GRACE_DAYS } = require('../utils/superadminCredentials');
@@ -572,7 +573,7 @@ router.get('/backups/:id/download', async (req, res, next) => {
     const backup = await Backup.findById(req.params.id);
     if (!backup) return res.status(404).json({ error: 'Backup not found' });
     audit(req, 'developer.backup_download', { entityType: 'Backup', entityId: backup._id });
-    res.download(backup.filePath, backup.fileName);
+    await storage.serveDownload(backup.filePath, backup.fileName, res);
   } catch (err) {
     next(err);
   }

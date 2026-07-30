@@ -1,0 +1,10 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/", "destination": "/welcome.html" }
+  ],
+  "crons": [
+    { "path": "/api/cron/daily", "schedule": "0 2 * * *" }
+  ]
+}
