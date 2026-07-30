@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Profile — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .form-grid .full {
+        grid-column: 1 / -1;
+      }
+      .fam-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+      }
+      .fam-remove {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--red-ink);
+        cursor: pointer;
+        font-size: 0.78rem;
+        font-weight: 600;
+        font-family: inherit;
+        flex-shrink: 0;
+      }
+      .fam-remove:hover {
+        border-color: var(--red-ink);
+      }
+      @media (max-width: 900px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="theme-member">
+    <div id="mShell"></div>
+    <div class="portal">
+      <aside class="portal-side">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div style="display: grid; gap: 4px">
+            <p>Member Portal</p>
+            <span>Contributions, claims and profile in one place.</span>
+          </div>
+        </div>
+        <nav aria-label="Member portal navigation">
+          <a href="/member/dashboard.html">Dashboard</a>
+          <a href="/member/claims.html">My claims</a>
+          <a href="/member/profile.html" class="active">Profile</a>
+          <a href="/member/preferences.html">Preferences</a>
+        </nav>
+        <div class="foot">
+          <div class="who">
+            <span class="avatar" id="sideAvatar"></span>
+            <div>
+              <strong
+                style="
+                  display: block;
+                  font-size: 0.98rem;
+                  color: #fff;
+                  margin-bottom: 2px;
+                "
+                id="sideName"
+              ></strong>
+              <span style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.68)"
+                >Member</span
+              >
+            </div>
+          </div>
+          <button type="button" class="signout" onclick="WIMS.signOut()">
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main class="portal-main">
+        <!-- Identity card -->
+        <section
+          class="panel"
+          style="display: flex; align-items: center; gap: 14px"
+        >
+          <span
+            class="avatar"
+            id="bigAvatar"
+            style="
+              width: 52px;
+              height: 52px;
+              background: var(--primary);
+              font-size: 1.1rem;
+            "
+          ></span>
+          <div style="min-width: 0; flex: 1">
+            <strong
+              style="display: block; font-size: 1.05rem; letter-spacing: -0.01em"
+              id="idName"
+            ></strong>
+            <span
+              style="
+                display: block;
+                color: var(--muted);
+                font-size: 0.82rem;
+                margin-bottom: 6px;
+              "
+              id="idEmail"
+            ></span>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap" id="idPills"></div>
+          </div>
+        </section>
+
+        <!-- Section chips -->
+        <div class="chiprow" id="chipRow"></div>
+
+        <!-- Section panel -->
+        <section class="panel">
+          <h2 style="font-size: 1.15rem; margin-bottom: 3px" id="panelTitle"></h2>
+          <p
+            style="margin: 0 0 16px; color: var(--muted); font-size: 0.85rem"
+            id="panelDesc"
+          ></p>
+          <div class="form-error" id="panelError"></div>
+          <div id="panelBody"></div>
+          <div
+            style="display: grid; gap: 10px; margin-top: 20px"
+            id="panelActions"
+          ></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["user", "admin", "supervisor", "accountant"],
+        });
+        if (!session) return;
+        let { user } = session;
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        WIMS.memberShell({
+          user,
+          active: "profile",
+          title: "Profile",
+          sub: "Personal information & records",
+        });
+
+        document.getElementById("bigAvatar").textContent = fmt.initials(user);
+        document.getElementById("idName").textContent = fmt.name(user);
+        document.getElementById("idEmail").textContent = user.email;
+        document.getElementById("idPills").innerHTML = `
+      <span class="pill green">${user.status === "active" ? "Active" : fmt.esc(user.status)}</span>
+      ${user.memberNumber ? `<span class="pill gray">${fmt.esc(user.memberNumber)}</span>` : ""}`;
+
+        let profile = (await API.get("/api/profile")).profile || {};
+
+        const SECTIONS = [
+          { key: "personal", label: "Personal", desc: "Your basic personal information on record." },
+          { key: "bank", label: "Bank", desc: "Account used for claim payouts and reimbursements." },
+          { key: "family", label: "Family", desc: "Spouse, children and next-of-kin covered under your membership." },
+          { key: "trustee", label: "Trustee", desc: "Person authorised to act on your behalf." },
+          { key: "packages", label: "Packages", desc: "Welfare packages you have benefited from." },
+        ];
+        let active = "personal";
+
+        function renderChips() {
+          document.getElementById("chipRow").innerHTML = SECTIONS.map(
+            (s) =>
+              `<button type="button" class="chip-btn ${s.key === active ? "on" : ""}" data-sec="${s.key}">${s.label}</button>`,
+          ).join("");
+          document.querySelectorAll("[data-sec]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              active = btn.dataset.sec;
+              renderChips();
+              renderPanel();
+            }),
+          );
+        }
+
+        const input = (id, label, value, opts = {}) => `
+      <div class="${opts.full ? "full" : ""}">
+        <label class="field">${label}</label>
+        <input class="field" id="${id}" value="${fmt.esc(value ?? "")}" ${opts.type ? `type="${opts.type}"` : ""} ${opts.readonly ? "readonly" : ""} ${opts.placeholder ? `placeholder="${opts.placeholder}"` : ""} />
+      </div>`;
+
+        const val = (id) => (document.getElementById(id)?.value ?? "").trim();
+        const dateVal = (d) => (d ? new Date(d).toISOString().slice(0, 10) : "");
+
+        function saveButtons(handler) {
+          const wrap = document.getElementById("panelActions");
+          wrap.innerHTML = `
+        <button type="button" class="btn" id="saveBtn" style="padding:14px; border-radius:12px;">Save section</button>
+        <button type="button" class="btn secondary" id="discardBtn" style="padding:14px; border-radius:12px;">Discard changes</button>`;
+          document.getElementById("saveBtn").addEventListener("click", handler);
+          document
+            .getElementById("discardBtn")
+            .addEventListener("click", renderPanel);
+        }
+
+        async function save(body, refreshUser) {
+          const errBox = document.getElementById("panelError");
+          errBox.classList.remove("show");
+          try {
+            const data = await API.patch("/api/profile", body);
+            profile = data.profile;
+            if (refreshUser && data.user) {
+              user = data.user;
+              document.getElementById("idName").textContent = fmt.name(user);
+              document.getElementById("sideName").textContent = fmt.name(user);
+            }
+            toast("Saved");
+          } catch (err) {
+            errBox.textContent = err.message;
+            errBox.classList.add("show");
+          }
+        }
+
+        function renderPanel() {
+          const sec = SECTIONS.find((s) => s.key === active);
+          document.getElementById("panelTitle").textContent =
+            sec.label + (active === "packages" ? " enjoyed" : " details");
+          document.getElementById("panelDesc").textContent = sec.desc;
+          document.getElementById("panelError").classList.remove("show");
+          const body = document.getElementById("panelBody");
+          const p = profile.personal || {};
+          const b = profile.bank || {};
+          const e = profile.emergencyContact || {};
+
+          if (active === "personal") {
+            body.innerHTML = `<div class="form-grid">
+          ${input("pFirst", "First name", user.firstName)}
+          ${input("pLast", "Last name", user.lastName)}
+          ${input("pEmail", "Email", user.email, { readonly: true })}
+          ${input("pPhone", "Phone", user.phone)}
+          ${input("pDob", "Date of birth", dateVal(p.dateOfBirth), { type: "date" })}
+          ${input("pOcc", "Occupation", p.occupation)}
+          ${input("pNid", "National ID", p.nationalId, { placeholder: "GHA-000000000-0" })}
+          ${input("pCity", "City / town", p.city)}
+          ${input("pAddr", "Residential address", p.address, { full: true })}
+        </div>`;
+            saveButtons(() =>
+              save(
+                {
+                  firstName: val("pFirst"),
+                  lastName: val("pLast"),
+                  phone: val("pPhone"),
+                  personal: {
+                    dateOfBirth: val("pDob") || undefined,
+                    occupation: val("pOcc"),
+                    nationalId: val("pNid"),
+                    city: val("pCity"),
+                    address: val("pAddr"),
+                  },
+                },
+                true,
+              ),
+            );
+          } else if (active === "bank") {
+            body.innerHTML = `<div class="form-grid">
+          ${input("bName", "Bank name", b.bankName)}
+          ${input("bBranch", "Branch", b.branch)}
+          ${input("bAccName", "Account name", b.accountName)}
+          ${input("bAccNo", "Account number", b.accountNumber)}
+          ${input("bMomoProv", "Mobile money provider", b.mobileMoneyProvider, { placeholder: "e.g. MTN MoMo" })}
+          ${input("bMomoNo", "Mobile money number", b.mobileMoneyNumber)}
+        </div>`;
+            saveButtons(() =>
+              save({
+                bank: {
+                  bankName: val("bName"),
+                  branch: val("bBranch"),
+                  accountName: val("bAccName"),
+                  accountNumber: val("bAccNo"),
+                  mobileMoneyProvider: val("bMomoProv"),
+                  mobileMoneyNumber: val("bMomoNo"),
+                },
+              }),
+            );
+          } else if (active === "family") {
+            const fam = profile.family || [];
+            body.innerHTML = `
+          <div style="display:grid; gap:10px; margin-bottom:16px;" id="famList">
+            ${
+              fam.length
+                ? fam
+                    .map(
+                      (m) => `
+              <div class="fam-row">
+                <div style="min-width:0;">
+                  <span style="display:block; font-weight:600; font-size:0.9rem;">${fmt.esc(m.name)}</span>
+                  <span style="display:block; font-size:0.78rem; color:var(--faint); margin-top:2px;">
+                    ${fmt.esc(m.relationship)}${m.dateOfBirth ? " · b. " + fmt.date(m.dateOfBirth) : ""}${m.isBeneficiary ? " · Beneficiary" : ""}
+                  </span>
+                </div>
+                <button type="button" class="fam-remove" data-remove="${m._id}">Remove</button>
+              </div>`,
+                    )
+                    .join("")
+                : '<div class="empty" style="padding:12px;">No family members on record yet.</div>'
+            }
+          </div>
+          <h3 style="margin:0 0 10px; font-size:0.95rem; font-weight:700;">Add family member</h3>
+          <div class="form-grid">
+            ${input("fmName", "Full name *", "")}
+            <div>
+              <label class="field">Relationship *</label>
+              <select class="field" id="fmRel">
+                <option>Spouse</option><option>Child</option><option>Father</option>
+                <option>Mother</option><option>Sibling</option><option>Other</option>
+              </select>
+            </div>
+            ${input("fmDob", "Date of birth", "", { type: "date" })}
+            ${input("fmPhone", "Phone", "")}
+            <label class="full" style="display:flex; align-items:center; gap:10px; font-size:0.9rem; cursor:pointer;">
+              <input type="checkbox" id="fmBen" style="width:16px; height:16px; accent-color:var(--primary);" />
+              Nominate as beneficiary
+            </label>
+          </div>`;
+            body.querySelectorAll("[data-remove]").forEach((btn) =>
+              btn.addEventListener("click", async () => {
+                if (!confirm("Remove this family member?")) return;
+                try {
+                  profile = (
+                    await API.del("/api/profile/family/" + btn.dataset.remove)
+                  ).profile;
+                  toast("Removed");
+                  renderPanel();
+                } catch (err) {
+                  toast(err.message, true);
+                }
+              }),
+            );
+            const wrap = document.getElementById("panelActions");
+            wrap.innerHTML = `<button type="button" class="btn" id="addFamBtn" style="padding:14px; border-radius:12px;">Add family member</button>`;
+            document
+              .getElementById("addFamBtn")
+              .addEventListener("click", async () => {
+                const errBox = document.getElementById("panelError");
+                errBox.classList.remove("show");
+                try {
+                  profile = (
+                    await API.post("/api/profile/family", {
+                      name: val("fmName"),
+                      relationship: val("fmRel"),
+                      dateOfBirth: val("fmDob") || undefined,
+                      phone: val("fmPhone") || undefined,
+                      isBeneficiary: document.getElementById("fmBen").checked,
+                    })
+                  ).profile;
+                  toast("Family member added");
+                  renderPanel();
+                } catch (err) {
+                  errBox.textContent = err.message;
+                  errBox.classList.add("show");
+                }
+              });
+          } else if (active === "trustee") {
+            body.innerHTML = `<div class="form-grid">
+          ${input("tName", "Full name", e.name)}
+          ${input("tRel", "Relationship", e.relationship)}
+          ${input("tPhone", "Phone", e.phone)}
+        </div>`;
+            saveButtons(() =>
+              save({
+                emergencyContact: {
+                  name: val("tName"),
+                  relationship: val("tRel"),
+                  phone: val("tPhone"),
+                },
+              }),
+            );
+          } else if (active === "packages") {
+            body.innerHTML = '<div class="empty">Loading…</div>';
+            document.getElementById("panelActions").innerHTML = "";
+            API.get("/api/claims?limit=50").then(({ items }) => {
+              if (active !== "packages") return;
+              const enjoyed = items.filter((c) =>
+                ["approved", "paid"].includes(c.status),
+              );
+              body.innerHTML = enjoyed.length
+                ? `<div style="display:grid; gap:10px;">${enjoyed
+                    .map(
+                      (c) => `
+              <div class="fam-row">
+                <div style="min-width:0;">
+                  <span style="display:block; font-weight:600; font-size:0.9rem;">${fmt.esc(c.claimTypeId ? c.claimTypeId.name : "Claim")}</span>
+                  <span style="display:block; font-size:0.78rem; color:var(--faint); margin-top:2px;">${c.claimNumber} · ${fmt.date(c.decidedAt || c.createdAt)} · ${fmt.gh(c.amountApproved ?? c.amountRequested)}</span>
+                </div>
+                ${WIMS.pill(c.status)}
+              </div>`,
+                    )
+                    .join("")}</div>`
+                : '<div class="empty">No packages enjoyed yet.</div>';
+            });
+          }
+        }
+
+        renderChips();
+        renderPanel();
+      })();
+    </script>
+  </body>
+</html>

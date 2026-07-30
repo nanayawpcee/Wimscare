@@ -1,0 +1,1353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Profile — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .main {
+        max-width: 1180px;
+      }
+      .spa-grid {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 20px;
+        align-items: start;
+      }
+      .spa-nav {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        position: sticky;
+        top: 24px;
+      }
+      .spa-nav button {
+        text-align: left;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.92rem;
+        font-weight: 600;
+        padding: 10px 12px;
+        border-radius: 9px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .spa-nav button:hover {
+        background: var(--bg);
+      }
+      .spa-nav button.on {
+        background: var(--primary-tint);
+        color: var(--primary);
+      }
+      .spa-nav button.logout {
+        color: var(--red-ink);
+      }
+      .spa-nav button.logout.on {
+        background: var(--red-bg);
+        color: var(--red-ink);
+      }
+      .panel-inner {
+        display: grid;
+        gap: 20px;
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+      }
+      .track {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        border-radius: 999px;
+        border: 0;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s ease;
+        background: var(--input-line);
+        padding: 0;
+      }
+      .track.on {
+        background: var(--primary);
+      }
+      .track .knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        transition: left 0.2s ease;
+        display: block;
+      }
+      .track.on .knob {
+        left: 23px;
+      }
+      .track[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .facility-tabs {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .facility-tab {
+        padding: 8px 4px;
+        margin-right: 18px;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 0.88rem;
+        cursor: pointer;
+        font-family: inherit;
+        border-bottom: 2px solid transparent;
+      }
+      .facility-tab.on {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+      }
+      .row-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--row-line);
+      }
+      .row-item:last-child {
+        border-bottom: 0;
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 44, 63, 0.45);
+        z-index: 300;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal.confirm-modal {
+        background: #fff;
+        border-radius: 18px;
+        padding: 26px;
+        width: 100%;
+        max-width: 420px;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html" class="active">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 24px 28px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 18px">
+            <span
+              class="avatar"
+              id="headAvatar"
+              style="width: 64px; height: 64px; font-size: 1.35rem"
+            ></span>
+            <div>
+              <h1
+                style="margin: 0 0 4px; font-size: 1.6rem; font-weight: 700"
+                id="headName"
+              ></h1>
+              <div
+                style="
+                  display: flex;
+                  gap: 8px;
+                  align-items: center;
+                  flex-wrap: wrap;
+                "
+              >
+                <span id="headRolePill"></span>
+                <span
+                  style="color: var(--faint); font-size: 0.85rem"
+                  id="headMeta"
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="spa-grid">
+          <nav class="spa-nav" id="spaNav"></nav>
+          <div class="panel-inner" id="panelHost"></div>
+        </div>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="brandResetModal">
+      <div class="modal confirm-modal">
+        <h3 style="margin: 0 0 8px; font-size: 1.05rem; font-weight: 700">
+          Reset branding to default?
+        </h3>
+        <p style="margin: 0 0 22px; color: var(--muted); font-size: 0.9rem; line-height: 1.5">
+          This clears your custom colours and removes your uploaded logo, back to the stock WIMScare look.
+        </p>
+        <div style="display: flex; justify-content: flex-end; gap: 10px">
+          <button type="button" class="btn ghost" id="brandResetCancel" style="padding: 9px 16px; font-size: 0.88rem">
+            Cancel
+          </button>
+          <button type="button" class="btn danger" id="brandResetConfirm" style="padding: 9px 16px; font-size: 0.88rem">
+            Reset to default
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="deleteAcctModal">
+      <div class="modal confirm-modal">
+        <h3 style="margin: 0 0 8px; font-size: 1.05rem; font-weight: 700">
+          Request account deletion?
+        </h3>
+        <p style="margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.5">
+          This sends a request to the WIMScare team — your account isn't
+          deleted until the superadmin approves it.
+        </p>
+        <label class="field">Reason (optional)</label>
+        <textarea class="field" id="deleteAcctReason" rows="3" placeholder="Let the WIMScare team know why" style="margin-bottom: 18px"></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 10px">
+          <button type="button" class="btn ghost" id="deleteAcctCancel" style="padding: 9px 16px; font-size: 0.88rem">Cancel</button>
+          <button type="button" class="btn danger" id="deleteAcctConfirm" style="padding: 9px 16px; font-size: 0.88rem">Send request</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="deleteOrgModal">
+      <div class="modal confirm-modal">
+        <h3 style="margin: 0 0 8px; font-size: 1.05rem; font-weight: 700">
+          Delete this organization?
+        </h3>
+        <p style="margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.5" id="deleteOrgCopy">
+          This sends a request to the WIMScare team. If approved, every admin, staff member and member here will be locked out immediately — all data is kept for records, but access is gone for good.
+        </p>
+        <label class="field">Type DELETE to confirm</label>
+        <input class="field" id="deleteOrgTyped" placeholder="DELETE" style="margin-bottom: 14px" autocomplete="off">
+        <label class="field">Reason (optional)</label>
+        <textarea class="field" id="deleteOrgReason" rows="2" placeholder="Let the WIMScare team know why" style="margin-bottom: 18px"></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 10px">
+          <button type="button" class="btn ghost" id="deleteOrgCancel" style="padding: 9px 16px; font-size: 0.88rem">Cancel</button>
+          <button type="button" class="btn danger" id="deleteOrgConfirm" style="padding: 9px 16px; font-size: 0.88rem" disabled>Request deletion</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+        const isAdmin = ["admin", "superadmin"].includes(user.role);
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("sideRole").textContent =
+          {
+            admin: "Administrator",
+            supervisor: "Supervisor",
+            accountant: "Accountant",
+            superadmin: "Superadmin",
+          }[user.role] || user.role;
+        document.getElementById("headAvatar").textContent = fmt.initials(user);
+        document.getElementById("headName").textContent = fmt.name(user);
+        document.getElementById("headRolePill").innerHTML =
+          `<span class="pill blue">${(user.role === "admin" ? "Administrator" : user.role).toUpperCase()}</span>`;
+        document.getElementById("headMeta").textContent =
+          `${user.email}${user.lastLoginAt ? " · Last sign-in " + fmt.dateTime(user.lastLoginAt) : ""}`;
+
+        // --- Delete-account modal (Preferences → "Delete my account") ---
+        const deleteAcctModal = document.getElementById("deleteAcctModal");
+        document.getElementById("deleteAcctCancel").onclick = () => deleteAcctModal.classList.remove("open");
+        deleteAcctModal.onclick = (e) => {
+          if (e.target === deleteAcctModal) deleteAcctModal.classList.remove("open");
+        };
+        document.getElementById("deleteAcctConfirm").onclick = async () => {
+          try {
+            const data = await API.post("/api/profile/request-deletion", {
+              reason: document.getElementById("deleteAcctReason").value.trim(),
+            });
+            deleteAcctModal.classList.remove("open");
+            toast(data.message);
+            renderPreferences();
+          } catch (err) {
+            toast(err.message, true);
+          }
+        };
+
+        // --- Delete-organization modal (System settings → "Delete organization") ---
+        const deleteOrgModal = document.getElementById("deleteOrgModal");
+        const deleteOrgTyped = document.getElementById("deleteOrgTyped");
+        const deleteOrgConfirmBtn = document.getElementById("deleteOrgConfirm");
+        deleteOrgTyped.addEventListener("input", () => {
+          deleteOrgConfirmBtn.disabled = deleteOrgTyped.value.trim().toUpperCase() !== "DELETE";
+        });
+        document.getElementById("deleteOrgCancel").onclick = () => deleteOrgModal.classList.remove("open");
+        deleteOrgModal.onclick = (e) => {
+          if (e.target === deleteOrgModal) deleteOrgModal.classList.remove("open");
+        };
+        deleteOrgConfirmBtn.onclick = async () => {
+          try {
+            const data = await API.post("/api/organization/request-deletion", {
+              reason: document.getElementById("deleteOrgReason").value.trim(),
+            });
+            deleteOrgModal.classList.remove("open");
+            toast(data.message);
+            renderSettings();
+          } catch (err) {
+            toast(err.message, true);
+          }
+        };
+
+        const SECTIONS = isAdmin
+          ? [
+              { key: "profile", label: "Profile" },
+              { key: "contributions", label: "My contributions" },
+              { key: "facility", label: "Facility profile" },
+              { key: "license", label: "License" },
+              { key: "settings", label: "System settings" },
+              { key: "updates", label: "System updates" },
+              { key: "backup", label: "Backup & restore" },
+              { key: "preferences", label: "Preferences" },
+              { key: "password", label: "Change password" },
+              { key: "logout", label: "Logout", logout: true },
+            ]
+          : [
+              { key: "facility", label: "Facility profile" },
+              { key: "password", label: "Change password" },
+              { key: "logout", label: "Logout", logout: true },
+            ];
+        let activeSection = SECTIONS[0].key;
+
+        function renderNav() {
+          document.getElementById("spaNav").innerHTML = SECTIONS.map(
+            (s) => `
+      <button type="button" class="${s.logout ? "logout" : ""} ${activeSection === s.key ? "on" : ""}" data-section="${s.key}">${s.label}</button>`,
+          ).join("");
+          document.querySelectorAll("[data-section]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              activeSection = btn.dataset.section;
+              renderNav();
+              renderPanel();
+            }),
+          );
+        }
+
+        const host = document.getElementById("panelHost");
+
+        async function renderPanel() {
+          host.innerHTML =
+            '<div class="card"><div class="empty">Loading…</div></div>';
+          if (activeSection === "profile") return renderProfile();
+          if (activeSection === "contributions") return renderContributions();
+          if (activeSection === "facility") return renderFacility();
+          if (activeSection === "license") return renderLicense();
+          if (activeSection === "settings") return renderSettings();
+          if (activeSection === "updates") return renderUpdates();
+          if (activeSection === "backup") return renderBackup();
+          if (activeSection === "preferences") return renderPreferences();
+          if (activeSection === "password") return renderPassword();
+          if (activeSection === "logout") return renderLogout();
+        }
+
+        function card(title, sub, bodyHtml) {
+          host.innerHTML = `
+      <div class="card">
+        <h2 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">${title}</h2>
+        <p style="margin:0 0 20px; color:var(--muted); font-size:0.88rem;">${sub}</p>
+        ${bodyHtml}
+      </div>`;
+        }
+
+        // --- Profile (personal) ---
+        async function renderProfile() {
+          card(
+            "Profile",
+            "Your personal information as an administrator",
+            `
+      <div class="form-error" id="pError"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div><label class="field">First name</label><input class="field" id="pFirst" value="${fmt.esc(user.firstName)}"></div>
+        <div><label class="field">Last name</label><input class="field" id="pLast" value="${fmt.esc(user.lastName)}"></div>
+        <div><label class="field">Email</label><input class="field" value="${fmt.esc(user.email)}" readonly></div>
+        <div><label class="field">Phone</label><input class="field" id="pPhone" value="${fmt.esc(user.phone || "")}"></div>
+        <div><label class="field">Role</label><input class="field" value="${user.role === "admin" ? "Administrator" : user.role}" readonly></div>
+        <div><label class="field">Member number</label><input class="field" value="${fmt.esc(user.memberNumber || "—")}" readonly></div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button class="btn" id="saveProfileBtn">Save profile</button>
+      </div>`,
+          );
+          document
+            .getElementById("saveProfileBtn")
+            .addEventListener("click", async () => {
+              const errBox = document.getElementById("pError");
+              errBox.classList.remove("show");
+              try {
+                await API.patch("/api/profile", {
+                  firstName: document.getElementById("pFirst").value.trim(),
+                  lastName: document.getElementById("pLast").value.trim(),
+                  phone: document.getElementById("pPhone").value.trim(),
+                });
+                toast("Profile saved");
+              } catch (err) {
+                errBox.textContent = err.message;
+                errBox.classList.add("show");
+              }
+            });
+        }
+
+        // --- My contributions (admin is also a member) ---
+        async function renderContributions() {
+          const data = await API.get("/api/dashboard/member");
+          const rows = data.recentContributions || [];
+          card(
+            "My contributions",
+            "Your own membership contributions — separate from console records",
+            `
+      <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; margin-bottom:20px;">
+        <div class="tile"><span style="display:block; color:var(--faint); font-size:0.75rem; text-transform:uppercase; margin-bottom:4px;">Total contributed</span><span style="font-weight:700; font-size:1.15rem;">${fmt.gh(data.totalContributed)}</span></div>
+        <div class="tile"><span style="display:block; color:var(--faint); font-size:0.75rem; text-transform:uppercase; margin-bottom:4px;">This month</span><span style="font-weight:700; font-size:1.15rem;">${fmt.gh(data.monthTotal)}</span></div>
+        <div class="tile"><span style="display:block; color:var(--faint); font-size:0.75rem; text-transform:uppercase; margin-bottom:4px;">Standing</span><span style="font-weight:700; font-size:1.15rem; color:var(--green-ink);">Good</span></div>
+      </div>
+      <table class="data">
+        <thead><tr><th>Date</th><th>Method</th><th>Note</th><th class="num">Amount</th></tr></thead>
+        <tbody>${rows.length ? rows.map((r) => `<tr><td>${fmt.date(r.contributionDate)}</td><td>${fmt.esc(r.method)}</td><td>${fmt.esc(r.note || "—")}</td><td class="num">${fmt.gh(r.amount)}</td></tr>`).join("") : '<tr><td colspan="4" class="empty">No contributions yet.</td></tr>'}</tbody>
+      </table>`,
+          );
+        }
+
+        // --- Facility profile (Administrator: editable; others: read-only) ---
+        const FACILITY_TABS = [
+          {
+            key: "identity",
+            label: "Identity",
+            fields: [
+              ["shortName", "Short name"],
+              ["tagline", "Tagline / motto"],
+              ["website", "Website"],
+              ["overview", "Organisation overview", true],
+            ],
+          },
+          {
+            key: "legal",
+            label: "Legal & regulatory",
+            fields: [
+              ["legalName", "Legal name"],
+              ["registrationNumber", "Registration number"],
+              ["taxId", "Tax ID / TIN"],
+              ["vatStatus", "VAT / GRA status"],
+              ["complianceNotes", "ISO / compliance notes"],
+            ],
+          },
+          {
+            key: "address",
+            label: "Address",
+            fields: [
+              ["addressLine1", "Address line 1"],
+              ["addressLine2", "Address line 2"],
+              ["city", "City / town"],
+              ["region", "Region / state"],
+              ["postalCode", "Postal code"],
+              ["country", "Country"],
+            ],
+          },
+          {
+            key: "contact",
+            label: "Contact",
+            fields: [
+              ["supportHotline", "Support hotline"],
+              ["supportEmail", "Organization email", false, undefined, "Set by WIMScare when your license was issued — used as the reply-to address on emails sent to your members, separate from any admin's own login email. Contact your provider to change it.", true],
+              ["whatsapp", "WhatsApp number"],
+            ],
+          },
+          {
+            key: "social",
+            label: "Social",
+            fields: [
+              ["facebook", "Facebook"],
+              ["twitter", "Twitter / X"],
+              ["instagram", "Instagram"],
+              ["linkedin", "LinkedIn"],
+            ],
+          },
+          {
+            key: "branding",
+            label: "Branding",
+            pro: true, // interface customization — Pro plan only
+            fields: [
+              ["primaryColor", "Primary colour", false, "color"],
+              ["accentColor", "Sidebar / accent colour", false, "color"],
+              ["backgroundColor", "Background colour", false, "color"],
+            ],
+          },
+        ];
+        async function renderFacility() {
+          const { organization } = await API.get("/api/organization");
+          const facility = organization.facility || {};
+          let facTab = "identity";
+
+          function fieldsHtml(tabKey) {
+            const tab = FACILITY_TABS.find((t) => t.key === tabKey);
+            const locked = tab.pro && !WIMS.feature("customBranding");
+            const lockNote = tab.pro
+              ? locked
+                ? `<div style="grid-column:span 2; background:var(--amber-bg); border:1px solid var(--amber-line); color:var(--amber-ink); border-radius:12px; padding:13px 16px; font-size:0.88rem;">
+                     <strong>Pro plan feature.</strong> Interface customization lets your organization recolour the whole console with its own brand. Ask your provider about upgrading to Pro.
+                   </div>`
+                : `<div style="grid-column:span 2; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+                     <span style="color:var(--muted); font-size:0.85rem;">Your logo, name and colours apply to every console — buttons, links, headers, backgrounds and the sidebar — for all your users after their next page load.</span>
+                     ${
+                       isAdmin && (facility.primaryColor || facility.accentColor || facility.backgroundColor || facility.logoPath)
+                         ? '<button type="button" class="btn ghost" id="brandResetBtn" style="padding:8px 14px; font-size:0.83rem; white-space:nowrap;">Reset to default</button>'
+                         : ""
+                     }
+                   </div>`
+              : "";
+            const logoBlock =
+              tab.pro && !locked
+                ? `<div style="grid-column:span 2; display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--bg); border:1px solid var(--line); border-radius:12px;">
+                     <img id="brandLogoPreview" src="${facility.logoPath ? "/api/organization/logo?v=" + Date.now() : "/assets/logo.png"}" alt="Logo" style="width:46px; height:46px; border-radius:10px; background:#fff; padding:4px; object-fit:contain; border:1px solid var(--line);">
+                     <div style="flex:1; min-width:0;">
+                       <span style="display:block; font-weight:600; font-size:0.9rem;">Company logo</span>
+                       <span style="display:block; color:var(--muted); font-size:0.8rem;">Shown in place of the WIMScare mark. PNG, JPEG or WebP, up to 5 MB.</span>
+                     </div>
+                     ${
+                       isAdmin
+                         ? `<input type="file" id="brandLogoFile" accept="image/png,image/jpeg,image/webp" style="display:none;">
+                            <button type="button" class="btn secondary" id="brandLogoBtn" style="padding:9px 14px; font-size:0.85rem;">Upload</button>
+                            ${facility.logoPath ? '<button type="button" class="btn ghost" id="brandLogoRemove" style="padding:9px 14px; font-size:0.85rem;">Remove</button>' : ""}`
+                         : ""
+                     }
+                   </div>`
+                : "";
+            return (
+              lockNote +
+              logoBlock +
+              tab.fields
+                .map(
+                  ([key, label, wide, type, hint, fieldLocked]) => `
+        <div style="${wide ? "grid-column:span 2;" : ""}">
+          <label class="field">${label}</label>
+          ${
+            type === "color"
+              ? `<div style="display:flex; align-items:center; gap:10px;">
+                   <input type="color" data-fac="${key}" value="${fmt.esc(facility[key] || (key === "accentColor" ? "#0f2c3f" : "#1d6fae"))}" ${isAdmin && !locked ? "" : "disabled"} style="width:52px; height:40px; border:1px solid var(--input-line); border-radius:10px; padding:2px; background:#fff; cursor:${isAdmin && !locked ? "pointer" : "not-allowed"};">
+                   <span style="font-size:0.85rem; color:var(--muted); font-family:ui-monospace, monospace;">${fmt.esc(facility[key] || "default")}</span>
+                 </div>`
+              : wide
+                ? `<textarea class="field" rows="2" data-fac="${key}" ${fieldLocked ? "disabled" : isAdmin ? "" : "readonly"} style="${fieldLocked ? "background:var(--bg); color:var(--muted); cursor:not-allowed;" : ""}">${fmt.esc(facility[key] || "")}</textarea>`
+                : `<input class="field" data-fac="${key}" value="${fmt.esc(facility[key] || "")}" ${fieldLocked ? "disabled" : isAdmin ? "" : "readonly"} style="${fieldLocked ? "background:var(--bg); color:var(--muted); cursor:not-allowed;" : ""}">`
+          }
+          ${hint ? `<span style="display:block; margin-top:4px; font-size:0.78rem; color:var(--faint);">${hint}</span>` : ""}
+        </div>`,
+                )
+                .join("")
+            );
+          }
+
+          function draw() {
+            host.innerHTML = `
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:6px; flex-wrap:wrap;">
+            <div>
+              <h2 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Facility profile</h2>
+              <p style="margin:0; color:var(--muted); font-size:0.88rem;">Organisation identity used across reports, exports and headers${isAdmin ? "" : " (read-only)"}</p>
+            </div>
+            ${isAdmin ? '<button type="button" class="btn" id="saveFacilityBtn" style="padding:10px 18px; font-size:0.9rem;">Save changes</button>' : ""}
+          </div>
+          <div class="facility-tabs" id="facTabs"></div>
+          <div class="form-error" id="facError"></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;" id="facFields"></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+            <div><label class="field">Organization name</label><input class="field" id="orgName" value="${fmt.esc(organization.name)}" ${isAdmin ? "" : "readonly"}></div>
+            <div><label class="field">Contact email</label><input class="field" id="orgEmail" value="${fmt.esc(organization.contactEmail || "")}" ${isAdmin ? "" : "readonly"}></div>
+            <div><label class="field">Contact phone</label><input class="field" id="orgPhone" value="${fmt.esc(organization.contactPhone || "")}" ${isAdmin ? "" : "readonly"}></div>
+            <div><label class="field">Address (summary)</label><input class="field" id="orgAddress" value="${fmt.esc(organization.address || "")}" ${isAdmin ? "" : "readonly"}></div>
+          </div>
+        </div>`;
+            document.getElementById("facTabs").innerHTML = FACILITY_TABS.map(
+              (t) =>
+                `<button type="button" class="facility-tab ${facTab === t.key ? "on" : ""}" data-fac-tab="${t.key}">${t.label}</button>`,
+            ).join("");
+            document.getElementById("facFields").innerHTML = fieldsHtml(facTab);
+            document.querySelectorAll("[data-fac-tab]").forEach((btn) =>
+              btn.addEventListener("click", () => {
+                collectPending();
+                facTab = btn.dataset.facTab;
+                draw();
+              }),
+            );
+            if (isAdmin)
+              document
+                .getElementById("saveFacilityBtn")
+                .addEventListener("click", save);
+
+            // Logo upload / removal (Branding tab, Pro plan only)
+            const logoBtn = document.getElementById("brandLogoBtn");
+            const logoFile = document.getElementById("brandLogoFile");
+            if (logoBtn && logoFile) {
+              logoBtn.addEventListener("click", () => logoFile.click());
+              logoFile.addEventListener("change", async () => {
+                if (!logoFile.files.length) return;
+                const fd = new FormData();
+                fd.append("logo", logoFile.files[0]);
+                try {
+                  const res = await API.upload("/api/organization/logo", fd);
+                  facility.logoPath = res.logoPath;
+                  toast("Logo updated");
+                  collectPending();
+                  draw();
+                  WIMS.applyBranding(facility);
+                } catch (err) {
+                  toast(err.message, true);
+                }
+              });
+            }
+            const logoRemove = document.getElementById("brandLogoRemove");
+            if (logoRemove)
+              logoRemove.addEventListener("click", async () => {
+                try {
+                  await API.del("/api/organization/logo");
+                  facility.logoPath = undefined;
+                  toast("Logo removed — stock mark restored");
+                  collectPending();
+                  draw();
+                } catch (err) {
+                  toast(err.message, true);
+                }
+              });
+
+            // Reset branding (Branding tab, Pro plan) — clears custom colours
+            // and removes the uploaded logo, back to WIMScare defaults.
+            const resetBtn = document.getElementById("brandResetBtn");
+            const resetModal = document.getElementById("brandResetModal");
+            if (resetBtn)
+              resetBtn.addEventListener("click", () =>
+                resetModal.classList.add("open"),
+              );
+            // onclick (not addEventListener) so re-running draw() overwrites
+            // rather than stacking duplicate handlers on the persistent modal.
+            document.getElementById("brandResetCancel").onclick = () =>
+              resetModal.classList.remove("open");
+            resetModal.onclick = (e) => {
+              if (e.target === resetModal) resetModal.classList.remove("open");
+            };
+            document.getElementById("brandResetConfirm").onclick = async () => {
+              try {
+                await API.patch("/api/organization/facility", {
+                  facility: { primaryColor: "", accentColor: "", backgroundColor: "" },
+                });
+                if (facility.logoPath) await API.del("/api/organization/logo");
+                toast("Branding reset to default");
+                location.reload();
+              } catch (err) {
+                resetModal.classList.remove("open");
+                toast(err.message, true);
+              }
+            };
+          }
+
+          // Preserve edits made on other tabs before switching.
+          const pending = {};
+          function collectPending() {
+            document.querySelectorAll("[data-fac]").forEach((el) => {
+              if (el.disabled) return; // locked Pro fields stay untouched
+              pending[el.dataset.fac] = el.value;
+              Object.assign(facility, { [el.dataset.fac]: el.value });
+            });
+          }
+
+          async function save() {
+            collectPending();
+            const errBox = document.getElementById("facError");
+            errBox.classList.remove("show");
+            try {
+              await API.patch("/api/organization/facility", {
+                name: document.getElementById("orgName").value.trim(),
+                contactEmail: document.getElementById("orgEmail").value.trim(),
+                contactPhone: document.getElementById("orgPhone").value.trim(),
+                address: document.getElementById("orgAddress").value.trim(),
+                facility,
+              });
+              toast("Facility profile saved");
+              // Pro branding: recolour this console right away.
+              if (WIMS.feature("customBranding")) {
+                WIMS.applyBranding(facility);
+              }
+            } catch (err) {
+              errBox.textContent = err.message;
+              errBox.classList.add("show");
+            }
+          }
+
+          draw();
+        }
+
+        // --- License ---
+        async function renderLicense() {
+          const { license } = await API.get("/api/organization/license");
+          if (!license) {
+            return card(
+              "License",
+              "Plan, seats and renewal",
+              '<div class="empty">No license on file — contact WIMScare support.</div>',
+            );
+          }
+          const daysLeft = Math.ceil(
+            (new Date(license.expiresAt) - Date.now()) / 86400000,
+          );
+          const expiring = daysLeft <= 14 && daysLeft >= 0;
+          const expired = daysLeft < 0;
+          card(
+            "License",
+            "Plan, seat usage and renewal",
+            `
+      ${expiring || expired ? `<div style="margin-bottom:16px; padding:14px 18px; border-radius:12px; background:${expired ? "var(--red-bg)" : "var(--amber-bg)"}; color:${expired ? "var(--red-ink)" : "var(--amber-ink)"}; font-weight:600; font-size:0.9rem;">${expired ? "This license has expired." : `Expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"} — renew soon to avoid interruption.`}</div>` : ""}
+      <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; margin-bottom:20px;">
+        <div class="tile"><span style="display:block; color:var(--faint); font-size:0.75rem; text-transform:uppercase; margin-bottom:4px;">Plan</span><span style="font-weight:700; font-size:1.1rem; text-transform:capitalize;">${license.plan}</span></div>
+        <div class="tile"><span style="display:block; color:var(--faint); font-size:0.75rem; text-transform:uppercase; margin-bottom:4px;">Max members</span><span style="font-weight:700; font-size:1.1rem;">${license.maxMembers}</span></div>
+        <div class="tile"><span style="display:block; color:var(--faint); font-size:0.75rem; text-transform:uppercase; margin-bottom:4px;">Expires</span><span style="font-weight:700; font-size:1.1rem;">${fmt.date(license.expiresAt)}</span></div>
+      </div>
+      ${
+        license.renewals && license.renewals.length
+          ? `<h3 style="margin:0 0 8px; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--faint); font-weight:700;">Renewal history</h3>
+             <div style="margin-bottom:20px; border:1px solid var(--line); border-radius:12px; overflow:hidden;">
+               ${license.renewals
+                 .slice()
+                 .reverse()
+                 .map(
+                   (r, i) => `<div style="display:flex; justify-content:space-between; gap:12px; padding:11px 16px; font-size:0.88rem; ${i ? "border-top:1px solid var(--line-soft);" : ""}">
+                       <span style="color:var(--muted);">${fmt.date(r.at)} · extended ${r.months} month${r.months === 1 ? "" : "s"}</span>
+                       <span style="font-weight:600; white-space:nowrap;">valid to ${fmt.date(r.newExpiresAt)}</span>
+                     </div>`,
+                 )
+                 .join("")}
+             </div>`
+          : ""
+      }
+      <p style="margin:0 0 16px; color:var(--muted); font-size:0.85rem;">Renewals and plan changes are issued by the WIMScare team. Request a renewal below and we'll follow up.</p>
+      <button type="button" class="btn" id="renewBtn" style="margin-bottom:20px;">Request renewal</button>
+      <h3 style="margin:0 0 8px; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--faint); font-weight:700;">Change plan</h3>
+      ${
+        license.requestedPlan
+          ? `<div style="margin-bottom:12px; padding:12px 16px; border-radius:12px; background:var(--primary-tint); color:var(--primary); font-weight:600; font-size:0.87rem;">Upgrade to ${fmt.esc(PLAN_LABELS[license.requestedPlan] || license.requestedPlan)} requested ${fmt.date(license.planRequestedAt)} — awaiting the WIMScare team.</div>`
+          : ""
+      }
+      <div style="display:grid; grid-template-columns:1fr auto; gap:10px;">
+        <select class="field" id="planSelect">
+          ${Object.entries(PLAN_LABELS)
+            .map(
+              ([key, label]) =>
+                `<option value="${key}" ${key === license.plan ? "selected" : ""}>${label}${key === license.plan ? " (current)" : ""}</option>`,
+            )
+            .join("")}
+        </select>
+        <button type="button" class="btn secondary" id="planReqBtn" style="white-space:nowrap;">Request plan change</button>
+      </div>`,
+          );
+          document
+            .getElementById("renewBtn")
+            .addEventListener("click", async () => {
+              try {
+                const data = await API.post(
+                  "/api/organization/request-license-renewal",
+                  {},
+                );
+                toast(data.message);
+              } catch (err) {
+                toast(err.message, true);
+              }
+            });
+          document
+            .getElementById("planReqBtn")
+            .addEventListener("click", async () => {
+              const plan = document.getElementById("planSelect").value;
+              if (plan === license.plan)
+                return toast(`Already on the ${PLAN_LABELS[plan]} plan`, true);
+              try {
+                const data = await API.post(
+                  "/api/organization/request-plan-upgrade",
+                  { plan },
+                );
+                toast(data.message);
+                renderLicense();
+              } catch (err) {
+                toast(err.message, true);
+              }
+            });
+        }
+        const PLAN_LABELS = { free: "Free", standard: "Standard", pro: "Pro" };
+
+        // --- System settings ---
+        async function renderSettings() {
+          const { organization } = await API.get("/api/organization");
+          const s = organization.systemSettings || {};
+          const TOGGLES = [
+            [
+              "auditLogEnabled",
+              "Detailed audit logging",
+              "Record every admin action with before/after values",
+            ],
+            [
+              "emailAlerts",
+              "System email alerts",
+              "Notify admins of failed backups and errors",
+            ],
+            [
+              "strictEligibility",
+              "Strict claim eligibility",
+              "Block submissions that fail eligibility checks",
+            ],
+            [
+              "maintenanceMode",
+              "Maintenance mode",
+              "Temporarily block member sign-ins",
+            ],
+          ];
+          card(
+            "System settings",
+            "Global console behaviour — applies to all administrators",
+            `
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+        <div>
+          <label class="field">Default currency</label>
+          <select class="field" id="sCurrency"><option ${organization.currency === "GHS" ? "selected" : ""}>Ghana Cedi (GH₵)</option><option ${organization.currency === "USD" ? "selected" : ""}>US Dollar ($)</option></select>
+        </div>
+        <div>
+          <label class="field">Session timeout (minutes)</label>
+          <input class="field" type="number" min="5" max="480" id="sTimeout" value="${s.sessionTimeoutMinutes ?? 30}">
+        </div>
+      </div>
+      <div style="display:grid; gap:10px;" id="settingsToggles"></div>
+      <h3 style="margin:26px 0 4px; font-size:0.95rem; font-weight:700; color:var(--red-ink, #b4372a);">Danger zone</h3>
+      <p style="margin:0 0 12px; color:var(--muted); font-size:0.85rem;">Permanently close this organization — every admin, staff member and member here loses access.</p>
+      <div id="deleteOrgBody"></div>
+    `,
+          );
+          function drawToggles() {
+            document.getElementById("settingsToggles").innerHTML = TOGGLES.map(
+              ([key, title, desc]) => `
+        <div class="toggle-row">
+          <div><span style="display:block; font-weight:600; font-size:0.9rem;">${title}</span><span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;">${desc}</span></div>
+          <button type="button" class="track ${s[key] ? "on" : ""}" data-set="${key}"><span class="knob"></span></button>
+        </div>`,
+            ).join("");
+            document.querySelectorAll("[data-set]").forEach((btn) =>
+              btn.addEventListener("click", async () => {
+                try {
+                  await API.patch("/api/organization/system-settings", {
+                    [btn.dataset.set]: !s[btn.dataset.set],
+                  });
+                  s[btn.dataset.set] = !s[btn.dataset.set];
+                  drawToggles();
+                  toast("Setting saved");
+                } catch (err) {
+                  toast(err.message, true);
+                }
+              }),
+            );
+          }
+          drawToggles();
+          document
+            .getElementById("sTimeout")
+            .addEventListener("change", async (e) => {
+              try {
+                await API.patch("/api/organization/system-settings", {
+                  sessionTimeoutMinutes: e.target.value,
+                });
+                toast("Session timeout saved");
+              } catch (err) {
+                toast(err.message, true);
+              }
+            });
+
+          // --- Delete organization ---
+          const deleteOrgBody = document.getElementById("deleteOrgBody");
+          if (organization.deletionRequestedAt) {
+            deleteOrgBody.innerHTML = `
+        <div style="padding:14px 16px; border-radius:12px; background:var(--amber-bg); color:var(--amber-ink); font-size:0.88rem; margin-bottom:14px;">
+          Deletion requested ${fmt.date(organization.deletionRequestedAt)} — awaiting the WIMScare team.
+        </div>
+        <button type="button" class="btn secondary" id="cancelDeleteOrgBtn" style="padding:11px 18px;">Withdraw request</button>`;
+            document.getElementById("cancelDeleteOrgBtn").addEventListener("click", async () => {
+              try {
+                await API.post("/api/organization/cancel-deletion-request", {});
+                toast("Deletion request withdrawn");
+                renderSettings();
+              } catch (err) {
+                toast(err.message, true);
+              }
+            });
+          } else {
+            deleteOrgBody.innerHTML = `<button type="button" class="btn danger" id="openDeleteOrgBtn" style="padding:11px 18px;">Delete organization</button>`;
+            document.getElementById("openDeleteOrgBtn").addEventListener("click", () => {
+              document.getElementById("deleteOrgCopy").innerHTML = `This sends a request to the WIMScare team. If approved, every admin, staff member and member in <strong>${fmt.esc(organization.name)}</strong> will be locked out immediately — all data is kept for records, but access is gone for good.`;
+              document.getElementById("deleteOrgTyped").value = "";
+              document.getElementById("deleteOrgReason").value = "";
+              deleteOrgConfirmBtn.disabled = true;
+              deleteOrgModal.classList.add("open");
+            });
+          }
+        }
+
+        // --- System updates ---
+        async function renderUpdates() {
+          const { items } = await API.get("/api/developer/updates");
+          card(
+            "System updates",
+            `${items.length} published update${items.length === 1 ? "" : "s"}`,
+            `
+      <div>${
+        items.length
+          ? items
+              .map(
+                (u) => `
+        <div class="row-item">
+          <div><span style="display:block; font-size:0.92rem; font-weight:600;">${fmt.esc(u.version)} — ${fmt.esc(u.title)}</span><span style="display:block; font-size:0.82rem; color:var(--faint); margin-top:2px;">${fmt.esc(u.body || "")} · ${fmt.date(u.publishedAt)}</span></div>
+          <span class="pill ${u.kind === "security" ? "red" : u.kind === "maintenance" ? "amber" : "green"}">${u.kind}</span>
+        </div>`,
+              )
+              .join("")
+          : '<div class="empty">No updates published yet.</div>'
+      }</div>`,
+          );
+        }
+
+        // --- Backup & restore ---
+        async function renderBackup() {
+          const canBackup = WIMS.can("manage_backups");
+          const { items } = canBackup
+            ? await API.get("/api/backups")
+            : { items: [] };
+          card(
+            "Backup & restore",
+            canBackup
+              ? "Create and restore organization backups"
+              : "You do not have permission to manage backups",
+            `
+      ${canBackup ? '<button type="button" class="btn" id="createBackupBtn" style="margin-bottom:16px;">Create backup now</button>' : ""}
+      <div>${
+        items.length
+          ? items
+              .map(
+                (b) => `
+        <div class="row-item">
+          <div><span style="display:block; font-size:0.92rem; font-weight:600;">${fmt.esc(b.fileName)}</span><span style="display:block; font-size:0.82rem; color:var(--faint); margin-top:2px;">${(b.sizeBytes / 1024 / 1024).toFixed(1)} MB · ${fmt.dateTime(b.createdAt)} · ${fmt.esc(fmt.name(b.createdBy))}</span></div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span class="pill ${b.status === "completed" ? "green" : "red"}">${b.status}</span>
+            <a class="btn small secondary" href="/api/backups/${b._id}/download">Download</a>
+            ${isAdmin ? `<button type="button" class="btn small secondary" style="color:var(--red-ink);" data-restore="${b._id}">Restore</button>` : ""}
+          </div>
+        </div>`,
+              )
+              .join("")
+          : canBackup
+            ? '<div class="empty">No backups yet.</div>'
+            : ""
+      }</div>`,
+          );
+          if (canBackup) {
+            document
+              .getElementById("createBackupBtn")
+              .addEventListener("click", async () => {
+                try {
+                  await API.post("/api/backups");
+                  toast("Backup created");
+                  renderBackup();
+                } catch (err) {
+                  toast(err.message, true);
+                }
+              });
+            document.querySelectorAll("[data-restore]").forEach((btn) =>
+              btn.addEventListener("click", async () => {
+                const confirmText = prompt(
+                  "This replaces ALL current organization data. Type RESTORE to confirm:",
+                );
+                if (confirmText !== "RESTORE") return;
+                try {
+                  await API.post(
+                    `/api/backups/${btn.dataset.restore}/restore`,
+                    { confirm: "RESTORE" },
+                  );
+                  toast("Restore completed — please sign in again");
+                  setTimeout(() => WIMS.signOut(), 1500);
+                } catch (err) {
+                  toast(err.message, true);
+                }
+              }),
+            );
+          }
+        }
+
+        // --- Preferences (shared User.preferences — admins are members too) ---
+        async function renderPreferences() {
+          const { user: u } = await API.get("/api/profile");
+          const p = u.preferences || {};
+          const TOGGLES = [
+            [
+              "emailNotifications",
+              "Email notifications",
+              "General account and system emails",
+            ],
+            [
+              "claimUpdates",
+              "Claim status updates",
+              "Email me when my own claims change status",
+            ],
+            [
+              "contributionReceipts",
+              "Contribution receipts",
+              "Email me a receipt when a contribution is recorded",
+            ],
+            [
+              "monthlyStatement",
+              "Monthly statement",
+              "Email a monthly summary of my contributions",
+            ],
+          ];
+          card(
+            "Preferences",
+            "Personal console preferences — affect only your account",
+            `
+      <div style="display:grid; gap:10px;" id="prefToggles"></div>
+      <h3 style="margin:26px 0 4px; font-size:0.95rem; font-weight:700;">Phone & two-factor authentication</h3>
+      <p style="margin:0 0 16px; color:var(--muted); font-size:0.85rem;">Verify your phone for SMS alerts, and optionally require a text-message code when you sign in.</p>
+      <div class="form-error" id="tfaError"></div>
+      <div style="display:grid; gap:16px; max-width:420px;">
+        <div>
+          <label class="field">Phone number</label>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <input class="field" id="tfaPhone" placeholder="+233 24 000 0000" style="flex:1;">
+            <span id="tfaBadge"></span>
+          </div>
+        </div>
+        <div id="tfaAction"></div>
+        <div class="toggle-row">
+          <div style="min-width:0;">
+            <span style="display:block; font-weight:600; font-size:0.9rem;">Require SMS code at login</span>
+            <span id="tfaToggleDesc" style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;"></span>
+          </div>
+          <button type="button" class="track" id="tfaToggle" role="switch"><span class="knob"></span></button>
+        </div>
+      </div>
+      <h3 style="margin:26px 0 4px; font-size:0.95rem; font-weight:700; color:var(--red-ink, #b4372a);">Danger zone</h3>
+      <p style="margin:0 0 12px; color:var(--muted); font-size:0.85rem;">Permanently close your WIMScare account.</p>
+      <div id="deleteAcctBody"></div>`,
+          );
+          function draw() {
+            document.getElementById("prefToggles").innerHTML = TOGGLES.map(
+              ([key, title, desc]) => `
+        <div class="toggle-row">
+          <div><span style="display:block; font-weight:600; font-size:0.9rem;">${title}</span><span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;">${desc}</span></div>
+          <button type="button" class="track ${p[key] ? "on" : ""}" data-pref="${key}"><span class="knob"></span></button>
+        </div>`,
+            ).join("");
+            document.querySelectorAll("[data-pref]").forEach((btn) =>
+              btn.addEventListener("click", async () => {
+                try {
+                  await API.patch("/api/profile/preferences", {
+                    [btn.dataset.pref]: !p[btn.dataset.pref],
+                  });
+                  p[btn.dataset.pref] = !p[btn.dataset.pref];
+                  draw();
+                } catch (err) {
+                  toast(err.message, true);
+                }
+              }),
+            );
+          }
+          draw();
+
+          // --- Phone verification + SMS 2FA ---
+          let tfa = {
+            phone: u.phone || "",
+            verified: !!u.phoneVerified,
+            enabled: !!u.twoFactorEnabled,
+            otpSent: false,
+          };
+          const tfaPhoneInput = document.getElementById("tfaPhone");
+          const tfaBadge = document.getElementById("tfaBadge");
+          const tfaAction = document.getElementById("tfaAction");
+          const tfaToggle = document.getElementById("tfaToggle");
+          const tfaToggleDesc = document.getElementById("tfaToggleDesc");
+          const tfaErrorBox = document.getElementById("tfaError");
+
+          function showTfaError(msg) {
+            tfaErrorBox.textContent = msg;
+            tfaErrorBox.classList.add("show");
+          }
+
+          function renderTfa() {
+            tfaErrorBox.classList.remove("show");
+            tfaPhoneInput.value = tfa.phone;
+            tfaBadge.innerHTML = tfa.verified
+              ? '<span class="pill green">Verified</span>'
+              : tfa.phone
+                ? '<span class="pill gray">Unverified</span>'
+                : "";
+
+            if (tfa.otpSent) {
+              tfaAction.innerHTML = `
+                <label class="field">Enter the code sent to ${fmt.esc(tfa.phone)}</label>
+                <input class="field" id="tfaOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="letter-spacing:0.3em; text-align:center; max-width:180px;">
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                  <button type="button" class="btn" id="tfaVerifyBtn" style="padding:10px 18px;">Verify</button>
+                  <button type="button" class="btn secondary" id="tfaResendBtn" style="padding:10px 18px;">Resend code</button>
+                </div>`;
+              document.getElementById("tfaVerifyBtn").addEventListener("click", async () => {
+                const code = document.getElementById("tfaOtp").value.trim();
+                if (!code) return showTfaError("Enter the code sent to your phone");
+                try {
+                  await API.post("/api/profile/phone/verify-otp", { code });
+                  tfa.verified = true;
+                  tfa.otpSent = false;
+                  renderTfa();
+                  toast("Phone number verified");
+                } catch (err) {
+                  showTfaError(err.message);
+                  const otpEl = document.getElementById("tfaOtp");
+                  otpEl.value = "";
+                  otpEl.focus();
+                }
+              });
+              document.getElementById("tfaResendBtn").addEventListener("click", async () => {
+                try {
+                  await API.post("/api/profile/phone/send-otp", { phone: tfa.phone });
+                  toast("New code sent");
+                } catch (err) {
+                  showTfaError(err.message);
+                }
+              });
+            } else {
+              tfaAction.innerHTML = `<button type="button" class="btn secondary" id="tfaSendBtn" style="padding:10px 18px;">${tfa.verified ? "Change number" : "Send verification code"}</button>`;
+              document.getElementById("tfaSendBtn").addEventListener("click", async () => {
+                const phone = tfaPhoneInput.value.trim();
+                if (!phone) return showTfaError("Enter a phone number first");
+                try {
+                  await API.post("/api/profile/phone/send-otp", { phone });
+                  tfa.phone = phone;
+                  tfa.verified = false;
+                  tfa.otpSent = true;
+                  tfa.enabled = false;
+                  renderTfa();
+                  toast(`Code sent to ${phone}`);
+                } catch (err) {
+                  showTfaError(err.message);
+                }
+              });
+            }
+
+            tfaToggle.classList.toggle("on", tfa.enabled);
+            tfaToggle.setAttribute("aria-checked", String(tfa.enabled));
+            tfaToggle.disabled = !tfa.verified;
+            tfaToggle.style.opacity = tfa.verified ? "1" : "0.5";
+            tfaToggle.style.cursor = tfa.verified ? "pointer" : "not-allowed";
+            tfaToggleDesc.textContent = tfa.verified
+              ? "Adds a text-message code after your password when signing in."
+              : "Verify your phone number above to enable this.";
+          }
+          tfaToggle.addEventListener("click", async () => {
+            if (!tfa.verified) return;
+            const next = !tfa.enabled;
+            tfa.enabled = next;
+            renderTfa();
+            try {
+              await API.patch("/api/profile/two-factor", { enabled: next });
+              toast(next ? "SMS code required at login" : "SMS code at login turned off");
+            } catch (err) {
+              tfa.enabled = !next;
+              renderTfa();
+              toast(err.message, true);
+            }
+          });
+          renderTfa();
+
+          // --- Delete my account ---
+          const deleteAcctBody = document.getElementById("deleteAcctBody");
+          if (u.deletionRequestedAt) {
+            deleteAcctBody.innerHTML = `
+        <div style="padding:14px 16px; border-radius:12px; background:var(--amber-bg); color:var(--amber-ink); font-size:0.88rem; margin-bottom:14px;">
+          Deletion requested ${fmt.date(u.deletionRequestedAt)} — awaiting the WIMScare team.
+        </div>
+        <button type="button" class="btn secondary" id="cancelDeleteAcctBtn" style="padding:11px 18px;">Withdraw request</button>`;
+            document.getElementById("cancelDeleteAcctBtn").addEventListener("click", async () => {
+              try {
+                await API.post("/api/profile/cancel-deletion-request", {});
+                toast("Deletion request withdrawn");
+                renderPreferences();
+              } catch (err) {
+                toast(err.message, true);
+              }
+            });
+          } else {
+            deleteAcctBody.innerHTML = `<button type="button" class="btn danger" id="openDeleteAcctBtn" style="padding:11px 18px;">Delete my account</button>`;
+            document.getElementById("openDeleteAcctBtn").addEventListener("click", () => {
+              document.getElementById("deleteAcctReason").value = "";
+              deleteAcctModal.classList.add("open");
+            });
+          }
+        }
+
+        // --- Change password ---
+        function renderPassword() {
+          card(
+            "Change password",
+            "Use at least 8 characters",
+            `
+      <div class="form-error" id="pwError" style="margin-bottom:14px;"></div>
+      <div style="max-width:420px; display:grid; gap:14px;">
+        <div><label class="field">Current password</label><input class="field" type="password" id="pwCurrent"></div>
+        <div><label class="field">New password</label><input class="field" type="password" id="pwNew"><span class="field-error" id="err-pwNew"></span></div>
+        <div><label class="field">Confirm new password</label><input class="field" type="password" id="pwConfirm"><span class="field-error" id="err-pwConfirm"></span></div>
+        <button class="btn" id="pwSaveBtn" style="width:fit-content;" disabled>Update password</button>
+      </div>`,
+          );
+          WIMS.wirePasswordToggle("pwCurrent");
+          WIMS.wirePasswordToggle("pwNew");
+          WIMS.wirePasswordToggle("pwConfirm");
+
+          const saveBtn = document.getElementById("pwSaveBtn");
+          const pwFields = {
+            pwNew: WIMS.bindField(
+              "pwNew",
+              (v) => (v.length >= 8 ? "" : "At least 8 characters required"),
+              "err-pwNew",
+            ),
+            pwConfirm: WIMS.bindField(
+              "pwConfirm",
+              (v) =>
+                v === document.getElementById("pwNew").value
+                  ? ""
+                  : "Passwords do not match",
+              "err-pwConfirm",
+            ),
+          };
+          document
+            .getElementById("pwNew")
+            .addEventListener("input", () => pwFields.pwConfirm.isValid());
+          function updatePwSaveState() {
+            const filled = document.getElementById("pwCurrent").value.length > 0;
+            saveBtn.disabled =
+              !filled || !Object.values(pwFields).every((f) => f.isValid());
+          }
+          ["pwCurrent", "pwNew", "pwConfirm"].forEach((id) => {
+            document.getElementById(id).addEventListener("input", updatePwSaveState);
+            document.getElementById(id).addEventListener("blur", updatePwSaveState);
+          });
+
+          saveBtn.addEventListener("click", async () => {
+            const errBox = document.getElementById("pwError");
+            errBox.classList.remove("show");
+            const allValid = Object.values(pwFields)
+              .map((f) => f.forceShow())
+              .every(Boolean);
+            if (!allValid) return;
+            const newPassword = document.getElementById("pwNew").value;
+            try {
+              await API.post("/api/auth/change-password", {
+                currentPassword: document.getElementById("pwCurrent").value,
+                newPassword,
+              });
+              toast("Password changed");
+              document.getElementById("pwCurrent").value = "";
+              document.getElementById("pwNew").value = "";
+              document.getElementById("pwConfirm").value = "";
+              updatePwSaveState();
+            } catch (err) {
+              errBox.textContent = err.message;
+              errBox.classList.add("show");
+            }
+          });
+        }
+
+        // --- Logout ---
+        function renderLogout() {
+          card(
+            "Log out",
+            `You are signed in as ${fmt.esc(user.email)} on this device`,
+            `
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn danger" id="logoutBtn">Log out</button>
+      </div>`,
+          );
+          document
+            .getElementById("logoutBtn")
+            .addEventListener("click", () => WIMS.signOut());
+        }
+
+        renderNav();
+        await renderPanel();
+      })();
+    </script>
+  </body>
+</html>

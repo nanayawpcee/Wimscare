@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claim Processing — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .main {
+        max-width: 1120px;
+      }
+      .tile {
+        background: var(--bg);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .tile .k {
+        display: block;
+        color: var(--faint);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+      .tile .v {
+        font-weight: 700;
+        font-size: 1.1rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .tbl-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: inherit;
+        text-decoration: none;
+      }
+      .tbl-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .doc-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+      }
+      .act-row {
+        display: flex;
+        gap: 12px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--row-line);
+        align-items: flex-start;
+      }
+      .act-row:last-child {
+        border-bottom: 0;
+      }
+      .dot {
+        flex-shrink: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-top: 5px;
+        display: block;
+      }
+      .kv {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.88rem;
+      }
+      .kv .k {
+        color: var(--faint);
+      }
+      .kv .v {
+        font-weight: 600;
+      }
+      .decision-btn {
+        width: 100%;
+        padding: 11px 18px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.92rem;
+        cursor: pointer;
+        font-family: inherit;
+        box-sizing: border-box;
+      }
+      .step-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        padding: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html" class="active">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div style="padding-bottom: 24px">
+          <a
+            href="/admin/claims.html"
+            style="
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              font-weight: 600;
+              font-size: 0.9rem;
+              margin-bottom: 12px;
+            "
+            >← Back to claims</a
+          >
+          <h1 style="margin: 0 0 6px; font-size: 1.9rem; font-weight: 700">
+            Claim Processing
+          </h1>
+          <p style="margin: 0; color: var(--muted)" id="pageSub">
+            Review the claim and move it through the workflow
+          </p>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+          "
+        >
+          <!-- Left column -->
+          <div style="display: grid; gap: 16px">
+            <div class="card">
+              <div
+                style="
+                  display: flex;
+                  align-items: flex-start;
+                  justify-content: space-between;
+                  gap: 16px;
+                  margin-bottom: 18px;
+                "
+              >
+                <div>
+                  <h2 style="font-size: 1.2rem" id="claimType"></h2>
+                  <span
+                    style="color: var(--faint); font-size: 0.85rem"
+                    id="claimMeta"
+                  ></span>
+                </div>
+                <span id="claimPill"></span>
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(3, minmax(0, 1fr));
+                  gap: 14px;
+                  margin-bottom: 18px;
+                "
+              >
+                <div class="tile">
+                  <span class="k">Amount requested</span
+                  ><span class="v" id="tAmount"></span>
+                </div>
+                <div class="tile">
+                  <span class="k">Benefit limit</span
+                  ><span class="v" id="tLimit"></span>
+                </div>
+                <div class="tile">
+                  <span class="k">Days in queue</span
+                  ><span class="v" id="tDays"></span>
+                </div>
+              </div>
+              <p
+                style="
+                  margin: 0;
+                  color: var(--muted);
+                  font-size: 0.92rem;
+                  line-height: 1.7;
+                "
+                id="claimDesc"
+              ></p>
+            </div>
+
+            <div class="card">
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 12px;
+                  margin-bottom: 14px;
+                "
+              >
+                <h2>Supporting documents</h2>
+                <span
+                  style="color: var(--faint); font-size: 0.82rem"
+                  id="docCount"
+                ></span>
+              </div>
+              <div style="display: grid; gap: 10px" id="docList"></div>
+              <div id="uploadWrap" style="display: none; margin-top: 14px">
+                <div style="display: flex; gap: 10px; align-items: center">
+                  <input
+                    type="file"
+                    id="docFile"
+                    accept=".pdf,image/jpeg,image/png,image/webp"
+                    multiple
+                    style="flex: 1; font-size: 0.85rem; font-family: inherit"
+                  />
+                  <button
+                    type="button"
+                    class="tbl-btn"
+                    id="uploadBtn"
+                    style="padding: 9px 16px"
+                  >
+                    Upload
+                  </button>
+                </div>
+                <p
+                  style="
+                    margin: 8px 0 0;
+                    color: var(--faint);
+                    font-size: 0.8rem;
+                  "
+                  id="requiredDocsHint"
+                ></p>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2 style="margin-bottom: 14px">Activity log</h2>
+              <div
+                style="display: flex; flex-direction: column"
+                id="activityList"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div style="display: grid; gap: 16px">
+            <div class="card">
+              <h2 style="margin-bottom: 14px">Member</h2>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  margin-bottom: 16px;
+                "
+              >
+                <span
+                  id="memberAvatar"
+                  style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 10px;
+                    background: var(--primary);
+                    color: #fff;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 0.9rem;
+                  "
+                ></span>
+                <div>
+                  <span
+                    style="display: block; font-weight: 700; font-size: 0.95rem"
+                    id="memberName"
+                  ></span>
+                  <span
+                    style="
+                      display: block;
+                      font-size: 0.82rem;
+                      color: var(--faint);
+                    "
+                    id="memberMeta"
+                  ></span>
+                </div>
+              </div>
+              <div style="display: grid; gap: 8px" id="memberFacts"></div>
+              <div
+                style="
+                  margin-top: 14px;
+                  padding: 12px 14px;
+                  border-radius: 12px;
+                "
+                id="eligBanner"
+              ></div>
+            </div>
+
+            <div class="card">
+              <h2 style="margin-bottom: 14px" id="decisionTitle">Decision</h2>
+              <div id="chainSteps" style="margin-bottom: 14px"></div>
+              <div class="form-error" id="decisionError"></div>
+              <div id="decisionBody"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+        const isAdmin = ["admin", "superadmin"].includes(user.role);
+        const isAccountant = user.role === "accountant";
+
+        // Fund accounts for the payout selectors (best-effort — needs the
+        // accountsManagement feature + view_accounts). Builds a <select>
+        // with the given default fund pre-selected.
+        let fundsCache = null;
+        async function ensureFunds() {
+          if (fundsCache) return fundsCache;
+          try {
+            fundsCache = (await API.get("/api/fund-accounts")).items.filter(
+              (f) => f.status !== "closed",
+            );
+          } catch (e) {
+            fundsCache = [];
+          }
+          return fundsCache;
+        }
+        function fundSelectHtml(id, defaultName, selectedId) {
+          if (!fundsCache || !fundsCache.length) return "";
+          const opts = fundsCache
+            .map((f) => {
+              const isSel = selectedId
+                ? String(f._id) === String(selectedId)
+                : f.name === defaultName;
+              return `<option value="${f._id}" ${isSel ? "selected" : ""}>${fmt.esc(f.name)}</option>`;
+            })
+            .join("");
+          return `<label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:6px;">Pay from fund</label>
+            <select class="field" id="${id}" style="margin-bottom:14px;">${opts}</select>`;
+        }
+        // Mirrors STEP_ROLE in routes/claims.js — who owns deciding each step.
+        const STEP_ROLE = {
+          supervisor: "supervisor",
+          accountant: "accountant",
+          admin: "admin",
+          committee: "admin",
+        };
+        function myTurn(claim) {
+          const current = claim.approvals.find((a) => a.decision === "pending");
+          if (!current) return false;
+          const requiredRole = STEP_ROLE[current.step];
+          return (
+            isAdmin || user.role === requiredRole || WIMS.can("approve_claims")
+          );
+        }
+        function stepLabelFor(role) {
+          return (
+            {
+              supervisor: "a supervisor",
+              accountant: "an accountant",
+              admin: "an administrator",
+            }[role] || role
+          );
+        }
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("sideRole").textContent =
+          {
+            admin: "Administrator",
+            supervisor: "Supervisor",
+            accountant: "Accountant",
+            superadmin: "Superadmin",
+          }[user.role] || user.role;
+
+        const claimId = new URLSearchParams(location.search).get("id");
+        if (!claimId) {
+          window.location.href = "/admin/claims.html";
+          return;
+        }
+
+        const showError = (msg) => {
+          const box = document.getElementById("decisionError");
+          box.textContent = msg;
+          box.classList.add("show");
+        };
+
+        async function act(promise, successMsg) {
+          document.getElementById("decisionError").classList.remove("show");
+          try {
+            await promise;
+            if (successMsg) toast(successMsg);
+            await load();
+          } catch (err) {
+            showError(err.message);
+          }
+        }
+
+        async function load() {
+          const [{ claim }, ctx] = await Promise.all([
+            API.get("/api/claims/" + claimId),
+            API.get(`/api/claims/${claimId}/member-context`),
+          ]);
+          const type = claim.claimTypeId || {};
+
+          // --- Summary ---
+          document.getElementById("pageSub").textContent =
+            `Review claim ${claim.claimNumber} and move it through the workflow`;
+          document.getElementById("claimType").textContent =
+            type.name || "Claim";
+          document.getElementById("claimMeta").textContent =
+            `${claim.claimNumber} · ${claim.submittedAt ? "Submitted " + fmt.date(claim.submittedAt) : "Draft created " + fmt.date(claim.createdAt)} by ${fmt.name(claim.memberId)}`;
+          document.getElementById("claimPill").innerHTML = pill(claim.status);
+          document.getElementById("tAmount").textContent = fmt.gh(
+            claim.amountRequested,
+          );
+          const perLabels = {
+            claim: "/ claim",
+            year: "/ year",
+            lifetime: "lifetime",
+          };
+          document.getElementById("tLimit").textContent =
+            type.benefitLimit !== undefined
+              ? `${fmt.gh(type.benefitLimit)} ${perLabels[type.limitPer] || ""}`
+              : "—";
+          const since = claim.submittedAt || claim.createdAt;
+          document.getElementById("tDays").textContent = Math.max(
+            0,
+            Math.floor((Date.now() - new Date(since)) / 86400000),
+          );
+          document.getElementById("claimDesc").textContent =
+            claim.description ||
+            (claim.beneficiaryName
+              ? `Beneficiary: ${claim.beneficiaryName}`
+              : "No description provided.");
+
+          // --- Documents ---
+          const required = type.requiredDocuments || [];
+          document.getElementById("docCount").textContent = required.length
+            ? `${claim.documents.length} uploaded · ${required.length} required`
+            : `${claim.documents.length} uploaded`;
+          document.getElementById("docList").innerHTML = claim.documents.length
+            ? claim.documents
+                .map(
+                  (d) => `
+        <div class="doc-row">
+          <div>
+            <span style="display:block; font-weight:600; font-size:0.9rem;">${fmt.esc(d.label || d.originalName)}</span>
+            <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;">
+              ${(d.mimeType || "").split("/")[1]?.toUpperCase() || "FILE"} · ${(d.size / 1024 / 1024).toFixed(1)} MB · uploaded ${fmt.date(d.uploadedAt)}
+            </span>
+          </div>
+          <a class="tbl-btn" href="/api/claims/${claim._id}/documents/${d._id}/download">View</a>
+        </div>`,
+                )
+                .join("")
+            : '<div class="empty" style="padding:14px;">No documents uploaded yet.</div>';
+
+          const uploadable = ["draft", "submitted", "under_review"].includes(
+            claim.status,
+          );
+          document.getElementById("uploadWrap").style.display = uploadable
+            ? "block"
+            : "none";
+          document.getElementById("requiredDocsHint").textContent =
+            required.length ? "Required: " + required.join(", ") : "";
+
+          // --- Activity ---
+          const dotColor = (ev) =>
+            /reject/i.test(ev)
+              ? "var(--red-ink)"
+              : /approv|paid|verified|passed/i.test(ev)
+                ? "#79b843"
+                : /review|information/i.test(ev)
+                  ? "var(--gold)"
+                  : "var(--primary)";
+          const timeline = [...claim.timeline].reverse();
+          document.getElementById("activityList").innerHTML = timeline.length
+            ? timeline
+                .map(
+                  (t) => `
+        <div class="act-row">
+          <span class="dot" style="background:${dotColor(t.event)};"></span>
+          <div>
+            <span style="display:block; font-size:0.9rem; font-weight:600;">${fmt.esc(t.event)}</span>
+            <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;">
+              ${fmt.dateTime(t.at)}${t.actor ? " · " + fmt.esc(fmt.name(t.actor)) : ""}${t.note ? " — " + fmt.esc(t.note) : ""}
+            </span>
+          </div>
+        </div>`,
+                )
+                .join("")
+            : '<div class="empty" style="padding:14px;">No activity yet.</div>';
+
+          // --- Member card ---
+          document.getElementById("memberAvatar").textContent =
+            ctx.member.initials;
+          document.getElementById("memberName").textContent = ctx.member.name;
+          document.getElementById("memberMeta").textContent =
+            [ctx.member.memberNumber, ctx.member.department]
+              .filter(Boolean)
+              .join(" · ") || "—";
+          document.getElementById("memberFacts").innerHTML = [
+            [
+              "Member since",
+              new Date(ctx.member.memberSince).toLocaleDateString("en-GB", {
+                month: "short",
+                year: "numeric",
+              }),
+            ],
+            [
+              "Contribution standing",
+              ctx.standing === "good"
+                ? '<span style="color:var(--green-ink);">Good</span>'
+                : '<span style="color:var(--red-ink);">Arrears</span>',
+            ],
+            [
+              "Claims this year",
+              ctx.maxClaimsPerYear
+                ? `${ctx.claimsThisYear} of ${ctx.maxClaimsPerYear}`
+                : String(ctx.claimsThisYear),
+            ],
+            ["Total contributed", fmt.gh(ctx.totalContributed)],
+          ]
+            .map(
+              ([k, v]) =>
+                `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`,
+            )
+            .join("");
+
+          // --- Eligibility banner ---
+          const problems = [];
+          if (ctx.member.status !== "active")
+            problems.push("member account is not active");
+          if (ctx.standing !== "good")
+            problems.push("contributions in arrears");
+          if (ctx.membershipMonths < ctx.minMembershipMonths)
+            problems.push(`membership under ${ctx.minMembershipMonths} months`);
+          if (ctx.maxClaimsPerYear && ctx.claimsThisYear > ctx.maxClaimsPerYear)
+            problems.push("yearly claim limit exceeded");
+          const banner = document.getElementById("eligBanner");
+          if (!problems.length) {
+            banner.style.background = "var(--green-bg)";
+            banner.innerHTML =
+              '<span style="font-weight:700; color:var(--green-ink); font-size:0.85rem;">Eligible — all checks passed</span>';
+          } else {
+            banner.style.background = "var(--amber-bg)";
+            banner.innerHTML = `<span style="font-weight:700; color:var(--amber-ink); font-size:0.85rem;">Check before approving: ${fmt.esc(problems.join("; "))}</span>`;
+          }
+
+          // --- Approval chain steps ---
+          const stepLabels = {
+            supervisor: "Supervisor",
+            accountant: "Accountant",
+            admin: "Administrator",
+            committee: "Welfare committee",
+          };
+          document.getElementById("chainSteps").innerHTML =
+            claim.approvals.length && claim.status !== "draft"
+              ? claim.approvals
+                  .map((a) => {
+                    const icon =
+                      a.decision === "approved"
+                        ? "✓"
+                        : a.decision === "rejected"
+                          ? "✕"
+                          : "·";
+                    const color =
+                      a.decision === "approved"
+                        ? "var(--green-ink)"
+                        : a.decision === "rejected"
+                          ? "var(--red-ink)"
+                          : "var(--faint)";
+                    return `<div class="step-row">
+            <span style="width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; color:#fff; background:${color};">${icon}</span>
+            <span style="font-weight:600;">${stepLabels[a.step] || a.step}</span>
+            <span style="color:var(--faint);">${a.decision === "pending" ? "awaiting decision" : `${a.decision}${a.actedBy ? " · " + fmt.name(a.actedBy) : ""}`}</span>
+          </div>`;
+                  })
+                  .join("")
+              : "";
+
+          // --- Decision panel (contextual) ---
+          if (claim.status === "approved") await ensureFunds();
+          renderDecision(claim, type);
+        }
+
+        function renderDecision(claim, type) {
+          const body = document.getElementById("decisionBody");
+          const title = document.getElementById("decisionTitle");
+          title.textContent = "Decision";
+
+          if (claim.status === "draft") {
+            title.textContent = "Submit application";
+            body.innerHTML = `
+        <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem;">Upload the required documents above, then submit the claim into the review workflow.</p>
+        <button type="button" class="decision-btn" id="submitBtn" style="border:0; background:var(--primary); color:#fff;">Submit for review</button>`;
+            document
+              .getElementById("submitBtn")
+              .addEventListener("click", () =>
+                act(
+                  API.post(`/api/claims/${claim._id}/submit`),
+                  "Claim submitted for review",
+                ),
+              );
+            return;
+          }
+
+          if (["submitted", "under_review"].includes(claim.status)) {
+            const current = claim.approvals.find(
+              (a) => a.decision === "pending",
+            );
+            const requiredRole = current ? STEP_ROLE[current.step] : null;
+            if (!current || !myTurn(claim)) {
+              const awaiting = requiredRole
+                ? stepLabelFor(requiredRole)
+                : "the approval chain";
+              body.innerHTML = `<p style="margin:0; color:var(--muted); font-size:0.88rem;">Awaiting a decision from ${awaiting}. ${isAccountant ? "You can prepare the payout once the claim is approved." : ""}</p>`;
+              return;
+            }
+            body.innerHTML = `
+        <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:6px;">Approved amount (GH₵)</label>
+        <input class="field" type="number" step="0.01" min="0.01" id="dAmount" value="${claim.amountRequested}" style="margin-bottom:14px;">
+        <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:6px;">Reviewer notes</label>
+        <textarea class="field" id="dNotes" rows="3" placeholder="Notes visible in the audit trail" style="margin-bottom:16px;"></textarea>
+        <div style="display:grid; gap:8px;">
+          <button type="button" class="decision-btn" id="approveBtn" style="border:0; background:var(--primary); color:#fff;">Approve claim</button>
+          <button type="button" class="decision-btn" id="infoBtn" style="border:1px solid var(--line); background:#fff; color:var(--ink); font-weight:600;">Request more information</button>
+          <button type="button" class="decision-btn" id="rejectBtn" style="border:1px solid var(--line); background:#fff; color:var(--red-ink); font-weight:600;">Reject claim</button>
+        </div>`;
+            document
+              .getElementById("approveBtn")
+              .addEventListener("click", () =>
+                act(
+                  API.post(`/api/claims/${claim._id}/decide`, {
+                    decision: "approved",
+                    comment:
+                      document.getElementById("dNotes").value.trim() ||
+                      undefined,
+                    amountApproved: document.getElementById("dAmount").value,
+                  }),
+                  "Step approved",
+                ),
+              );
+            document.getElementById("infoBtn").addEventListener("click", () => {
+              const message = document.getElementById("dNotes").value.trim();
+              if (!message)
+                return showError(
+                  "Write what you need from the member in the notes box first",
+                );
+              act(
+                API.post(`/api/claims/${claim._id}/request-info`, { message }),
+                "Request sent to the member",
+              );
+            });
+            document
+              .getElementById("rejectBtn")
+              .addEventListener("click", () => {
+                const comment = document.getElementById("dNotes").value.trim();
+                if (!comment)
+                  return showError(
+                    "Add a rejection reason in the notes box first",
+                  );
+                act(
+                  API.post(`/api/claims/${claim._id}/decide`, {
+                    decision: "rejected",
+                    comment,
+                  }),
+                  "Claim rejected",
+                );
+              });
+            return;
+          }
+
+          if (claim.status === "approved") {
+            const d = claim.disbursement || {};
+            if (isAdmin) {
+              title.textContent = "Record payout";
+              const prepNote =
+                d.status === "prepared"
+                  ? `<p style="margin:0 0 14px; padding:10px 12px; border-radius:10px; background:var(--primary-tint); color:var(--primary); font-size:0.85rem;">Prepared by an accountant — you can release it directly below.</p>`
+                  : "";
+              body.innerHTML = `
+          ${prepNote}
+          <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem;">Approved for <strong>${fmt.gh(claim.amountApproved ?? claim.amountRequested)}</strong>. Releasing posts the amount to the ledger and the accounts register.</p>
+          ${fundSelectHtml("payFund", "Welfare Fund", d.fundAccountId)}
+          <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:6px;">Payout account</label>
+          <select class="field" id="payAccount" style="margin-bottom:14px;">
+            <option value="bank" ${d.payoutAccount === "bank" || !d.payoutAccount ? "selected" : ""}>Bank</option>
+            <option value="cash" ${d.payoutAccount === "cash" ? "selected" : ""}>Cash</option>
+            <option value="mobile_money" ${d.payoutAccount === "mobile_money" ? "selected" : ""}>Mobile Money</option>
+          </select>
+          <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:6px;">Payment reference</label>
+          <input class="field" id="payRef" value="${fmt.esc(d.paymentReference || "")}" placeholder="e.g. cheque or momo transaction number" style="margin-bottom:16px;">
+          <button type="button" class="decision-btn" id="payBtn" style="border:0; background:var(--primary); color:#fff;">Release payout</button>`;
+              document.getElementById("payBtn").addEventListener("click", () =>
+                act(
+                  API.post(`/api/claims/${claim._id}/pay`, {
+                    account: document.getElementById("payAccount").value,
+                    fundAccountId:
+                      document.getElementById("payFund")?.value || undefined,
+                    paymentReference:
+                      document.getElementById("payRef").value.trim() ||
+                      undefined,
+                  }),
+                  "Payout released",
+                ),
+              );
+              return;
+            }
+
+            if (isAccountant) {
+              title.textContent = "Prepare payout";
+              if (!d.documentsReviewed) {
+                body.innerHTML = `
+            <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem;">Review the supporting documents above, then mark them reviewed to unlock payout preparation.</p>
+            <button type="button" class="decision-btn" id="markReviewedBtn" style="border:1px solid var(--line); background:#fff; color:var(--ink); font-weight:600;">Mark documents reviewed</button>`;
+                document
+                  .getElementById("markReviewedBtn")
+                  .addEventListener("click", () =>
+                    act(
+                      API.post(
+                        `/api/claims/${claim._id}/mark-documents-reviewed`,
+                      ),
+                      "Documents marked as reviewed",
+                    ),
+                  );
+              } else if (d.status === "prepared") {
+                body.innerHTML = `
+            <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem;">Payout prepared — awaiting administrator release.</p>
+            <button type="button" class="decision-btn" id="recallBtn" style="border:1px solid var(--line); background:#fff; color:var(--red-ink); font-weight:600;">Recall payout</button>`;
+                document
+                  .getElementById("recallBtn")
+                  .addEventListener("click", () =>
+                    act(
+                      API.post(`/api/claims/${claim._id}/recall-payout`),
+                      "Payout recalled",
+                    ),
+                  );
+              } else {
+                body.innerHTML = `
+            <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem;">Documents reviewed. Prepare the payout to queue it for administrator release.</p>
+            ${fundSelectHtml("payFund", "Welfare Fund", d.fundAccountId)}
+            <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:6px;">Payout account</label>
+            <select class="field" id="payAccount" style="margin-bottom:16px;">
+              <option value="bank">Bank</option>
+              <option value="cash">Cash</option>
+              <option value="mobile_money">Mobile Money</option>
+            </select>
+            <button type="button" class="decision-btn" id="prepBtn" style="border:0; background:var(--primary); color:#fff;">Prepare payout</button>`;
+                document
+                  .getElementById("prepBtn")
+                  .addEventListener("click", () =>
+                    act(
+                      API.post(`/api/claims/${claim._id}/prepare-payout`, {
+                        account: document.getElementById("payAccount").value,
+                        fundAccountId:
+                          document.getElementById("payFund")?.value ||
+                          undefined,
+                      }),
+                      "Payout prepared, awaiting administrator release",
+                    ),
+                  );
+              }
+              return;
+            }
+
+            title.textContent = "Payout";
+            body.innerHTML =
+              '<p style="margin:0; color:var(--muted); font-size:0.88rem;">Approved — an accountant prepares the payout and an administrator releases it.</p>';
+            return;
+          }
+
+          // paid / rejected — read-only
+          body.innerHTML =
+            claim.status === "paid"
+              ? `<p style="margin:0; color:var(--muted); font-size:0.88rem;">Paid ${claim.paidAt ? fmt.date(claim.paidAt) : ""}${claim.paymentReference ? " · ref " + fmt.esc(claim.paymentReference) : ""}. This claim is closed.</p>`
+              : `<p style="margin:0; color:var(--muted); font-size:0.88rem;">Rejected${claim.rejectionReason ? " — " + fmt.esc(claim.rejectionReason) : ""}. This claim is closed.</p>`;
+        }
+
+        // --- Document upload ---
+        document
+          .getElementById("uploadBtn")
+          .addEventListener("click", async () => {
+            const input = document.getElementById("docFile");
+            if (!input.files.length)
+              return toast("Choose one or more files first", true);
+            const fd = new FormData();
+            for (const f of input.files) fd.append("documents", f);
+            try {
+              await API.upload(`/api/claims/${claimId}/documents`, fd);
+              toast(`${input.files.length} document(s) uploaded`);
+              input.value = "";
+              load();
+            } catch (err) {
+              toast(err.message, true);
+            }
+          });
+
+        await load();
+      })();
+    </script>
+  </body>
+</html>

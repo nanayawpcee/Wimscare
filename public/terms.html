@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Terms & Data Policy — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #0f2c3f;
+        --blue: #1d6fae;
+        --blue-hover: #185e93;
+        --bg: #f4f7f8;
+        --ink: #12242e;
+        --muted: #5a6b75;
+        --muted-2: #8a98a1;
+        --border: #e2e9ec;
+        --blue-bg: #e8f1f8;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+      a:hover {
+        color: var(--blue-hover);
+      }
+      img {
+        max-width: 100%;
+        display: block;
+      }
+
+      .wc-header {
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+      }
+      .wc-header-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 16px 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .wc-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .wc-brand img {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        object-fit: cover;
+      }
+      .wc-brand span {
+        font-weight: 700;
+        font-size: 1.15rem;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      .wc-nav {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+        align-items: center;
+      }
+      .wc-nav-link {
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 0.95rem;
+        padding: 8px 14px;
+        border-radius: 8px;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+      .wc-nav-link:hover {
+        background: var(--bg);
+        color: var(--ink);
+      }
+      .wc-nav-link.current {
+        background: var(--bg);
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .wc-nav-cta {
+        color: #fff;
+        background: var(--blue);
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 9px 18px;
+        border-radius: 9px;
+        margin-left: 8px;
+        transition: background 0.15s ease;
+      }
+      .wc-nav-cta:hover {
+        background: var(--blue-hover);
+        color: #fff;
+      }
+
+      .container {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-left: 32px;
+        padding-right: 32px;
+      }
+
+      .doc {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 56px 32px 80px;
+      }
+      .doc-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--blue-bg);
+        color: var(--blue);
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 999px;
+        margin-bottom: 18px;
+        letter-spacing: 0.02em;
+      }
+      .doc h1 {
+        font-size: clamp(1.7rem, 3.2vw, 2.3rem);
+        line-height: 1.15;
+        margin: 0 0 10px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .doc .updated {
+        color: var(--muted-2);
+        font-size: 0.9rem;
+        margin: 0 0 40px;
+      }
+      .doc h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 40px 0 12px;
+        padding-top: 4px;
+      }
+      .doc h2:first-of-type {
+        margin-top: 0;
+      }
+      .doc p {
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 0.98rem;
+        margin: 0 0 14px;
+      }
+      .doc ul {
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 0.98rem;
+        margin: 0 0 14px;
+        padding-left: 22px;
+      }
+      .doc li {
+        margin-bottom: 8px;
+      }
+      .doc strong {
+        color: var(--ink);
+      }
+      .callout {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--blue);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin: 0 0 14px;
+      }
+      .callout p {
+        margin: 0;
+        color: var(--ink);
+      }
+
+      .wc-footer {
+        border-top: 1px solid var(--border);
+        padding: 28px 0;
+      }
+      .wc-footer-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .wc-footer-brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .wc-footer-brand img {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+      }
+      .wc-footer-brand span {
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .wc-footer-copy {
+        margin: 0;
+        color: var(--muted-2);
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 640px) {
+        .wc-nav-link {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="wc-header">
+      <div class="wc-header-inner">
+        <a class="wc-brand" href="/welcome.html">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <span>WIMScare</span>
+        </a>
+        <nav class="wc-nav">
+          <a href="/welcome.html" class="wc-nav-link">Home</a>
+          <a href="/about.html" class="wc-nav-link">About</a>
+          <a href="/terms.html" class="wc-nav-link current" aria-current="page">Terms & Data Policy</a>
+          <a href="/login.html" class="wc-nav-cta" id="navAuthCta">Sign in</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="doc">
+      <div class="doc-badge">Terms & Data Policy</div>
+      <h1>How WIMScare handles your account and your data.</h1>
+      <p class="updated">Version 2026-07-26 · applies to every member, staff and administrator account on the platform</p>
+
+      <h2>1. What this covers</h2>
+      <p>
+        This page explains how WIMScare — the Welfare Information Management System — handles the account and
+        personal information of anyone who signs in: members, and the Supervisors, Accountants and Administrators
+        who run a welfare organization's console. By creating or activating an account you agree to the practices
+        described here.
+      </p>
+
+      <h2>2. Who's responsible for your data</h2>
+      <p>
+        Your welfare organization (a hospital, church, association or similar body) decides what information to
+        collect about its members and staff, and is responsible for keeping it accurate. REKONSTECH Trading and
+        Consultancy Services operates the WIMScare platform your organization's administrators use to do that.
+        Your organization's administrator is your first point of contact for questions or requests about your data.
+      </p>
+
+      <h2>3. Information we collect</h2>
+      <ul>
+        <li><strong>Identity</strong> — full name, email address, phone number.</li>
+        <li><strong>Membership</strong> — member number, department, role, join date.</li>
+        <li><strong>Financial</strong> — contribution history, payment method and reference, receipt numbers.</li>
+        <li><strong>Claims</strong> — benefit applications, any supporting documents you upload, approval history and payout records.</li>
+        <li><strong>Profile details you choose to add</strong> — bank details for payouts, an emergency contact, family or beneficiary information.</li>
+        <li><strong>Account security</strong> — a hashed password, phone verification status, sign-in history, and an audit trail of changes made to your account.</li>
+      </ul>
+      <p>We don't collect anything beyond what your organization's administrators enter or that you submit yourself through your profile, claims and preferences.</p>
+
+      <h2>4. How your information is used</h2>
+      <ul>
+        <li>To track your contributions, apply any benefit limits, and move your claims through your organization's approval chain.</li>
+        <li>To send account notifications — activation links, claim status updates, contribution receipts, and phone verification codes — according to your notification preferences.</li>
+        <li>To produce reports for your organization's administrators, both aggregate and per-member.</li>
+        <li>To maintain an audit trail of sensitive actions, for accountability.</li>
+      </ul>
+
+      <h2>5. Who can see your data</h2>
+      <ul>
+        <li>Staff of your own organization can see the records their role and permissions allow — an Administrator sees more than a Supervisor, who sees more than an Accountant handling only contributions, and so on.</li>
+        <li>The WIMScare platform team can access organization data only for support, billing and platform maintenance — every such access is written to the immutable audit trail.</li>
+        <li>We do not sell your data or share it with third parties for marketing, and your organization's data is never visible to any other organization on the platform.</li>
+      </ul>
+
+      <h2>6. Data retention — including after account deletion</h2>
+      <p>We keep your data for as long as your account is active, and afterward as described here:</p>
+      <ul>
+        <li>You can request that your account be deleted at any time. Your organization's administrator reviews member/staff requests; an administrator's own request (or a request to delete the whole organization) is reviewed by the WIMScare team.</li>
+        <li>Approving a deletion request locks the account immediately — nobody can sign in with it again.</li>
+      </ul>
+      <div class="callout">
+        <p>
+          <strong>Approving a deletion does not erase your contribution, claim or ledger history.</strong>
+          Those records stay in your organization's books, correctly attributed to you, so that financial totals,
+          audit trails and compliance reports stay accurate, any benefit you already received remains properly
+          documented, and other members' shared totals are never thrown off by records disappearing.
+        </p>
+      </div>
+      <ul>
+        <li>Uploaded claim documents, contribution receipts and audit-log entries are kept indefinitely unless your organization's administrator removes a specific file, or the organization itself is deleted.</li>
+        <li>Your organization's administrators can trigger backups, and the platform also runs them automatically, capturing organization data (including uploaded files) for disaster recovery.</li>
+        <li>If an entire organization is deleted, all of its data is kept in the same way — locked away from everyone except the WIMScare platform team — for the same audit and continuity reasons.</li>
+      </ul>
+
+      <h2>7. Your rights</h2>
+      <ul>
+        <li>View your own profile, contribution history and claim status at any time.</li>
+        <li>Correct your personal details yourself, or ask your administrator to.</li>
+        <li>Request deletion of your account — see Section 6 for exactly what that does.</li>
+        <li>Verify your phone number and optionally require an SMS code at every sign-in, for extra security.</li>
+        <li>Choose which email notifications you receive, from your Preferences.</li>
+      </ul>
+
+      <h2>8. Security</h2>
+      <ul>
+        <li>Passwords are hashed and never stored in plain text; activation and password-reset links are single-use, hashed, and expire quickly.</li>
+        <li>Sessions use secure, HTTP-only cookies that page scripts cannot read.</li>
+        <li>Optional two-factor authentication (an SMS code at sign-in) is available to every account.</li>
+        <li>Sensitive actions — role changes, permission grants, backups, deletions — are written to a tenant-scoped audit log your administrators can review.</li>
+      </ul>
+      <p>No system is perfectly secure and we can't guarantee against every possible incident, but the platform is built to limit what any single compromised credential can do.</p>
+
+      <h2>9. Changes to this policy</h2>
+      <p>
+        We may update this policy as the platform changes. When we do, the version date at the top changes, and
+        you'll be asked to review and accept it again the next time you sign in.
+      </p>
+
+      <h2>10. A note on legal review</h2>
+      <p>
+        This policy describes, in plain language, how the WIMScare platform actually stores and handles data
+        today. It is not a substitute for formal legal advice. If your organization operates under a specific
+        data-protection law, you should have this policy reviewed by your own legal counsel before relying on it
+        for compliance purposes.
+      </p>
+    </main>
+
+    <footer class="wc-footer">
+      <div class="wc-footer-inner">
+        <div class="wc-footer-brand">
+          <img src="/assets/logo.png" alt="" />
+          <span>WIMScare</span>
+        </div>
+        <p class="wc-footer-copy">&copy; 2026 REKONSTECH Trading and Consultancy Services</p>
+      </div>
+    </footer>
+
+    <script>
+      // Point the header CTA at the visitor's dashboard if already signed in.
+      (async function () {
+        try {
+          const res = await fetch("/api/auth/me", { credentials: "include" }).catch(() => null);
+          if (!res || !res.ok) return;
+          const data = await res.json().catch(() => null);
+          if (!data || !data.user) return;
+          const role = String(data.user.role || "").toLowerCase();
+          const cta = document.getElementById("navAuthCta");
+          if (cta) {
+            cta.textContent = "Go to your dashboard";
+            cta.href =
+              role === "superadmin"
+                ? "/developer/"
+                : role === "user"
+                  ? "/member/dashboard.html"
+                  : "/admin/dashboard.html";
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </body>
+</html>

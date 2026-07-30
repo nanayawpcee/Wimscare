@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reports — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .type-btn {
+        padding: 9px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        cursor: pointer;
+        font-family: inherit;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--muted);
+      }
+      .type-btn.on {
+        border-color: var(--primary);
+        background: var(--primary-tint);
+        color: var(--primary);
+      }
+      .exp-btn {
+        padding: 9px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .exp-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html" class="active">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div style="padding-bottom: 24px">
+          <h1 style="margin: 0 0 6px; font-size: 1.9rem; font-weight: 700">
+            Reports
+          </h1>
+          <p style="margin: 0; color: var(--muted)">
+            Generate aggregated reports across members, contributions, accounts,
+            claims and audit logs
+          </p>
+        </div>
+
+        <!-- Report builder -->
+        <div class="card" style="margin-bottom: 20px">
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              flex-wrap: wrap;
+              margin-bottom: 18px;
+            "
+            id="typeButtons"
+          ></div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+              gap: 14px;
+              align-items: end;
+            "
+          >
+            <div>
+              <label
+                style="
+                  display: block;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  margin-bottom: 6px;
+                "
+                >From</label
+              >
+              <input class="field" type="date" id="fromDate" />
+            </div>
+            <div>
+              <label
+                style="
+                  display: block;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  margin-bottom: 6px;
+                "
+                >To</label
+              >
+              <input class="field" type="date" id="toDate" />
+            </div>
+            <div></div>
+            <button
+              type="button"
+              class="btn"
+              id="runBtn"
+              style="padding: 11px 18px; font-size: 0.92rem"
+            >
+              Run report
+            </button>
+          </div>
+        </div>
+
+        <div class="stat-grid" id="summaryCards"></div>
+
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 16px;
+              margin-bottom: 12px;
+            "
+          >
+            <h2
+              id="resultTitle"
+              style="font-size: 1.05rem; font-weight: 700"
+            ></h2>
+            <div style="display: flex; gap: 8px" id="exportButtons">
+              <button type="button" class="exp-btn" id="exportXlsx">
+                Excel
+              </button>
+              <button type="button" class="exp-btn" id="exportCsv">CSV</button>
+            </div>
+          </div>
+          <div style="overflow-x: auto">
+            <table class="data" id="resultTable">
+              <thead>
+                <tr id="resultHead"></tr>
+              </thead>
+              <tbody id="resultBody"></tbody>
+            </table>
+          </div>
+          <div
+            id="emptyState"
+            style="
+              display: none;
+              padding: 30px;
+              text-align: center;
+              color: var(--muted);
+            "
+          >
+            No data in this period.
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+        if (!WIMS.can("view_reports")) {
+          window.location.href = "/admin/dashboard.html";
+          return;
+        }
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("sideRole").textContent =
+          {
+            admin: "Administrator",
+            supervisor: "Supervisor",
+            accountant: "Accountant",
+            superadmin: "Superadmin",
+          }[user.role] || user.role;
+
+        const isAdmin = ["admin", "superadmin"].includes(user.role);
+        const TYPE_DEFS = [
+          { key: "summary", label: "Summary" },
+          { key: "members", label: "Members" },
+          { key: "contributions", label: "Contributions" },
+          ...(WIMS.feature("accountsManagement") || user.role === "superadmin"
+            ? [{ key: "accounts", label: "Accounts" }]
+            : []),
+          { key: "claims", label: "Claims" },
+          // Audit trail is admin-only AND a Pro-plan feature.
+          ...(isAdmin &&
+          (WIMS.feature("auditTrail") || user.role === "superadmin")
+            ? [{ key: "audit", label: "Audit logs" }]
+            : []),
+        ];
+        let activeType = "summary";
+
+        document.getElementById("typeButtons").innerHTML = TYPE_DEFS.map(
+          (t) => `
+    <button type="button" class="type-btn ${activeType === t.key ? "on" : ""}" data-type="${t.key}">${t.label}</button>`,
+        ).join("");
+        document.querySelectorAll("[data-type]").forEach((btn) =>
+          btn.addEventListener("click", () => {
+            activeType = btn.dataset.type;
+            document
+              .querySelectorAll("[data-type]")
+              .forEach((b) =>
+                b.classList.toggle("on", b.dataset.type === activeType),
+              );
+            document.getElementById("exportButtons").style.display =
+              activeType === "audit" ? "none" : "flex";
+            run();
+          }),
+        );
+
+        const yearStart = new Date(new Date().getFullYear(), 0, 1)
+          .toISOString()
+          .slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById("fromDate").value = yearStart;
+        document.getElementById("toDate").value = today;
+        document.getElementById("runBtn").addEventListener("click", run);
+
+        let lastRows = [];
+        let lastColumns = [];
+
+        async function run() {
+          const params = new URLSearchParams({
+            type: activeType,
+            from: document.getElementById("fromDate").value,
+            to: document.getElementById("toDate").value,
+          });
+          try {
+            const data = await API.get("/api/reports/tab?" + params);
+            document.getElementById("resultTitle").textContent = data.title;
+            document.getElementById("summaryCards").innerHTML = data.summary
+              .map(
+                (s) => `
+        <div class="stat"><div class="label">${s.label}</div><div class="value">${fmt.esc(s.value)}</div><div class="sub">${fmt.esc(s.sub || "")}</div></div>`,
+              )
+              .join("");
+
+            lastColumns = data.columns;
+            lastRows = data.rows;
+            document.getElementById("resultHead").innerHTML = data.columns
+              .map(
+                (c, i) =>
+                  `<th${i === data.columns.length - 1 ? ' class="num"' : ""}>${fmt.esc(c)}</th>`,
+              )
+              .join("");
+            document.getElementById("emptyState").style.display = data.rows
+              .length
+              ? "none"
+              : "block";
+            document.getElementById("resultTable").style.display = data.rows
+              .length
+              ? ""
+              : "none";
+            document.getElementById("resultBody").innerHTML = data.rows
+              .map(
+                (row) => `
+        <tr>${row.map((cell, i) => `<td${i === row.length - 1 ? ' class="num"' : ""}>${fmt.esc(cell)}</td>`).join("")}</tr>`,
+              )
+              .join("");
+          } catch (err) {
+            toast(err.message, true);
+          }
+        }
+
+        function toCsv(columns, rows) {
+          const esc = (v) => {
+            const s = String(v ?? "");
+            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+          };
+          return [
+            columns.map(esc).join(","),
+            ...rows.map((r) => r.map(esc).join(",")),
+          ].join("\n");
+        }
+        document.getElementById("exportCsv").addEventListener("click", () => {
+          const blob = new Blob([toCsv(lastColumns, lastRows)], {
+            type: "text/csv",
+          });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `report-${activeType}.csv`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        });
+        document.getElementById("exportXlsx").addEventListener("click", () => {
+          // Reuse the CSV path — most spreadsheet tools open CSV natively and it
+          // avoids pulling in a client-side xlsx writer for this ad-hoc export.
+          document.getElementById("exportCsv").click();
+          toast("Downloaded as CSV (opens in Excel)");
+        });
+
+        await run();
+      })();
+    </script>
+  </body>
+</html>

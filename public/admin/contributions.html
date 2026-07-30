@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contributions — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .tbl-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .tbl-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .exp-btn {
+        padding: 9px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .exp-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .pg-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .pg-btn:hover:not([disabled]) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .pg-btn[disabled] {
+        color: var(--faint);
+        cursor: not-allowed;
+      }
+      .pg-num {
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: var(--primary-tint);
+        color: var(--primary);
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+      .suggest {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        margin-top: 4px;
+        overflow: hidden;
+        box-shadow: 0 12px 32px rgba(15, 44, 63, 0.12);
+        display: none;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+      .suggest.open {
+        display: block;
+      }
+      .suggest button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 10px 14px;
+        border: 0;
+        background: #fff;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: var(--ink);
+      }
+      .suggest button:hover {
+        background: var(--bg);
+      }
+      .suggest .sub {
+        display: block;
+        color: var(--faint);
+        font-size: 0.8rem;
+        margin-top: 1px;
+      }
+      .dropzone {
+        flex: 1;
+        border: 2px dashed var(--input-line);
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-align: center;
+        min-height: 140px;
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease;
+      }
+      .dropzone.drag {
+        border-color: var(--primary);
+        background: var(--primary-tint);
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 44, 63, 0.45);
+        z-index: 300;
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 48px 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal {
+        background: #fff;
+        border-radius: 18px;
+        padding: 28px;
+        width: 100%;
+        max-width: 520px;
+        box-sizing: border-box;
+      }
+      .bulk-results {
+        margin-top: 12px;
+        max-height: 180px;
+        overflow-y: auto;
+        font-size: 0.83rem;
+        display: none;
+      }
+      .bulk-results.show {
+        display: block;
+      }
+      .bulk-results .err {
+        color: var(--red-ink);
+      }
+      .bulk-results .ok {
+        color: var(--green-ink);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html" class="active">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1>Contributions</h1>
+            <p>Track, record and manage member contributions</p>
+          </div>
+          <div style="display: flex; gap: 10px">
+            <a
+              class="btn secondary"
+              href="#bulkCard"
+              style="padding: 10px 18px; font-size: 0.92rem"
+              >Bulk upload CSV</a
+            >
+            <a
+              class="btn"
+              href="#add"
+              style="
+                padding: 10px 18px;
+                font-weight: 600;
+                font-size: 0.92rem;
+                white-space: nowrap;
+              "
+              >Record contribution</a
+            >
+          </div>
+        </div>
+
+        <div class="banner" id="reversalBanner" style="display: none">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span class="title" id="bannerTitle"></span>
+            <span class="sub" id="bannerSub"></span>
+          </div>
+          <a href="/admin/reversals.html">Review requests</a>
+        </div>
+
+        <div
+          class="stat-grid"
+          id="statCards"
+          style="grid-template-columns: repeat(3, minmax(0, 1fr))"
+        ></div>
+
+        <div class="card" style="margin-bottom: 20px">
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              flex-wrap: wrap;
+              align-items: center;
+              margin-bottom: 16px;
+            "
+          >
+            <input
+              type="search"
+              class="field"
+              id="searchInput"
+              placeholder="Search by member, email or note…"
+              style="flex: 1; min-width: 220px; width: auto; font-size: 0.95rem"
+            />
+            <input
+              type="date"
+              class="field"
+              id="fromDate"
+              style="width: auto; padding: 10px 12px; font-size: 0.9rem"
+            />
+            <span style="color: var(--faint); font-size: 0.88rem">to</span>
+            <input
+              type="date"
+              class="field"
+              id="toDate"
+              style="width: auto; padding: 10px 12px; font-size: 0.9rem"
+            />
+            <div style="display: flex; gap: 8px; margin-left: auto">
+              <button type="button" class="exp-btn" data-export="xlsx">
+                Excel
+              </button>
+              <button type="button" class="exp-btn" data-export="csv">
+                CSV
+              </button>
+              <button type="button" class="exp-btn" data-export="pdf">
+                PDF
+              </button>
+            </div>
+          </div>
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Member</th>
+                <th>Method</th>
+                <th>Account</th>
+                <th>Note</th>
+                <th class="num">Amount</th>
+                <th class="num">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="contribRows"></tbody>
+          </table>
+          <div
+            id="emptyState"
+            style="
+              display: none;
+              padding: 40px 24px;
+              text-align: center;
+              color: var(--muted);
+            "
+          >
+            <strong
+              style="display: block; margin-bottom: 6px; color: var(--ink)"
+              >No contributions found</strong
+            >
+            <span style="font-size: 0.9rem"
+              >Try adjusting the filters or record one below.</span
+            >
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding-top: 14px;
+            "
+          >
+            <span
+              style="color: var(--faint); font-size: 0.85rem"
+              id="countLabel"
+            ></span>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <button type="button" class="pg-btn" id="prevBtn">
+                Previous
+              </button>
+              <span class="pg-num" id="pageNum">1</span>
+              <button type="button" class="pg-btn" id="nextBtn">Next</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record + bulk upload -->
+        <div
+          id="add"
+          style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px"
+        >
+          <div class="card">
+            <h2>Record a contribution</h2>
+            <p class="sub" style="margin-bottom: 18px">
+              Member details auto-populate after selection
+            </p>
+            <div class="form-error" id="formError"></div>
+            <form
+              id="recordForm"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px"
+            >
+              <div style="position: relative">
+                <label
+                  style="
+                    display: block;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    margin-bottom: 6px;
+                  "
+                  >Member *</label
+                >
+                <input
+                  class="field"
+                  id="memberSearch"
+                  placeholder="Search member by name or email"
+                  autocomplete="off"
+                  required
+                />
+                <div class="suggest" id="memberSuggest"></div>
+              </div>
+              <div>
+                <label
+                  style="
+                    display: block;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    margin-bottom: 6px;
+                  "
+                  >Date of payment</label
+                >
+                <input class="field" type="date" id="payDate" />
+              </div>
+              <div>
+                <label
+                  style="
+                    display: block;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    margin-bottom: 6px;
+                  "
+                  >Amount (GH₵) *</label
+                >
+                <input
+                  class="field"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  id="payAmount"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    display: block;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    margin-bottom: 6px;
+                  "
+                  >Payment method</label
+                >
+                <select class="field" id="payMode"></select>
+              </div>
+              <div>
+                <label
+                  style="
+                    display: block;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    margin-bottom: 6px;
+                  "
+                  >Deposit into fund</label
+                >
+                <select class="field" id="payFund"></select>
+              </div>
+              <div style="grid-column: span 2; display: none" id="refWrap">
+                <label
+                  style="
+                    display: block;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    margin-bottom: 6px;
+                  "
+                  >Transaction reference *</label
+                >
+                <input
+                  class="field"
+                  id="payRef"
+                  placeholder="e.g. momo transaction ID or bank reference"
+                />
+              </div>
+              <div style="grid-column: span 2">
+                <label
+                  style="
+                    display: block;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    margin-bottom: 6px;
+                  "
+                  >Notes</label
+                >
+                <textarea
+                  class="field"
+                  id="payNote"
+                  rows="2"
+                  placeholder="Additional notes or comments"
+                ></textarea>
+              </div>
+              <div
+                style="
+                  grid-column: span 2;
+                  display: flex;
+                  gap: 10px;
+                  margin-top: 2px;
+                "
+              >
+                <button
+                  class="btn"
+                  type="submit"
+                  style="padding: 10px 18px; font-size: 0.92rem"
+                >
+                  Save contribution
+                </button>
+                <button
+                  class="btn secondary"
+                  type="button"
+                  id="clearBtn"
+                  style="padding: 10px 18px; font-size: 0.92rem"
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div
+            class="card"
+            id="bulkCard"
+            style="display: flex; flex-direction: column"
+          >
+            <h2>Bulk upload</h2>
+            <p class="sub" style="margin-bottom: 16px">
+              CSV columns:
+              <span
+                style="
+                  font-family: monospace;
+                  background: var(--bg);
+                  padding: 2px 6px;
+                  border-radius: 6px;
+                  font-size: 0.8rem;
+                "
+                >date, email, amount, method, account, notes</span
+              >
+            </p>
+            <div class="dropzone" id="dropzone">
+              <span style="font-weight: 600; font-size: 0.92rem"
+                >Drag &amp; drop your CSV here</span
+              >
+              <span style="color: var(--faint); font-size: 0.82rem">or</span>
+              <button
+                type="button"
+                class="exp-btn"
+                style="color: var(--primary)"
+                id="browseBtn"
+              >
+                Browse files
+              </button>
+              <input
+                type="file"
+                id="csvFile"
+                accept=".csv,text/csv"
+                style="display: none"
+              />
+            </div>
+            <div class="bulk-results" id="bulkResults"></div>
+            <a
+              href="#"
+              id="templateLink"
+              style="margin-top: 12px; font-size: 0.85rem; font-weight: 600"
+              >Download CSV template</a
+            >
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Edit modal -->
+    <div class="modal-backdrop" id="editModal">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+          "
+        >
+          <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700">
+            Edit contribution
+          </h2>
+          <button type="button" class="btn ghost small" id="editClose">
+            Close
+          </button>
+        </div>
+        <p
+          style="margin: 0 0 20px; color: var(--muted); font-size: 0.88rem"
+          id="editSub"
+        ></p>
+        <div class="form-error" id="editError"></div>
+        <form id="editForm" style="display: grid; gap: 16px">
+          <div>
+            <label class="field">Status</label>
+            <select class="field" id="eStatus">
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="review">Review</option>
+            </select>
+          </div>
+          <div>
+            <label class="field">Account / reference</label>
+            <input class="field" id="eRef" />
+          </div>
+          <div>
+            <label class="field">Note</label>
+            <textarea class="field" id="eNote" rows="2"></textarea>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <button class="btn" type="submit">Save changes</button>
+            <button
+              class="btn secondary"
+              type="button"
+              id="reverseBtn"
+              style="color: var(--red-ink)"
+            >
+              Request reversal
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("sideRole").textContent =
+          {
+            admin: "Administrator",
+            supervisor: "Supervisor",
+            accountant: "Accountant",
+            superadmin: "Superadmin",
+          }[user.role] || user.role;
+
+        const state = { q: "", from: "", to: "", page: 1, pages: 1, total: 0 };
+        let modes = [];
+
+        function listParams() {
+          const params = new URLSearchParams({ page: state.page, limit: 15 });
+          if (state.q) params.set("q", state.q);
+          if (state.from) params.set("from", state.from);
+          if (state.to) params.set("to", state.to);
+          return params;
+        }
+
+        // --- Stats + banner ---
+        async function loadStats() {
+          const s = await API.get("/api/contributions/stats");
+          document.getElementById("statCards").innerHTML = [
+            {
+              label: "Total contributions",
+              value: fmt.gh(s.total),
+              sub: "This month: " + fmt.gh(s.monthTotal),
+            },
+            {
+              label: "Contribution count",
+              value: s.count.toLocaleString("en-US"),
+              sub: "Total transactions",
+            },
+            {
+              label: "Average monthly",
+              value: fmt.gh(s.avgMonthly),
+              sub: "Last 12 months",
+            },
+          ]
+            .map(
+              (c) => `
+      <div class="stat">
+        <div class="label">${c.label}</div>
+        <div class="value">${c.value}</div>
+        <div class="sub">${c.sub}</div>
+      </div>`,
+            )
+            .join("");
+
+          const banner = document.getElementById("reversalBanner");
+          if (user.role === "admin" && s.pendingReversals.count > 0) {
+            banner.style.display = "flex";
+            document.getElementById("bannerTitle").textContent =
+              `${s.pendingReversals.count} pending reversal request${s.pendingReversals.count === 1 ? "" : "s"}`;
+            const l = s.pendingReversals.latest;
+            document.getElementById("bannerSub").textContent = l
+              ? `Latest: ${l.member} — ${fmt.gh(l.amount)}, requested ${fmt.date(l.requestedAt)}`
+              : "Contribution reversals awaiting your review";
+          } else {
+            banner.style.display = "none";
+          }
+        }
+
+        // --- Table ---
+        async function loadList() {
+          const data = await API.get("/api/contributions?" + listParams());
+          state.pages = Math.max(data.pages, 1);
+          state.total = data.total;
+          document.getElementById("emptyState").style.display = data.items
+            .length
+            ? "none"
+            : "block";
+          document.getElementById("contribRows").innerHTML = data.items
+            .map(
+              (c) => `
+      <tr>
+        <td style="white-space:nowrap; font-weight:400; color:var(--muted);">${fmt.date(c.contributionDate)}</td>
+        <td style="font-weight:600; color:var(--ink);">${fmt.esc(fmt.name(c.memberId))}</td>
+        <td style="white-space:nowrap;">${fmt.esc(c.method)}</td>
+        <td>${fmt.esc(c.reference || "—")}</td>
+        <td>${fmt.esc(c.note || "—")}${c.status !== "paid" ? " " + pill(c.status) : ""}</td>
+        <td class="num" style="white-space:nowrap; ${c.status === "reversed" ? "text-decoration:line-through; color:var(--faint);" : ""}">${fmt.gh(c.amount)}</td>
+        <td class="num"><button type="button" class="tbl-btn" data-edit="${c._id}">Edit</button></td>
+      </tr>`,
+            )
+            .join("");
+          document.getElementById("countLabel").textContent =
+            `Showing ${data.items.length} of ${state.total.toLocaleString("en-US")} contribution${state.total === 1 ? "" : "s"}`;
+          document.getElementById("pageNum").textContent = state.page;
+          document.getElementById("prevBtn").disabled = state.page <= 1;
+          document.getElementById("nextBtn").disabled =
+            state.page >= state.pages;
+          document
+            .querySelectorAll("[data-edit]")
+            .forEach((btn) =>
+              btn.addEventListener("click", () => openEdit(btn.dataset.edit)),
+            );
+        }
+
+        const load = () => Promise.all([loadStats(), loadList()]);
+
+        let debounce;
+        document
+          .getElementById("searchInput")
+          .addEventListener("input", (e) => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+              state.q = e.target.value.trim();
+              state.page = 1;
+              loadList();
+            }, 300);
+          });
+        document.getElementById("fromDate").addEventListener("change", (e) => {
+          state.from = e.target.value;
+          state.page = 1;
+          loadList();
+        });
+        document.getElementById("toDate").addEventListener("change", (e) => {
+          state.to = e.target.value;
+          state.page = 1;
+          loadList();
+        });
+        document.getElementById("prevBtn").addEventListener("click", () => {
+          if (state.page > 1) {
+            state.page--;
+            loadList();
+          }
+        });
+        document.getElementById("nextBtn").addEventListener("click", () => {
+          if (state.page < state.pages) {
+            state.page++;
+            loadList();
+          }
+        });
+        document.querySelectorAll("[data-export]").forEach((btn) =>
+          btn.addEventListener("click", () => {
+            window.location.href =
+              `/api/contributions/export.${btn.dataset.export}?` + listParams();
+          }),
+        );
+
+        // --- Payment modes ---
+        async function loadModes() {
+          modes = (await API.get("/api/payment-modes")).items;
+          document.getElementById("payMode").innerHTML = modes
+            .map((m) => `<option value="${m._id}">${fmt.esc(m.name)}</option>`)
+            .join("");
+          updateRefVisibility();
+        }
+        function selectedMode() {
+          return modes.find(
+            (m) => m._id === document.getElementById("payMode").value,
+          );
+        }
+
+        // --- Deposit funds ---
+        // Fund accounts need the accountsManagement plan feature + view_accounts.
+        // If unavailable (Free plan / no permission), hide the selector and let
+        // the server default the deposit to the General Fund.
+        async function loadFunds() {
+          const wrap = document.getElementById("payFund").closest("div");
+          try {
+            const { items } = await API.get("/api/fund-accounts");
+            const active = items.filter((f) => f.status !== "closed");
+            if (!active.length) {
+              wrap.style.display = "none";
+              return;
+            }
+            const general = active.find((f) => f.name === "General Fund");
+            document.getElementById("payFund").innerHTML = active
+              .map(
+                (f) =>
+                  `<option value="${f._id}" ${general && f._id === general._id ? "selected" : ""}>${fmt.esc(f.name)}</option>`,
+              )
+              .join("");
+          } catch (e) {
+            wrap.style.display = "none";
+          }
+        }
+        function updateRefVisibility() {
+          const mode = selectedMode();
+          document.getElementById("refWrap").style.display =
+            mode && mode.requiresReference ? "block" : "none";
+        }
+        document
+          .getElementById("payMode")
+          .addEventListener("change", updateRefVisibility);
+
+        // --- Member autocomplete ---
+        const memberSearch = document.getElementById("memberSearch");
+        const suggest = document.getElementById("memberSuggest");
+        let selectedMemberId = null;
+        let suggestDebounce;
+        memberSearch.addEventListener("input", () => {
+          selectedMemberId = null;
+          clearTimeout(suggestDebounce);
+          const q = memberSearch.value.trim();
+          if (q.length < 2) {
+            suggest.classList.remove("open");
+            return;
+          }
+          suggestDebounce = setTimeout(async () => {
+            const data = await API.get(
+              "/api/users?limit=6&q=" + encodeURIComponent(q),
+            );
+            suggest.innerHTML = data.items.length
+              ? data.items
+                  .map(
+                    (u) => `
+          <button type="button" data-id="${u._id}" data-label="${fmt.esc(fmt.name(u))}">
+            <strong>${fmt.esc(fmt.name(u))}</strong>${u.memberNumber ? ` · ${fmt.esc(u.memberNumber)}` : ""}
+            <span class="sub">${fmt.esc(u.email)}</span>
+          </button>`,
+                  )
+                  .join("")
+              : '<button type="button" disabled style="color:var(--faint); cursor:default;">No members match</button>';
+            suggest.classList.add("open");
+            suggest.querySelectorAll("button[data-id]").forEach((b) =>
+              b.addEventListener("click", () => {
+                selectedMemberId = b.dataset.id;
+                memberSearch.value = b.dataset.label;
+                suggest.classList.remove("open");
+              }),
+            );
+          }, 250);
+        });
+        document.addEventListener("click", (e) => {
+          if (!suggest.contains(e.target) && e.target !== memberSearch)
+            suggest.classList.remove("open");
+        });
+
+        // --- Record form ---
+        const formError = document.getElementById("formError");
+        document.getElementById("payDate").value = new Date()
+          .toISOString()
+          .slice(0, 10);
+        document
+          .getElementById("recordForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            formError.classList.remove("show");
+            if (!selectedMemberId) {
+              formError.textContent = "Pick a member from the suggestions list";
+              formError.classList.add("show");
+              return;
+            }
+            try {
+              const mode = selectedMode();
+              const fundSel = document.getElementById("payFund");
+              const fundVisible =
+                fundSel.closest("div").style.display !== "none";
+              await API.post("/api/contributions", {
+                memberId: selectedMemberId,
+                amount: document.getElementById("payAmount").value,
+                paymentModeId: mode ? mode._id : undefined,
+                fundAccountId:
+                  fundVisible && fundSel.value ? fundSel.value : undefined,
+                reference:
+                  document.getElementById("payRef").value.trim() || undefined,
+                note:
+                  document.getElementById("payNote").value.trim() || undefined,
+                contributionDate:
+                  document.getElementById("payDate").value || undefined,
+              });
+              toast("Contribution recorded — receipt emailed to the member");
+              clearForm();
+              load();
+            } catch (err) {
+              formError.textContent = err.message;
+              formError.classList.add("show");
+            }
+          });
+        function clearForm() {
+          document.getElementById("recordForm").reset();
+          document.getElementById("payDate").value = new Date()
+            .toISOString()
+            .slice(0, 10);
+          selectedMemberId = null;
+          updateRefVisibility();
+        }
+        document
+          .getElementById("clearBtn")
+          .addEventListener("click", clearForm);
+
+        // --- Edit modal ---
+        const editModal = document.getElementById("editModal");
+        let editingId = null;
+        async function openEdit(id) {
+          const { contribution: c } = await API.get("/api/contributions/" + id);
+          editingId = id;
+          document.getElementById("editError").classList.remove("show");
+          document.getElementById("editSub").textContent =
+            `${c.receiptNumber} · ${fmt.name(c.memberId)} · ${fmt.gh(c.amount)} · ${fmt.date(c.contributionDate)}`;
+          document.getElementById("eStatus").value = [
+            "paid",
+            "pending",
+            "review",
+          ].includes(c.status)
+            ? c.status
+            : "paid";
+          document.getElementById("eStatus").disabled = c.status === "reversed";
+          document.getElementById("eRef").value = c.reference || "";
+          document.getElementById("eNote").value = c.note || "";
+          document.getElementById("reverseBtn").style.display =
+            c.status === "reversed" ? "none" : "";
+          editModal.classList.add("open");
+        }
+        document
+          .getElementById("editClose")
+          .addEventListener("click", () => editModal.classList.remove("open"));
+        editModal.addEventListener("click", (e) => {
+          if (e.target === editModal) editModal.classList.remove("open");
+        });
+
+        document
+          .getElementById("editForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            try {
+              const body = {
+                reference: document.getElementById("eRef").value.trim(),
+                note: document.getElementById("eNote").value.trim(),
+              };
+              if (!document.getElementById("eStatus").disabled)
+                body.status = document.getElementById("eStatus").value;
+              await API.patch("/api/contributions/" + editingId, body);
+              toast("Contribution updated");
+              editModal.classList.remove("open");
+              load();
+            } catch (err) {
+              const box = document.getElementById("editError");
+              box.textContent = err.message;
+              box.classList.add("show");
+            }
+          });
+
+        document
+          .getElementById("reverseBtn")
+          .addEventListener("click", async () => {
+            const reason = prompt("Reason for the reversal request:");
+            if (!reason) return;
+            try {
+              await API.post("/api/reversals", {
+                contributionId: editingId,
+                reason,
+              });
+              toast("Reversal request submitted for admin review");
+              editModal.classList.remove("open");
+              load();
+            } catch (err) {
+              const box = document.getElementById("editError");
+              box.textContent = err.message;
+              box.classList.add("show");
+            }
+          });
+
+        // --- Bulk CSV upload ---
+        const dropzone = document.getElementById("dropzone");
+        const csvFile = document.getElementById("csvFile");
+        document
+          .getElementById("browseBtn")
+          .addEventListener("click", () => csvFile.click());
+        csvFile.addEventListener("change", () => {
+          if (csvFile.files[0]) importCsv(csvFile.files[0]);
+        });
+        ["dragover", "dragenter"].forEach((ev) =>
+          dropzone.addEventListener(ev, (e) => {
+            e.preventDefault();
+            dropzone.classList.add("drag");
+          }),
+        );
+        ["dragleave", "drop"].forEach((ev) =>
+          dropzone.addEventListener(ev, (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("drag");
+          }),
+        );
+        dropzone.addEventListener("drop", (e) => {
+          const file = e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) importCsv(file);
+        });
+
+        document
+          .getElementById("templateLink")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            const csv =
+              "date,email,amount,method,account,notes\n2026-07-01,member@example.com,150,Mobile Money,024xxxx123,Monthly dues\n";
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+            a.download = "contributions-template.csv";
+            a.click();
+            URL.revokeObjectURL(a.href);
+          });
+
+        // Minimal CSV parser with quoted-field support.
+        function parseCsv(text) {
+          const rows = [];
+          let row = [],
+            cell = "",
+            inQuotes = false;
+          for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (inQuotes) {
+              if (ch === '"' && text[i + 1] === '"') {
+                cell += '"';
+                i++;
+              } else if (ch === '"') inQuotes = false;
+              else cell += ch;
+            } else if (ch === '"') inQuotes = true;
+            else if (ch === ",") {
+              row.push(cell);
+              cell = "";
+            } else if (ch === "\n" || ch === "\r") {
+              if (ch === "\r" && text[i + 1] === "\n") i++;
+              row.push(cell);
+              cell = "";
+              if (row.some((c) => c.trim() !== "")) rows.push(row);
+              row = [];
+            } else cell += ch;
+          }
+          row.push(cell);
+          if (row.some((c) => c.trim() !== "")) rows.push(row);
+          return rows;
+        }
+
+        async function importCsv(file) {
+          const resultsBox = document.getElementById("bulkResults");
+          resultsBox.classList.remove("show");
+          try {
+            const text = await file.text();
+            const parsed = parseCsv(text);
+            if (parsed.length < 2)
+              throw new Error(
+                "CSV appears to be empty (needs a header row plus data)",
+              );
+            const headers = parsed[0].map((h) => h.trim().toLowerCase());
+            const expected = [
+              "date",
+              "email",
+              "amount",
+              "method",
+              "account",
+              "notes",
+            ];
+            const missing = ["date", "email", "amount"].filter(
+              (h) => !headers.includes(h),
+            );
+            if (missing.length)
+              throw new Error(
+                "CSV is missing required column(s): " + missing.join(", "),
+              );
+
+            const rows = parsed.slice(1).map((cells) => {
+              const obj = {};
+              headers.forEach((h, i) => {
+                if (expected.includes(h)) obj[h] = (cells[i] || "").trim();
+              });
+              return obj;
+            });
+
+            const data = await API.post("/api/contributions/bulk", { rows });
+            toast(data.message, data.imported === 0);
+            const errors = data.results.filter((r) => r.status !== "imported");
+            resultsBox.innerHTML =
+              `<div class="ok" style="font-weight:700; margin-bottom:4px;">${data.imported} imported, ${data.failed} failed</div>` +
+              errors
+                .map(
+                  (r) =>
+                    `<div class="err">Line ${r.line}${r.email ? " (" + fmt.esc(r.email) + ")" : ""}: ${fmt.esc(r.reason)}</div>`,
+                )
+                .join("");
+            resultsBox.classList.add("show");
+            csvFile.value = "";
+            load();
+          } catch (err) {
+            resultsBox.innerHTML = `<div class="err">${fmt.esc(err.message)}</div>`;
+            resultsBox.classList.add("show");
+            csvFile.value = "";
+          }
+        }
+
+        await Promise.all([load(), loadModes(), loadFunds()]);
+      })();
+    </script>
+  </body>
+</html>

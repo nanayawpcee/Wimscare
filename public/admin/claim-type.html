@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Add Claim Type — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .main {
+        max-width: 1120px;
+      }
+      .form-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 26px;
+      }
+      .form-card h2 {
+        margin: 0 0 18px;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+      .form-card h2.tight {
+        margin-bottom: 6px;
+      }
+      .form-card .lead {
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .chain-btn {
+        text-align: left;
+        border-radius: 12px;
+        padding: 14px 16px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s ease;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .chain-btn.on {
+        border-color: var(--primary);
+        background: var(--primary-tint);
+        color: var(--primary);
+        box-shadow: 0 0 0 1px var(--primary) inset;
+      }
+      .chain-btn .t {
+        display: block;
+        font-weight: 700;
+        font-size: 0.92rem;
+      }
+      .chain-btn .d {
+        display: block;
+        font-size: 0.8rem;
+        margin-top: 2px;
+        opacity: 0.75;
+      }
+      .doc-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+      }
+      .doc-remove {
+        padding: 5px 11px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--red-ink);
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .doc-remove:hover {
+        border-color: var(--red-ink);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html" class="active">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role">Administrator</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div style="padding-bottom: 24px">
+          <a
+            href="/admin/claims-config.html"
+            style="
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              font-weight: 600;
+              font-size: 0.9rem;
+              margin-bottom: 12px;
+            "
+            >← Back to claims configuration</a
+          >
+          <h1
+            style="margin: 0 0 6px; font-size: 1.9rem; font-weight: 700"
+            id="pageTitle"
+          >
+            Add Claim Type
+          </h1>
+          <p style="margin: 0; color: var(--muted)">
+            Define a new benefit members can claim — limits, eligibility,
+            approvals and required documents
+          </p>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+          "
+        >
+          <!-- Form column -->
+          <div style="display: grid; gap: 20px">
+            <div class="form-error" id="formError" style="margin: 0"></div>
+
+            <div class="form-card">
+              <h2>Basics</h2>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px"
+              >
+                <div>
+                  <label class="field">Claim type name *</label>
+                  <input
+                    class="field"
+                    id="fName"
+                    placeholder="e.g. Housing assistance"
+                  />
+                </div>
+                <div>
+                  <label class="field">Internal identifier</label>
+                  <input
+                    class="field"
+                    id="fSlug"
+                    readonly
+                    style="font-family: monospace"
+                    value="claim_type_id"
+                  />
+                </div>
+                <div style="grid-column: span 2">
+                  <label class="field">Description shown to members *</label>
+                  <textarea
+                    class="field"
+                    id="fDesc"
+                    rows="2"
+                    placeholder="One or two sentences explaining what this benefit covers"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-card">
+              <h2>Benefit &amp; limits</h2>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px"
+              >
+                <div>
+                  <label class="field">Amount type</label>
+                  <select class="field" id="fAmountMode">
+                    <option value="fixed">
+                      Fixed amount — members receive exactly this
+                    </option>
+                    <option value="capped">
+                      Up to a limit — members enter an amount
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="field" id="fLimitLabel"
+                    >Benefit amount (GH₵) *</label
+                  >
+                  <input
+                    class="field"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    id="fLimit"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label class="field">Limit applies</label>
+                  <select class="field" id="fLimitPer">
+                    <option value="claim">Per claim</option>
+                    <option value="year">Per year</option>
+                    <option value="lifetime">Lifetime</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="field">Waiting period</label>
+                  <select class="field" id="fWaiting">
+                    <option value="0">None</option>
+                    <option value="6">6 months</option>
+                    <option value="12">12 months</option>
+                    <option value="24">24 months</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="field">Max claims per member / year</label>
+                  <input
+                    class="field"
+                    type="number"
+                    min="1"
+                    id="fMaxPerYear"
+                    value="1"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-card">
+              <h2 class="tight">Approval workflow</h2>
+              <p class="lead">Who must approve claims of this type, in order</p>
+              <div style="display: grid; gap: 8px" id="chainList"></div>
+            </div>
+
+            <div class="form-card">
+              <h2 class="tight">Required documents</h2>
+              <p class="lead">
+                Members must upload these before the application can be
+                submitted
+              </p>
+              <div
+                style="display: grid; gap: 8px; margin-bottom: 14px"
+                id="docList"
+              ></div>
+              <div style="display: flex; gap: 10px">
+                <input
+                  class="field"
+                  id="newDoc"
+                  placeholder="e.g. Medical report"
+                  style="flex: 1"
+                />
+                <button
+                  type="button"
+                  class="btn secondary"
+                  id="addDocBtn"
+                  style="
+                    padding: 11px 18px;
+                    color: var(--primary);
+                    font-size: 0.9rem;
+                    white-space: nowrap;
+                  "
+                >
+                  Add document
+                </button>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px">
+              <button type="button" class="btn" id="saveBtn">
+                Create claim type
+              </button>
+              <button type="button" class="btn secondary" id="draftBtn">
+                Save as draft
+              </button>
+              <a class="btn ghost" href="/admin/claims-config.html">Cancel</a>
+            </div>
+          </div>
+
+          <!-- Preview column -->
+          <div style="display: grid; gap: 20px; position: sticky; top: 24px">
+            <div class="form-card">
+              <p
+                style="
+                  margin: 0 0 14px;
+                  color: var(--faint);
+                  font-size: 0.78rem;
+                  text-transform: uppercase;
+                  letter-spacing: 0.08em;
+                  font-weight: 700;
+                "
+              >
+                Member preview
+              </p>
+              <div
+                style="
+                  border: 1px solid var(--line);
+                  border-radius: 14px;
+                  padding: 16px;
+                "
+              >
+                <span
+                  style="display: block; font-weight: 700; font-size: 0.95rem"
+                  id="pvName"
+                  >New claim type</span
+                >
+                <span
+                  style="
+                    display: block;
+                    font-size: 0.82rem;
+                    margin-top: 4px;
+                    color: var(--muted);
+                    line-height: 1.5;
+                  "
+                  id="pvDesc"
+                  >Description shown to members appears here.</span
+                >
+                <div
+                  style="
+                    display: flex;
+                    gap: 6px;
+                    margin-top: 12px;
+                    flex-wrap: wrap;
+                  "
+                >
+                  <span
+                    style="
+                      display: inline-block;
+                      font-size: 0.75rem;
+                      font-weight: 600;
+                      padding: 3px 9px;
+                      border-radius: 999px;
+                      background: var(--primary-tint);
+                      color: var(--primary);
+                    "
+                    id="pvLimit"
+                    >Limit not set</span
+                  >
+                  <span
+                    style="
+                      display: inline-block;
+                      font-size: 0.75rem;
+                      font-weight: 600;
+                      padding: 3px 9px;
+                      border-radius: 999px;
+                      background: #e9eff2;
+                      color: var(--muted);
+                    "
+                    id="pvDocs"
+                    >0 documents required</span
+                  >
+                </div>
+              </div>
+              <p
+                style="
+                  margin: 14px 0 0;
+                  color: var(--faint);
+                  font-size: 0.8rem;
+                  line-height: 1.5;
+                "
+              >
+                This is how the claim type card appears in the member
+                application form.
+              </p>
+            </div>
+
+            <div
+              style="
+                background: var(--amber-bg);
+                border: 1px solid var(--amber-line);
+                border-radius: 14px;
+                padding: 18px 20px;
+              "
+            >
+              <span
+                style="
+                  display: block;
+                  font-weight: 700;
+                  color: var(--amber-ink);
+                  font-size: 0.9rem;
+                  margin-bottom: 2px;
+                "
+                >Applies to new claims only</span
+              >
+              <span
+                style="
+                  color: var(--amber-ink);
+                  font-size: 0.82rem;
+                  opacity: 0.85;
+                  line-height: 1.5;
+                "
+                >Existing claims keep the rules that were active when they were
+                submitted.</span
+              >
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "superadmin"],
+        });
+        if (!session) return;
+        document.getElementById("sideAvatar").textContent = fmt.initials(
+          session.user,
+        );
+        document.getElementById("sideName").textContent = fmt.name(
+          session.user,
+        );
+
+        const editId = new URLSearchParams(location.search).get("id");
+        const state = {
+          chain: "supervisor_admin",
+          docs: [
+            "Completed claim form",
+            "Proof of expense (receipt or invoice)",
+          ],
+        };
+
+        const CHAINS = [
+          {
+            key: "admin",
+            label: "Administrator only",
+            desc: "Single approval — fastest turnaround",
+          },
+          {
+            key: "supervisor_admin",
+            label: "Supervisor → Accountant → Administrator",
+            desc: "Three-step review, adds accountant sign-off before final approval",
+          },
+          {
+            key: "committee",
+            label: "Welfare committee",
+            desc: "Full committee vote — for high-value or sensitive benefits",
+          },
+        ];
+
+        const $ = (id) => document.getElementById(id);
+
+        function renderChains() {
+          $("chainList").innerHTML = CHAINS.map(
+            (c) => `
+      <button type="button" class="chain-btn ${state.chain === c.key ? "on" : ""}" data-chain="${c.key}">
+        <span class="t">${c.label}</span>
+        <span class="d">${c.desc}</span>
+      </button>`,
+          ).join("");
+          document.querySelectorAll("[data-chain]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              state.chain = btn.dataset.chain;
+              renderChains();
+            }),
+          );
+        }
+
+        function renderDocs() {
+          $("docList").innerHTML = state.docs.length
+            ? state.docs
+                .map(
+                  (d, i) => `
+        <div class="doc-row">
+          <span style="font-weight:600; font-size:0.9rem;">${fmt.esc(d)}</span>
+          <button type="button" class="doc-remove" data-remove="${i}">Remove</button>
+        </div>`,
+                )
+                .join("")
+            : '<div style="padding:8px 2px; color:var(--faint); font-size:0.85rem;">No documents required.</div>';
+          document.querySelectorAll("[data-remove]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              state.docs.splice(Number(btn.dataset.remove), 1);
+              renderDocs();
+              preview();
+            }),
+          );
+        }
+
+        function slugify(name) {
+          return (
+            String(name)
+              .trim()
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "_")
+              .replace(/^_+|_+$/g, "") || "claim_type_id"
+          );
+        }
+
+        function preview() {
+          const name = $("fName").value.trim();
+          const desc = $("fDesc").value.trim();
+          const limit = Number($("fLimit").value);
+          const perLabels = {
+            claim: "per claim",
+            year: "per year",
+            lifetime: "lifetime",
+          };
+          $("fSlug").value = slugify(name);
+          $("pvName").textContent = name || "New claim type";
+          $("pvDesc").textContent =
+            desc || "Description shown to members appears here.";
+          const fixedMode = $("fAmountMode").value === "fixed";
+          $("fLimitLabel").textContent = fixedMode
+            ? "Benefit amount (GH₵) *"
+            : "Benefit limit (GH₵) *";
+          $("pvLimit").textContent =
+            limit > 0
+              ? fixedMode
+                ? `Fixed ${fmt.gh(limit)} ${perLabels[$("fLimitPer").value]}`
+                : `Up to ${fmt.gh(limit)} ${perLabels[$("fLimitPer").value]}`
+              : "Amount not set";
+          $("pvDocs").textContent =
+            `${state.docs.length} document${state.docs.length === 1 ? "" : "s"} required`;
+        }
+        ["fName", "fDesc", "fLimit", "fLimitPer", "fAmountMode"].forEach((id) =>
+          $(id).addEventListener("input", preview),
+        );
+
+        $("addDocBtn").addEventListener("click", () => {
+          const v = $("newDoc").value.trim();
+          if (!v) return;
+          state.docs.push(v);
+          $("newDoc").value = "";
+          renderDocs();
+          preview();
+        });
+        $("newDoc").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            $("addDocBtn").click();
+          }
+        });
+
+        async function save(status) {
+          const errBox = $("formError");
+          errBox.classList.remove("show");
+          const body = {
+            name: $("fName").value.trim(),
+            description: $("fDesc").value.trim(),
+            benefitLimit: $("fLimit").value,
+            amountMode: $("fAmountMode").value,
+            limitPer: $("fLimitPer").value,
+            waitingPeriodMonths: $("fWaiting").value,
+            maxClaimsPerYear: $("fMaxPerYear").value,
+            approvalChain: state.chain,
+            requiredDocuments: state.docs,
+            status, 
+
+          };
+          if (
+            !body.name ||
+            !body.description ||
+            !(Number(body.benefitLimit) >= 0) ||
+            body.benefitLimit === ""
+          ) {
+            errBox.textContent =
+              "Name, description and benefit limit are required";
+            errBox.classList.add("show");
+            return;
+          }
+          try {
+            if (editId) {
+              await API.patch("/api/claim-types/" + editId, body);
+              toast("Claim type updated");
+            } else {
+              await API.post("/api/claim-types", body);
+              toast(
+                status === "draft" ? "Saved as draft" : "Claim type created",
+              );
+            }
+            window.location.href = "/admin/claims-config.html";
+          } catch (err) {
+            errBox.textContent = err.message;
+            errBox.classList.add("show");
+          }
+        }
+        $("saveBtn").addEventListener("click", () => save("active"));
+        $("draftBtn").addEventListener("click", () => save("draft"));
+
+        // --- Edit mode ---
+        if (editId) {
+          document.title = "Edit Claim Type — WIMScare";
+          $("pageTitle").textContent = "Edit Claim Type";
+          $("saveBtn").textContent = "Save changes";
+          const { items } = await API.get("/api/claim-types");
+          const t = items.find((x) => x._id === editId);
+          if (!t) {
+            toast("Claim type not found", true);
+            window.location.href = "/admin/claims-config.html";
+            return;
+          }
+          $("fName").value = t.name;
+          $("fDesc").value = t.description || "";
+          $("fLimit").value = t.benefitLimit;
+          $("fAmountMode").value = t.amountMode === "capped" ? "capped" : "fixed";
+          $("fLimitPer").value = t.limitPer;
+          const waitSel = $("fWaiting");
+          if (
+            ![...waitSel.options].some(
+              (o) => o.value === String(t.waitingPeriodMonths),
+            )
+          ) {
+            waitSel.insertAdjacentHTML(
+              "beforeend",
+              `<option value="${t.waitingPeriodMonths}">${t.waitingPeriodMonths} months</option>`,
+            );
+          }
+          waitSel.value = String(t.waitingPeriodMonths);
+          $("fMaxPerYear").value = t.maxClaimsPerYear;
+          state.chain = t.approvalChain;
+          state.docs = [...t.requiredDocuments];
+          if (t.status === "draft") $("draftBtn").textContent = "Keep as draft";
+          else $("draftBtn").style.display = "none";
+        }
+
+        renderChains();
+        renderDocs();
+        preview();
+      })();
+    </script>
+  </body>
+</html>

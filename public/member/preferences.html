@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Preferences — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 13px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 14px;
+      }
+      .track {
+        position: relative;
+        width: 48px;
+        height: 28px;
+        border-radius: 999px;
+        border: 0;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s ease;
+        background: var(--input-line);
+        padding: 0;
+      }
+      .track.on {
+        background: var(--primary);
+      }
+      .track .knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        transition: left 0.2s ease;
+        display: block;
+      }
+      .track.on .knob {
+        left: 23px;
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 44, 63, 0.45);
+        z-index: 300;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal.confirm-modal {
+        background: #fff;
+        border-radius: 18px;
+        padding: 26px;
+        width: 100%;
+        max-width: 420px;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body class="theme-member">
+    <div id="mShell"></div>
+    <div class="portal">
+      <aside class="portal-side">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div style="display: grid; gap: 4px">
+            <p>Member Portal</p>
+            <span>Contributions, claims and profile in one place.</span>
+          </div>
+        </div>
+        <nav aria-label="Member portal navigation">
+          <a href="/member/dashboard.html">Dashboard</a>
+          <a href="/member/claims.html">My claims</a>
+          <a href="/member/profile.html">Profile</a>
+          <a href="/member/preferences.html" class="active">Preferences</a>
+        </nav>
+        <div class="foot">
+          <div class="who">
+            <span class="avatar" id="sideAvatar"></span>
+            <div>
+              <strong
+                style="
+                  display: block;
+                  font-size: 0.98rem;
+                  color: #fff;
+                  margin-bottom: 2px;
+                "
+                id="sideName"
+              ></strong>
+              <span style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.68)"
+                >Member</span
+              >
+            </div>
+          </div>
+          <button type="button" class="signout" onclick="WIMS.signOut()">
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main class="portal-main">
+        <div class="chiprow" id="chipRow"></div>
+
+        <!-- Notifications -->
+        <section class="panel" id="notifPanel">
+          <h2 style="font-size: 1.15rem; margin-bottom: 3px">Notifications</h2>
+          <p style="margin: 0 0 16px; color: var(--muted); font-size: 0.85rem">
+            Choose how and when you want to be notified.
+          </p>
+          <div style="display: grid; gap: 10px" id="toggleList"></div>
+        </section>
+
+        <!-- Two-factor authentication -->
+        <section class="panel" id="tfaPanel" style="display: none">
+          <h2 style="font-size: 1.15rem; margin-bottom: 3px">
+            Phone & two-factor authentication
+          </h2>
+          <p style="margin: 0 0 16px; color: var(--muted); font-size: 0.85rem">
+            Verify your phone to receive SMS alerts, and optionally require a
+            text-message code when you sign in.
+          </p>
+          <div style="padding: 30px 24px; text-align: center; border: 1px dashed var(--line); border-radius: 14px;">
+            <span class="pill gray" style="margin-bottom: 10px; display: inline-block;">Coming soon</span>
+            <p style="margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.6;">
+              Phone verification and SMS-based two-factor authentication
+              aren't available yet — we're working on it.
+            </p>
+          </div>
+          <!-- Disabled for now (see "Coming soon" placeholder above) — kept
+               here, commented out, to restore once SMS 2FA ships. Matching
+               JS block is commented out in the script below. -->
+          <!--
+          <div class="form-error" id="tfaError"></div>
+          <div style="display: grid; gap: 16px; max-width: 420px">
+            <div>
+              <label class="field">Phone number</label>
+              <div style="display: flex; align-items: center; gap: 10px">
+                <input
+                  class="field"
+                  id="tfaPhone"
+                  placeholder="+233 24 000 0000"
+                  style="flex: 1"
+                />
+                <span id="tfaBadge"></span>
+              </div>
+            </div>
+            <div id="tfaAction"></div>
+            <div class="toggle-row">
+              <div style="min-width: 0">
+                <span
+                  style="display: block; font-weight: 600; font-size: 0.9rem"
+                  >Require SMS code at login</span
+                >
+                <span
+                  id="tfaToggleDesc"
+                  style="
+                    display: block;
+                    font-size: 0.78rem;
+                    color: var(--faint);
+                    margin-top: 2px;
+                  "
+                ></span>
+              </div>
+              <button
+                type="button"
+                class="track"
+                id="tfaToggle"
+                role="switch"
+              >
+                <span class="knob"></span>
+              </button>
+            </div>
+          </div>
+          -->
+        </section>
+
+        <!-- Security -->
+        <section class="panel" id="secPanel" style="display: none">
+          <h2 style="font-size: 1.15rem; margin-bottom: 3px">Security</h2>
+          <p style="margin: 0 0 16px; color: var(--muted); font-size: 0.85rem">
+            Change the password you use to sign in.
+          </p>
+          <div class="form-error" id="pwError"></div>
+          <div style="display: grid; gap: 14px; max-width: 420px">
+            <div>
+              <label class="field">Current password</label>
+              <input
+                class="field"
+                type="password"
+                id="pwCurrent"
+                autocomplete="current-password"
+              />
+            </div>
+            <div>
+              <label class="field">New password</label>
+              <input
+                class="field"
+                type="password"
+                id="pwNew"
+                autocomplete="new-password"
+                placeholder="At least 8 characters"
+              />
+              <span class="field-error" id="err-pwNew"></span>
+            </div>
+            <div>
+              <label class="field">Confirm new password</label>
+              <input
+                class="field"
+                type="password"
+                id="pwConfirm"
+                autocomplete="new-password"
+              />
+              <span class="field-error" id="err-pwConfirm"></span>
+            </div>
+            <button
+              type="button"
+              class="btn"
+              id="pwBtn"
+              style="padding: 14px; border-radius: 12px"
+              disabled
+            >
+              Update password
+            </button>
+          </div>
+        </section>
+
+        <!-- Account -->
+        <section class="panel" id="acctPanel" style="display: none">
+          <h2 style="font-size: 1.15rem; margin-bottom: 3px">Account</h2>
+          <p style="margin: 0 0 16px; color: var(--muted); font-size: 0.85rem">
+            Permanently close your WIMScare account.
+          </p>
+          <div id="acctBody"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="deleteAcctModal">
+      <div class="modal confirm-modal">
+        <h3 style="margin: 0 0 8px; font-size: 1.05rem; font-weight: 700">
+          Request account deletion?
+        </h3>
+        <p style="margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.5">
+          This sends a request to your organization administrator — your
+          account isn't deleted until they approve it.
+        </p>
+        <label class="field">Reason (optional)</label>
+        <textarea
+          class="field"
+          id="deleteAcctReason"
+          rows="3"
+          placeholder="Let your administrator know why"
+          style="margin-bottom: 18px"
+        ></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 10px">
+          <button
+            type="button"
+            class="btn ghost"
+            id="deleteAcctCancel"
+            style="padding: 9px 16px; font-size: 0.88rem"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn danger"
+            id="deleteAcctConfirm"
+            style="padding: 9px 16px; font-size: 0.88rem"
+          >
+            Send request
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["user", "admin", "supervisor", "accountant"],
+        });
+        if (!session) return;
+        const { user } = session;
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        WIMS.memberShell({
+          user,
+          active: "preferences",
+          title: "Preferences",
+          sub: "Notifications & security",
+        });
+
+        // ---- Chips ----
+        const CHIPS = [
+          { key: "notifications", label: "Notifications" },
+          { key: "twofactor", label: "Two-factor" },
+          { key: "security", label: "Security" },
+          { key: "account", label: "Account" },
+        ];
+        let active = "notifications";
+        function renderChips() {
+          document.getElementById("chipRow").innerHTML = CHIPS.map(
+            (c) =>
+              `<button type="button" class="chip-btn ${c.key === active ? "on" : ""}" data-chip="${c.key}">${c.label}</button>`,
+          ).join("");
+          document.querySelectorAll("[data-chip]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              active = btn.dataset.chip;
+              renderChips();
+              document.getElementById("notifPanel").style.display =
+                active === "notifications" ? "" : "none";
+              document.getElementById("tfaPanel").style.display =
+                active === "twofactor" ? "" : "none";
+              document.getElementById("secPanel").style.display =
+                active === "security" ? "" : "none";
+              document.getElementById("acctPanel").style.display =
+                active === "account" ? "" : "none";
+            }),
+          );
+        }
+        renderChips();
+
+        // ---- Notification toggles (persisted per toggle) ----
+        const DEFS = [
+          {
+            key: "emailNotifications",
+            title: "Email notifications",
+            desc: "Master toggle for all emails",
+          },
+          {
+            key: "claimUpdates",
+            title: "Claim status changes",
+            desc: "Email when your claim is updated",
+          },
+          {
+            key: "contributionReceipts",
+            title: "Contribution receipts",
+            desc: "Receipt when a contribution is recorded",
+          },
+          {
+            key: "monthlyStatement",
+            title: "Monthly statement",
+            desc: "Summary of your contributions each month",
+          },
+        ];
+        let prefs = { ...(user.preferences || {}) };
+
+        function renderToggles() {
+          document.getElementById("toggleList").innerHTML = DEFS.map(
+            (d) => `
+        <div class="toggle-row">
+          <div style="min-width:0;">
+            <span style="display:block; font-weight:600; font-size:0.9rem;">${d.title}</span>
+            <span style="display:block; font-size:0.78rem; color:var(--faint); margin-top:2px;">${d.desc}</span>
+          </div>
+          <button type="button" class="track ${prefs[d.key] !== false ? "on" : ""}" data-toggle="${d.key}" role="switch" aria-checked="${prefs[d.key] !== false}">
+            <span class="knob"></span>
+          </button>
+        </div>`,
+          ).join("");
+          document.querySelectorAll("[data-toggle]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              const key = btn.dataset.toggle;
+              const next = !(prefs[key] !== false);
+              prefs[key] = next;
+              renderToggles();
+              try {
+                await API.patch("/api/profile/preferences", { [key]: next });
+                toast("Preference saved");
+              } catch (err) {
+                prefs[key] = !next;
+                renderToggles();
+                toast(err.message, true);
+              }
+            }),
+          );
+        }
+        // monthlyStatement defaults to false on the backend, others to true
+        if (prefs.monthlyStatement === undefined) prefs.monthlyStatement = false;
+        renderToggles();
+
+        // ---- Phone verification + SMS 2FA ----
+        // Disabled for now — the "Two-factor" panel shows a "Coming soon"
+        // placeholder instead (see the HTML above, also commented out).
+        // Uncomment both blocks together to restore this feature.
+        /*
+        let tfa = {
+          phone: user.phone || "",
+          verified: !!user.phoneVerified,
+          enabled: !!user.twoFactorEnabled,
+          otpSent: false,
+        };
+        const tfaPhoneInput = document.getElementById("tfaPhone");
+        const tfaBadge = document.getElementById("tfaBadge");
+        const tfaAction = document.getElementById("tfaAction");
+        const tfaToggle = document.getElementById("tfaToggle");
+        const tfaToggleDesc = document.getElementById("tfaToggleDesc");
+        const tfaErrorBox = document.getElementById("tfaError");
+
+        function showTfaError(msg) {
+          tfaErrorBox.textContent = msg;
+          tfaErrorBox.classList.add("show");
+        }
+
+        function renderTfa() {
+          tfaErrorBox.classList.remove("show");
+          tfaPhoneInput.value = tfa.phone;
+          tfaBadge.innerHTML = tfa.verified
+            ? '<span class="pill green">Verified</span>'
+            : tfa.phone
+              ? '<span class="pill gray">Unverified</span>'
+              : "";
+
+          if (tfa.otpSent) {
+            tfaAction.innerHTML = `
+              <label class="field">Enter the code sent to ${fmt.esc(tfa.phone)}</label>
+              <input class="field" id="tfaOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="letter-spacing:0.3em; text-align:center; max-width:180px;">
+              <div style="display:flex; gap:8px; margin-top:10px;">
+                <button type="button" class="btn" id="tfaVerifyBtn" style="padding:10px 18px;">Verify</button>
+                <button type="button" class="btn secondary" id="tfaResendBtn" style="padding:10px 18px;">Resend code</button>
+              </div>`;
+            document.getElementById("tfaVerifyBtn").addEventListener("click", async () => {
+              const code = document.getElementById("tfaOtp").value.trim();
+              if (!code) return showTfaError("Enter the code sent to your phone");
+              try {
+                const data = await API.post("/api/profile/phone/verify-otp", { code });
+                tfa.verified = true;
+                tfa.otpSent = false;
+                Object.assign(user, { phoneVerified: true, phoneVerifiedAt: data.user.phoneVerifiedAt });
+                renderTfa();
+                toast("Phone number verified");
+              } catch (err) {
+                showTfaError(err.message);
+                const otpEl = document.getElementById("tfaOtp");
+                otpEl.value = "";
+                otpEl.focus();
+              }
+            });
+            document.getElementById("tfaResendBtn").addEventListener("click", async () => {
+              try {
+                await API.post("/api/profile/phone/send-otp", { phone: tfa.phone });
+                toast("New code sent");
+              } catch (err) {
+                showTfaError(err.message);
+              }
+            });
+          } else {
+            tfaAction.innerHTML = `<button type="button" class="btn secondary" id="tfaSendBtn" style="padding:10px 18px;">${tfa.verified ? "Change number" : "Send verification code"}</button>`;
+            document.getElementById("tfaSendBtn").addEventListener("click", async () => {
+              const phone = tfaPhoneInput.value.trim();
+              if (!phone) return showTfaError("Enter a phone number first");
+              try {
+                await API.post("/api/profile/phone/send-otp", { phone });
+                tfa.phone = phone;
+                tfa.verified = false;
+                tfa.otpSent = true;
+                if (tfa.enabled) {
+                  tfa.enabled = false; // number changed — 2FA is auto-disabled server-side too
+                }
+                renderTfa();
+                toast(`Code sent to ${phone}`);
+              } catch (err) {
+                showTfaError(err.message);
+              }
+            });
+          }
+
+          tfaToggle.classList.toggle("on", tfa.enabled);
+          tfaToggle.setAttribute("aria-checked", String(tfa.enabled));
+          tfaToggle.disabled = !tfa.verified;
+          tfaToggle.style.opacity = tfa.verified ? "1" : "0.5";
+          tfaToggle.style.cursor = tfa.verified ? "pointer" : "not-allowed";
+          tfaToggleDesc.textContent = tfa.verified
+            ? "Adds a text-message code after your password when signing in."
+            : "Verify your phone number above to enable this.";
+        }
+        tfaToggle.addEventListener("click", async () => {
+          if (!tfa.verified) return;
+          const next = !tfa.enabled;
+          tfa.enabled = next;
+          renderTfa();
+          try {
+            await API.patch("/api/profile/two-factor", { enabled: next });
+            toast(next ? "SMS code required at login" : "SMS code at login turned off");
+          } catch (err) {
+            tfa.enabled = !next;
+            renderTfa();
+            toast(err.message, true);
+          }
+        });
+        renderTfa();
+        */
+
+        // ---- Change password ----
+        WIMS.wirePasswordToggle("pwCurrent");
+        WIMS.wirePasswordToggle("pwNew");
+        WIMS.wirePasswordToggle("pwConfirm");
+
+        const pwBtn = document.getElementById("pwBtn");
+        const pwFields = {
+          pwNew: WIMS.bindField(
+            "pwNew",
+            (v) => (v.length >= 8 ? "" : "At least 8 characters required"),
+            "err-pwNew",
+          ),
+          pwConfirm: WIMS.bindField(
+            "pwConfirm",
+            (v) =>
+              v === document.getElementById("pwNew").value
+                ? ""
+                : "Passwords do not match",
+            "err-pwConfirm",
+          ),
+        };
+        document
+          .getElementById("pwNew")
+          .addEventListener("input", () => pwFields.pwConfirm.isValid());
+        function updatePwBtnState() {
+          const filled = document.getElementById("pwCurrent").value.length > 0;
+          pwBtn.disabled =
+            !filled || !Object.values(pwFields).every((f) => f.isValid());
+        }
+        ["pwCurrent", "pwNew", "pwConfirm"].forEach((id) => {
+          document.getElementById(id).addEventListener("input", updatePwBtnState);
+          document.getElementById(id).addEventListener("blur", updatePwBtnState);
+        });
+
+        pwBtn.addEventListener("click", async () => {
+          const errBox = document.getElementById("pwError");
+          errBox.classList.remove("show");
+          const allValid = Object.values(pwFields)
+            .map((f) => f.forceShow())
+            .every(Boolean);
+          if (!allValid) return;
+          try {
+            await API.post("/api/auth/change-password", {
+              currentPassword: document.getElementById("pwCurrent").value,
+              newPassword: document.getElementById("pwNew").value,
+            });
+            toast("Password updated");
+            ["pwCurrent", "pwNew", "pwConfirm"].forEach(
+              (id) => (document.getElementById(id).value = ""),
+            );
+            updatePwBtnState();
+          } catch (err) {
+            errBox.textContent = err.message;
+            errBox.classList.add("show");
+          }
+        });
+
+        // ---- Account deletion ----
+        let acctUser = user;
+        const deleteModal = document.getElementById("deleteAcctModal");
+        function renderAccount() {
+          const body = document.getElementById("acctBody");
+          if (acctUser.deletionRequestedAt) {
+            body.innerHTML = `
+        <div style="padding:14px 16px; border-radius:12px; background:var(--amber-bg); color:var(--amber-ink); font-size:0.88rem; margin-bottom:14px;">
+          Deletion requested ${fmt.date(acctUser.deletionRequestedAt)} — awaiting your administrator's review.
+        </div>
+        <button type="button" class="btn secondary" id="cancelDeleteBtn" style="padding:11px 18px;">Withdraw request</button>`;
+            document.getElementById("cancelDeleteBtn").addEventListener("click", async () => {
+              try {
+                await API.post("/api/profile/cancel-deletion-request", {});
+                acctUser = { ...acctUser, deletionRequestedAt: undefined };
+                renderAccount();
+                toast("Deletion request withdrawn");
+              } catch (err) {
+                toast(err.message, true);
+              }
+            });
+          } else {
+            body.innerHTML = `<button type="button" class="btn danger" id="openDeleteBtn" style="padding:11px 18px;">Delete my account</button>`;
+            document.getElementById("openDeleteBtn").addEventListener("click", () => {
+              document.getElementById("deleteAcctReason").value = "";
+              deleteModal.classList.add("open");
+            });
+          }
+        }
+        document.getElementById("deleteAcctCancel").onclick = () =>
+          deleteModal.classList.remove("open");
+        deleteModal.onclick = (e) => {
+          if (e.target === deleteModal) deleteModal.classList.remove("open");
+        };
+        document.getElementById("deleteAcctConfirm").onclick = async () => {
+          try {
+            const data = await API.post("/api/profile/request-deletion", {
+              reason: document.getElementById("deleteAcctReason").value.trim(),
+            });
+            acctUser = data.user;
+            deleteModal.classList.remove("open");
+            renderAccount();
+            toast(data.message);
+          } catch (err) {
+            toast(err.message, true);
+          }
+        };
+        renderAccount();
+      })();
+    </script>
+  </body>
+</html>

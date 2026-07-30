@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invite Users — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .pg-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .pg-btn:hover:not([disabled]) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .pg-btn[disabled] {
+        color: var(--faint);
+        cursor: not-allowed;
+      }
+      .tbl-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .tbl-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .tbl-btn.revoke {
+        color: var(--red-ink);
+      }
+      .tbl-btn.revoke:hover {
+        border-color: var(--red-ink);
+        color: var(--red-ink);
+      }
+      /* Let a long recipient email wrap within its column instead of forcing
+         the whole table past its card edge — the full address stays visible
+         (no truncation), and the Revoke button no longer overflows. */
+      #inviteRows td:first-child {
+        overflow-wrap: anywhere;
+      }
+      /* Action buttons in a tidy right-aligned group, clear of the card edge. */
+      table.data th.actions,
+      table.data td.actions {
+        text-align: right;
+        padding-right: 2px;
+        white-space: nowrap;
+      }
+      .action-group {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      .link-box {
+        display: none;
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: var(--primary-tint);
+        border: 1px solid rgba(29, 111, 174, 0.25);
+        font-size: 0.85rem;
+        color: var(--ink);
+        word-break: break-all;
+      }
+      .link-box.show {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html" class="active">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role">Administrator</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div style="padding-bottom: 24px">
+          <a
+            href="/admin/users.html"
+            style="
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              font-weight: 600;
+              font-size: 0.9rem;
+              margin-bottom: 12px;
+            "
+            >← Back to users</a
+          >
+          <h1 style="margin: 0 0 6px; font-size: 1.9rem; font-weight: 700">
+            Invite Users
+          </h1>
+          <p style="margin: 0; color: var(--muted)">
+            Send activation links and track every link you have issued
+          </p>
+        </div>
+
+        <!-- Invite form -->
+        <div class="card" style="margin-bottom: 20px">
+          <h2>Send invitations</h2>
+          <p class="sub" style="margin-bottom: 18px">
+            Each recipient gets an activation link valid for 7 days — paste
+            several addresses separated by commas or new lines to invite in bulk
+          </p>
+          <form
+            id="inviteForm"
+            style="
+              display: grid;
+              grid-template-columns: 2fr 1fr auto;
+              gap: 14px;
+              align-items: end;
+            "
+          >
+            <div>
+              <label
+                style="
+                  display: block;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  margin-bottom: 6px;
+                "
+                >Email address(es)</label
+              >
+              <textarea
+                class="field"
+                id="inviteEmail"
+                rows="1"
+                placeholder="new.member@example.com, second.member@example.com"
+                required
+                style="min-height: 44px; max-height: 180px; resize: vertical"
+              ></textarea>
+            </div>
+            <div>
+              <label
+                style="
+                  display: block;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  margin-bottom: 6px;
+                "
+                >Role</label
+              >
+              <select class="field" id="inviteRole">
+                <option value="user">Member</option>
+                <option value="accountant">Accountant</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            <button
+              class="btn"
+              type="submit"
+              id="inviteBtn"
+              style="
+                padding: 11px 20px;
+                font-weight: 600;
+                font-size: 0.92rem;
+                white-space: nowrap;
+              "
+            >
+              Send invites
+            </button>
+          </form>
+          <div class="link-box" id="linkBox">
+            <strong style="display: block; margin-bottom: 6px" id="linkBoxTitle"
+              >Invitation links (email delivery is not configured — share these
+              manually):</strong
+            >
+            <div id="linkList" style="display: grid; gap: 6px"></div>
+          </div>
+        </div>
+
+        <!-- Sent links -->
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              flex-wrap: wrap;
+              align-items: center;
+              margin-bottom: 16px;
+            "
+          >
+            <h2 style="flex: 1">Sent links</h2>
+            <span
+              style="color: var(--muted); font-size: 0.85rem"
+              id="countLabel"
+            ></span>
+            <select
+              class="field"
+              id="statusFilter"
+              style="
+                width: auto;
+                font-weight: 600;
+                padding: 10px 14px;
+                font-size: 0.9rem;
+              "
+            >
+              <option value="all">All statuses</option>
+              <option value="sent">Pending</option>
+              <option value="accepted">Used</option>
+              <option value="expired">Expired</option>
+            </select>
+          </div>
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Recipient</th>
+                <th>Type</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Expires</th>
+                <th class="actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inviteRows"></tbody>
+          </table>
+          <div
+            id="emptyState"
+            style="
+              display: none;
+              padding: 40px 24px;
+              text-align: center;
+              color: var(--muted);
+            "
+          >
+            <strong
+              style="display: block; margin-bottom: 6px; color: var(--ink)"
+              >No invitations yet</strong
+            >
+            <span style="font-size: 0.9rem"
+              >Send your first invitation using the form above.</span
+            >
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 14px 2px 2px;
+            "
+          >
+            <span
+              style="color: var(--faint); font-size: 0.85rem"
+              id="pageLabel"
+            ></span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" class="pg-btn" id="prevBtn">
+                Previous
+              </button>
+              <button type="button" class="pg-btn" id="nextBtn">Next</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        if (!WIMS.can("invite_users")) {
+          window.location.href = "/admin/users.html";
+          return;
+        }
+        document.getElementById("sideAvatar").textContent = fmt.initials(
+          session.user,
+        );
+        document.getElementById("sideName").textContent = fmt.name(
+          session.user,
+        );
+
+        const STATUS = {
+          sent: { label: "Pending", cls: "blue" },
+          accepted: { label: "Used", cls: "green" },
+          expired: { label: "Expired", cls: "gray" },
+        };
+        const ROLE_LABELS = {
+          user: "Member",
+          accountant: "Accountant",
+          supervisor: "Supervisor",
+          admin: "Administrator",
+        };
+
+        let items = [];
+        const state = { status: "", page: 1, pages: 1, total: 0 };
+        const statusFilter = document.getElementById("statusFilter");
+
+        // Between hourly cron sweeps (jobs/scheduler.js), a "sent" invite
+        // already past its expiresAt is still stored as "sent" — this only
+        // affects the status pill shown per row, not server-side filtering.
+        function effectiveStatus(inv) {
+          if (inv.status === "sent" && new Date(inv.expiresAt) <= new Date())
+            return "expired";
+          return inv.status;
+        }
+
+        function render() {
+          const rows = items;
+          document.getElementById("emptyState").style.display = rows.length
+            ? "none"
+            : "block";
+          document.getElementById("countLabel").textContent =
+            `${rows.length} of ${state.total} invitation${state.total === 1 ? "" : "s"}`;
+          document.getElementById("pageLabel").textContent =
+            `Page ${state.page} of ${state.pages}`;
+          document.getElementById("prevBtn").disabled = state.page <= 1;
+          document.getElementById("nextBtn").disabled =
+            state.page >= state.pages;
+          document.getElementById("inviteRows").innerHTML = rows
+            .map((inv) => {
+              const st = effectiveStatus(inv);
+              const s = STATUS[st] || STATUS.sent;
+              const canResend = st === "sent" || st === "expired";
+              const canRevoke = st === "sent";
+              return `
+      <tr>
+        <td>${fmt.esc(inv.email)}</td>
+        <td>Invitation</td>
+        <td>${ROLE_LABELS[inv.role] || inv.role}</td>
+        <td><span class="pill ${s.cls}">${s.label}</span></td>
+        <td style="white-space:nowrap;">${fmt.date(inv.createdAt)}</td>
+        <td style="white-space:nowrap;">${fmt.date(inv.expiresAt)}</td>
+        <td class="actions">
+          <div class="action-group">
+            ${canResend ? `<button type="button" class="tbl-btn" data-resend="${inv._id}">Resend</button>` : ""}
+            ${canRevoke ? `<button type="button" class="tbl-btn revoke" data-revoke="${inv._id}">Revoke</button>` : ""}
+            ${!canResend && !canRevoke ? '<span style="color:var(--faint); font-size:0.82rem;">—</span>' : ""}
+          </div>
+        </td>
+      </tr>`;
+            })
+            .join("");
+
+          document.querySelectorAll("[data-resend]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                const data = await API.post(
+                  `/api/invitations/${btn.dataset.resend}/resend`,
+                );
+                toast(data.message);
+                showResendLink(data);
+                load();
+              } catch (err) {
+                toast(err.message, true);
+                btn.disabled = false;
+              }
+            }),
+          );
+
+          document.querySelectorAll("[data-revoke]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                await API.post(`/api/invitations/${btn.dataset.revoke}/revoke`);
+                toast("Invitation revoked");
+                load();
+              } catch (err) {
+                toast(err.message, true);
+                btn.disabled = false;
+              }
+            }),
+          );
+        }
+
+        async function load() {
+          const params = new URLSearchParams({ page: state.page, limit: 15 });
+          if (state.status) params.set("status", state.status);
+          const data = await API.get("/api/invitations?" + params);
+          items = data.items;
+          state.total = data.total;
+          state.pages = Math.max(data.pages, 1);
+          render();
+        }
+
+        statusFilter.addEventListener("change", () => {
+          state.status = statusFilter.value === "all" ? "" : statusFilter.value;
+          state.page = 1;
+          load();
+        });
+        document.getElementById("prevBtn").addEventListener("click", () => {
+          if (state.page > 1) {
+            state.page--;
+            load();
+          }
+        });
+        document.getElementById("nextBtn").addEventListener("click", () => {
+          if (state.page < state.pages) {
+            state.page++;
+            load();
+          }
+        });
+
+        const linkBox = document.getElementById("linkBox");
+        const linkList = document.getElementById("linkList");
+
+        function showLinks(entries) {
+          // entries: [{ email, inviteUrl }]
+          linkList.innerHTML = entries
+            .map(
+              (r, i) => `
+      <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+        <strong style="white-space:nowrap;">${fmt.esc(r.email)}:</strong>
+        <span style="word-break:break-all;" id="lnk-${i}">${fmt.esc(r.inviteUrl)}</span>
+        <button type="button" class="tbl-btn" data-copy="${i}">Copy</button>
+      </div>`,
+            )
+            .join("");
+          linkList.querySelectorAll("[data-copy]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              try {
+                await navigator.clipboard.writeText(
+                  document.getElementById("lnk-" + btn.dataset.copy)
+                    .textContent,
+                );
+                toast("Link copied");
+              } catch {
+                toast("Copy failed — select the text manually", true);
+              }
+            }),
+          );
+          linkBox.classList.add("show");
+        }
+
+        function showResendLink(data) {
+          if (data.inviteUrl)
+            showLinks([
+              { email: data.invitation.email, inviteUrl: data.inviteUrl },
+            ]);
+        }
+
+        document
+          .getElementById("inviteForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("inviteBtn");
+            btn.disabled = true;
+            linkBox.classList.remove("show");
+            try {
+              const data = await API.post("/api/invitations", {
+                emails: document.getElementById("inviteEmail").value,
+                role: document.getElementById("inviteRole").value,
+              });
+              toast(data.message);
+              const skipped = data.results.filter((r) => r.status !== "sent");
+              if (skipped.length) {
+                toast(
+                  `${data.message} — ${skipped.map((r) => `${r.email}: ${r.reason}`).join("; ")}`,
+                  skipped.length === data.results.length,
+                );
+              }
+              const withLinks = data.results.filter((r) => r.inviteUrl);
+              if (withLinks.length) showLinks(withLinks);
+              e.target.reset();
+              load();
+            } catch (err) {
+              toast(err.message, true);
+            } finally {
+              btn.disabled = false;
+            }
+          });
+
+        await load();
+      })();
+    </script>
+  </body>
+</html>

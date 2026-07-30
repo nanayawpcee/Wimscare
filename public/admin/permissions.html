@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Permissions & Roles — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .role-btn {
+        text-align: left;
+        border-radius: 14px;
+        padding: 16px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s ease;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+      }
+      .role-btn.on {
+        border-color: var(--primary);
+        background: var(--primary-tint);
+        color: var(--primary);
+        box-shadow: 0 0 0 1px var(--primary) inset;
+      }
+      .role-btn .t {
+        display: block;
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+      .role-btn .d {
+        display: block;
+        font-size: 0.8rem;
+        margin-top: 4px;
+        opacity: 0.75;
+      }
+      .perm-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+      }
+      .track {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        border-radius: 999px;
+        border: 0;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s ease;
+        background: var(--input-line);
+        padding: 0;
+      }
+      .track.on {
+        background: var(--primary);
+      }
+      .track .knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        transition: left 0.2s ease;
+        display: block;
+      }
+      .track.on .knob {
+        left: 23px;
+      }
+      .track[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html" class="active">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div style="padding-bottom: 24px">
+          <a
+            href="/admin/users.html"
+            style="
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              font-weight: 600;
+              font-size: 0.9rem;
+              margin-bottom: 12px;
+            "
+            >← Back to users</a
+          >
+          <h1 style="margin: 0 0 6px; font-size: 1.9rem; font-weight: 700">
+            Permissions &amp; Roles
+          </h1>
+          <p style="margin: 0; color: var(--muted)">
+            Grant or revoke individual permissions and manage elevated roles
+          </p>
+        </div>
+
+        <!-- User being edited -->
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 18px 22px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 14px">
+            <span
+              class="avatar"
+              id="targetAvatar"
+              style="
+                width: 44px;
+                height: 44px;
+                border-radius: 10px;
+                background: var(--gold);
+              "
+            ></span>
+            <div>
+              <span
+                style="display: block; font-weight: 700; font-size: 0.98rem"
+                id="targetName"
+              ></span>
+              <span
+                style="display: block; font-size: 0.85rem; color: var(--faint)"
+                id="targetMeta"
+              ></span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span id="targetRolePill"></span>
+            <select
+              class="field"
+              id="userSwitch"
+              style="width: auto; font-weight: 600; padding: 10px 14px"
+            ></select>
+          </div>
+        </div>
+
+        <div
+          class="form-error"
+          id="formError"
+          style="margin-bottom: 16px"
+        ></div>
+
+        <!-- Role selector -->
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+          "
+          id="roleButtons"
+        ></div>
+
+        <!-- Permission groups -->
+        <div style="display: grid; gap: 16px" id="permGroups"></div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px">
+          <button
+            type="button"
+            class="btn"
+            id="saveBtn"
+            style="padding: 11px 20px; font-size: 0.92rem"
+          >
+            Save permissions
+          </button>
+          <button
+            type="button"
+            class="btn secondary"
+            id="resetBtn"
+            style="padding: 11px 20px; font-size: 0.92rem"
+          >
+            Reset to role defaults
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const admin = session.user;
+        if (!WIMS.can("manage_permissions")) {
+          window.location.href = "/admin/users.html";
+          return;
+        }
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(admin);
+        document.getElementById("sideName").textContent = fmt.name(admin);
+        document.getElementById("sideRole").textContent =
+          admin.role === "admin" ? "Administrator" : admin.role;
+
+        const ROLE_DEFS = [
+          { key: "user", label: "Member", desc: "Portal access only" },
+          {
+            key: "accountant",
+            label: "Accountant",
+            desc: "Accounts + payouts",
+          },
+          {
+            key: "supervisor",
+            label: "Supervisor",
+            desc: "Claims + user oversight",
+          },
+          { key: "admin", label: "Administrator", desc: "Full system access" },
+        ];
+        const GROUP_DEFS = [
+          {
+            title: "User management",
+            keys: [
+              [
+                "manage_users",
+                "Manage users",
+                "Edit, suspend and delete accounts",
+              ],
+              ["invite_users", "Invite users", "Send activation links"],
+              [
+                "manage_permissions",
+                "Manage permissions",
+                "Change other users' access",
+              ],
+            ],
+          },
+          {
+            title: "Contributions & accounts",
+            keys: [
+              [
+                "view_contributions",
+                "View contributions",
+                "See all contribution records",
+              ],
+              [
+                "record_contributions",
+                "Record contributions",
+                "Add and edit entries",
+              ],
+              ["view_accounts", "View accounts", "See expenditure and ledger"],
+              [
+                "manage_accounts",
+                "Manage accounts",
+                "Create and approve entries",
+              ],
+            ],
+          },
+          {
+            title: "Claims & reporting",
+            keys: [
+              ["view_claims", "View claims", "See all member claims"],
+              [
+                "process_claims",
+                "Process claims",
+                "Move claims through review",
+              ],
+              ["approve_claims", "Approve claims", "Final approval and payout"],
+              ["view_reports", "View reports", "Run and export reports"],
+            ],
+          },
+          {
+            title: "System",
+            keys: [
+              [
+                "manage_backups",
+                "Manage backups",
+                "Create and restore backups",
+              ],
+            ],
+          },
+        ];
+
+        const params = new URLSearchParams(location.search);
+        let targetId = params.get("user") || "";
+        let state = { role: "user", explicit: [], roleDefaults: {} };
+
+        async function loadUserList() {
+          const data = await API.get("/api/users?limit=100");
+          // Permissions only make sense for staff — members don't get a console.
+          const staff = data.items.filter((u) => u.role !== "user");
+          const sel = document.getElementById("userSwitch");
+          sel.innerHTML = staff
+            .map(
+              (u) =>
+                `<option value="${u._id}">${fmt.esc(fmt.name(u))} — ${u.role}</option>`,
+            )
+            .join("");
+          if (!targetId && staff.length) targetId = staff[0]._id;
+          sel.value = targetId;
+        }
+        document
+          .getElementById("userSwitch")
+          .addEventListener("change", (e) => {
+            targetId = e.target.value;
+            loadTarget();
+          });
+
+        function renderRoles() {
+          document.getElementById("roleButtons").innerHTML = ROLE_DEFS.map(
+            (r) => `
+      <button type="button" class="role-btn ${state.role === r.key ? "on" : ""}" data-role="${r.key}">
+        <span class="t">${r.label}</span>
+        <span class="d">${r.desc}</span>
+      </button>`,
+          ).join("");
+          document.querySelectorAll("[data-role]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              state.role = btn.dataset.role;
+              renderRoles();
+              renderGroups();
+            }),
+          );
+        }
+
+        function effectiveOn(key) {
+          if (state.role === "admin") return true;
+          return (
+            state.explicit.includes(key) ||
+            (state.roleDefaults[state.role] || []).includes(key)
+          );
+        }
+
+        function renderGroups() {
+          document.getElementById("permGroups").innerHTML = GROUP_DEFS.map(
+            (g) => `
+      <div class="card">
+        <h2 style="font-size:1.02rem; margin-bottom:14px;">${g.title}</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          ${g.keys
+            .map(([key, title, desc]) => {
+              const on = effectiveOn(key);
+              const lockedOn = state.role === "admin";
+              return `
+            <div class="perm-row">
+              <div style="min-width:0;">
+                <span style="display:block; font-weight:600; font-size:0.9rem;">${title}</span>
+                <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;">${desc}</span>
+              </div>
+              <button type="button" class="track ${on ? "on" : ""}" data-perm="${key}" ${lockedOn ? 'disabled title="Administrators always have full access"' : ""} role="switch" aria-checked="${on}">
+                <span class="knob"></span>
+              </button>
+            </div>`;
+            })
+            .join("")}
+        </div>
+      </div>`,
+          ).join("");
+          document.querySelectorAll("[data-perm]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              const key = btn.dataset.perm;
+              if (state.explicit.includes(key))
+                state.explicit = state.explicit.filter((k) => k !== key);
+              else state.explicit = [...state.explicit, key];
+              renderGroups();
+            }),
+          );
+        }
+
+        async function loadTarget() {
+          const errBox = document.getElementById("formError");
+          errBox.classList.remove("show");
+          try {
+            const data = await API.get(`/api/users/${targetId}/permissions`);
+            state = {
+              role: data.user.role,
+              explicit: data.permissions,
+              roleDefaults: data.roleDefaults,
+            };
+            document.getElementById("targetAvatar").textContent = fmt.initials(
+              data.user,
+            );
+            document.getElementById("targetName").textContent = fmt.name(
+              data.user,
+            );
+            document.getElementById("targetMeta").textContent =
+              `${data.user.email}${data.user.memberNumber ? " · " + data.user.memberNumber : ""}`;
+            document.getElementById("targetRolePill").innerHTML = pill(
+              data.user.role,
+            );
+            document.getElementById("userSwitch").value = targetId;
+            renderRoles();
+            renderGroups();
+          } catch (err) {
+            errBox.textContent = err.message;
+            errBox.classList.add("show");
+          }
+        }
+
+        document
+          .getElementById("saveBtn")
+          .addEventListener("click", async () => {
+            const errBox = document.getElementById("formError");
+            errBox.classList.remove("show");
+            try {
+              await API.patch(`/api/users/${targetId}/permissions`, {
+                role: state.role,
+                permissions: state.explicit,
+              });
+              toast("Permissions saved");
+              loadTarget();
+            } catch (err) {
+              errBox.textContent = err.message;
+              errBox.classList.add("show");
+            }
+          });
+
+        document
+          .getElementById("resetBtn")
+          .addEventListener("click", async () => {
+            try {
+              await API.post(`/api/users/${targetId}/permissions/reset`);
+              toast("Reset to role defaults");
+              loadTarget();
+            } catch (err) {
+              toast(err.message, true);
+            }
+          });
+
+        await loadUserList();
+        await loadTarget();
+      })();
+    </script>
+  </body>
+</html>

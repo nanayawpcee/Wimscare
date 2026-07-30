@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Dashboard — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <a href="/welcome.html">
+          <div class="brand">
+            <img src="/assets/logo.png" alt="WIMScare" />
+            <div>
+              <span class="brand-name">WIMScare</span>
+              <span class="brand-sub">Admin Console</span>
+            </div>
+          </div>
+        </a>
+        <nav id="adminNav">
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html" class="active">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1>Admin Dashboard</h1>
+            <p id="periodLabel">System overview</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center">
+            <select
+              class="field"
+              id="yearSel"
+              style="width: auto; font-weight: 600; padding: 10px 14px"
+            ></select>
+            <select
+              class="field"
+              id="monthSel"
+              style="width: auto; font-weight: 600; padding: 10px 14px"
+            >
+              <option value="all">All months</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="banner" id="licenseBanner" style="display: none">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span class="title" id="licenseBannerTitle"></span>
+            <span class="sub" id="licenseBannerSub"></span>
+          </div>
+          <a href="/admin/profile.html">Manage license</a>
+        </div>
+
+        <div class="banner" id="claimsBanner" style="display: none">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span class="title" id="claimsBannerTitle"></span>
+            <span class="sub" id="claimsBannerSub"></span>
+          </div>
+          <a href="/admin/claims.html">Review claims</a>
+        </div>
+
+        <div class="banner" id="reversalBanner" style="display: none">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span class="title" id="bannerTitle"></span>
+            <span class="sub">Contribution reversals awaiting your review</span>
+          </div>
+          <a href="/admin/reversals.html">Review requests</a>
+        </div>
+
+        <div class="stat-grid" id="statCards"></div>
+
+        <div class="card" style="margin-bottom: 20px">
+          <div
+            style="
+              display: flex;
+              align-items: baseline;
+              justify-content: space-between;
+              gap: 16px;
+              margin-bottom: 20px;
+            "
+          >
+            <div>
+              <h2>Monthly contributions</h2>
+              <p class="sub" id="chartSub"></p>
+            </div>
+            <span
+              style="
+                font-size: 1.2rem;
+                font-weight: 700;
+                font-variant-numeric: tabular-nums;
+              "
+              id="chartTotal"
+            ></span>
+          </div>
+          <div
+            style="
+              display: flex;
+              align-items: flex-end;
+              gap: 10px;
+              height: 180px;
+            "
+            id="chartBars"
+          ></div>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 16px;
+              margin-bottom: 12px;
+            "
+          >
+            <h2>Recent contributions</h2>
+            <a
+              href="/admin/contributions.html"
+              style="font-size: 0.88rem; font-weight: 600"
+              >View all</a
+            >
+          </div>
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Date</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th class="num">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="recentRows"></tbody>
+          </table>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+          "
+          id="quickActions"
+        >
+          <a
+            href="/admin/contributions.html"
+            class="card"
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              color: var(--ink);
+              padding: 18px 20px;
+            "
+          >
+            <span style="font-weight: 700; font-size: 0.95rem"
+              >Record contribution</span
+            >
+            <span style="color: var(--muted); font-size: 0.85rem"
+              >Add a new member contribution</span
+            >
+          </a>
+          <a
+            href="/admin/users.html"
+            class="card"
+            id="manageUsersCard"
+            style="
+              display: none;
+              flex-direction: column;
+              gap: 4px;
+              color: var(--ink);
+              padding: 18px 20px;
+            "
+          >
+            <span style="font-weight: 700; font-size: 0.95rem"
+              >Manage users</span
+            >
+            <span style="color: var(--muted); font-size: 0.85rem"
+              >Search, edit and invite members</span
+            >
+          </a>
+          <a
+            href="/admin/reports.html"
+            class="card"
+            id="reportsCard"
+            style="
+              display: none;
+              flex-direction: column;
+              gap: 4px;
+              color: var(--ink);
+              padding: 18px 20px;
+            "
+          >
+            <span style="font-weight: 700; font-size: 0.95rem"
+              >Generate report</span
+            >
+            <span style="color: var(--muted); font-size: 0.85rem"
+              >Export summaries and analytics</span
+            >
+          </a>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("sideRole").textContent =
+          {
+            admin: "Administrator",
+            supervisor: "Supervisor",
+            accountant: "Accountant",
+            superadmin: "Superadmin",
+          }[user.role] || user.role;
+
+        // License expiry warning (admins only): red when expired, amber
+        // within 30 days of expiry.
+        if (user.role === "admin") {
+          (async () => {
+            try {
+              const { license, planLabel } = await API.get(
+                "/api/organization/license",
+              );
+              if (!license || !license.expiresAt) return;
+              const daysLeft = Math.ceil(
+                (new Date(license.expiresAt) - Date.now()) / 86400000,
+              );
+              if (daysLeft > 30) return;
+              const banner = document.getElementById("licenseBanner");
+              const plan = planLabel || license.plan;
+              const days = `${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
+
+              // Graduated urgency: the banner escalates in colour as the
+              // expiry date draws nearer across the 30-day window.
+              //   30–15d → blue (heads-up)  ·  14–8d → amber (notice)
+              //   7–1d  → orange (urgent)   ·  expired → red (critical)
+              let tier;
+              if (daysLeft <= 0) {
+                tier = {
+                  bg: "#fdecea", border: "#f5c6bf", ink: "#b4372a",
+                  title: `Your ${plan} license has expired`,
+                  sub: "Plan features have been reduced — request a renewal to restore them",
+                };
+              } else if (daysLeft <= 7) {
+                tier = {
+                  bg: "#fdeede", border: "#f0c39a", ink: "#b5540e",
+                  title: `Urgent: your ${plan} license expires in ${days}`,
+                  sub: "Request a renewal now to avoid an interruption to your console",
+                };
+              } else if (daysLeft <= 14) {
+                tier = {
+                  bg: "#fbf3e2", border: "#ebd9a9", ink: "#8a5e14",
+                  title: `Your ${plan} license expires in ${days}`,
+                  sub: "Request a renewal from your License page soon",
+                };
+              } else {
+                tier = {
+                  bg: "#e8f1f8", border: "#c4dcee", ink: "#1d6fae",
+                  title: `Your ${plan} license expires in ${days}`,
+                  sub: "A heads-up — you can request a renewal from your License page anytime",
+                };
+              }
+              document.getElementById("licenseBannerTitle").textContent =
+                tier.title;
+              document.getElementById("licenseBannerSub").textContent =
+                tier.sub;
+              banner.style.background = tier.bg;
+              banner.style.borderColor = tier.border;
+              banner
+                .querySelectorAll(".title, .sub, a")
+                .forEach((el) => (el.style.color = tier.ink));
+              banner.style.display = "flex";
+            } catch (e) {
+              /* banner is best-effort */
+            }
+          })();
+        }
+
+        // "Your turn" banner: claims whose current approval step belongs to
+        // this user's role, plus (admins) prepared payouts awaiting release.
+        (async () => {
+          try {
+            const att = await API.get("/api/claims/attention");
+            if (att.scope !== "staff") return;
+            const bits = [];
+            if (att.count > 0)
+              bits.push(
+                `${att.count} claim${att.count === 1 ? "" : "s"} waiting for your review`,
+              );
+            if (att.payoutsToRelease > 0)
+              bits.push(
+                `${att.payoutsToRelease} approved payout${att.payoutsToRelease === 1 ? "" : "s"} ready to release`,
+              );
+            if (!bits.length) return;
+            document.getElementById("claimsBannerTitle").textContent =
+              bits.join(" · ");
+            document.getElementById("claimsBannerSub").textContent =
+              att.count > 0
+                ? `It's your turn in the approval chain${att.claimNumbers.length ? " — " + att.claimNumbers.join(", ") : ""}`
+                : "Prepared by your accountant and awaiting your release";
+            document.getElementById("claimsBanner").style.display = "flex";
+          } catch (e) {
+            /* banner is best-effort */
+          }
+        })();
+
+        document.getElementById("manageUsersCard").style.display = WIMS.can(
+          "manage_users",
+        )
+          ? "flex"
+          : "none";
+        document.getElementById("reportsCard").style.display = WIMS.can(
+          "view_reports",
+        )
+          ? "flex"
+          : "none";
+
+        const MONTHS = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        const yearSel = document.getElementById("yearSel");
+        const monthSel = document.getElementById("monthSel");
+        const thisYear = new Date().getFullYear();
+        for (let y = thisYear; y >= thisYear - 4; y--) {
+          yearSel.insertAdjacentHTML(
+            "beforeend",
+            `<option value="${y}">${y}</option>`,
+          );
+        }
+
+        async function load() {
+          const year = yearSel.value;
+          const month = monthSel.value;
+          const data = await API.get(
+            `/api/dashboard/admin?year=${year}&month=${month}`,
+          );
+
+          const periodLabel =
+            month === "all" ? `year ${year}` : `${MONTHS[+month - 1]} ${year}`;
+          document.getElementById("periodLabel").textContent =
+            `System overview for ${periodLabel}`;
+
+          const banner = document.getElementById("reversalBanner");
+          if (data.pendingReversals > 0) {
+            banner.style.display = "flex";
+            document.getElementById("bannerTitle").textContent =
+              `${data.pendingReversals} pending reversal request${data.pendingReversals === 1 ? "" : "s"}`;
+          } else {
+            banner.style.display = "none";
+          }
+
+          document.getElementById("statCards").innerHTML = [
+            {
+              label: "Total members",
+              value: String(data.totalMembers),
+              sub: "All time",
+            },
+            {
+              label: "Contributions",
+              value: String(data.periodCount),
+              sub: periodLabel,
+            },
+            {
+              label: "Total amount",
+              value: fmt.gh(data.periodTotal),
+              sub: periodLabel,
+            },
+            {
+              label: "Active members",
+              value: String(data.activeMembers),
+              sub: periodLabel,
+            },
+          ]
+            .map(
+              (s) => `
+      <div class="stat">
+        <div class="label">${s.label}</div>
+        <div class="value">${s.value}</div>
+        <div class="sub">${s.sub}</div>
+      </div>`,
+            )
+            .join("");
+
+          const max = Math.max(...data.monthly, 1);
+          document.getElementById("chartBars").innerHTML = data.monthly
+            .map((amt, i) => {
+              const pct = Math.max(
+                Math.round((amt / max) * 100),
+                amt > 0 ? 3 : 1,
+              );
+              const active = month === "all" || +month - 1 === i;
+              return `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;" title="${MONTHS[i]}: ${fmt.gh(amt)}">
+          <div style="width:100%; max-width:38px; border-radius:6px 6px 0 0; height:${pct}%; background:${active ? "var(--primary)" : "var(--line)"};"></div>
+          <span style="font-size:0.7rem; font-weight:600; color:var(--faint);">${MONTHS[i].slice(0, 3)}</span>
+        </div>`;
+            })
+            .join("");
+          document.getElementById("chartSub").textContent =
+            `Total amount recorded per month, ${year}`;
+          document.getElementById("chartTotal").textContent = fmt.gh(
+            data.monthly.reduce((a, b) => a + b, 0),
+          );
+
+          document.getElementById("recentRows").innerHTML = data.recent.length
+            ? data.recent
+                .map(
+                  (c) => `
+        <tr>
+          <td>${fmt.esc(fmt.name(c.memberId))}</td>
+          <td>${fmt.date(c.contributionDate)}</td>
+          <td>${fmt.esc(c.method)}</td>
+          <td>${pill(c.status)}</td>
+          <td class="num">${fmt.gh(c.amount)}</td>
+        </tr>`,
+                )
+                .join("")
+            : '<tr><td colspan="5" class="empty">No contributions recorded yet.</td></tr>';
+        }
+
+        yearSel.addEventListener("change", load);
+        monthSel.addEventListener("change", load);
+        await load();
+      })();
+    </script>
+  </body>
+</html>

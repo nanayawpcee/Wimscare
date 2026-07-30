@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claims Management — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .metric {
+        text-align: left;
+        border-radius: 14px;
+        padding: 16px 18px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: border-color 0.15s ease;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+      }
+      .metric.active {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 1px var(--primary) inset;
+      }
+      .metric .value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+        display: block;
+      }
+      .metric .label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        display: block;
+        margin-top: 4px;
+        opacity: 0.8;
+      }
+      .tbl-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: inherit;
+        text-decoration: none;
+      }
+      .tbl-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 44, 63, 0.45);
+        z-index: 300;
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 48px 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal {
+        background: #fff;
+        border-radius: 18px;
+        padding: 28px;
+        width: 100%;
+        max-width: 540px;
+        box-sizing: border-box;
+      }
+      .suggest {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        margin-top: 4px;
+        overflow: hidden;
+        box-shadow: 0 12px 32px rgba(15, 44, 63, 0.12);
+        display: none;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+      .suggest.open {
+        display: block;
+      }
+      .suggest button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 10px 14px;
+        border: 0;
+        background: #fff;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: var(--ink);
+      }
+      .suggest button:hover {
+        background: var(--bg);
+      }
+      .suggest .sub {
+        display: block;
+        color: var(--faint);
+        font-size: 0.8rem;
+        margin-top: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html" class="active">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1>Claims Management</h1>
+            <p>Process and manage member claims through the full lifecycle</p>
+          </div>
+          <div style="display: flex; gap: 10px">
+            <a
+              class="btn secondary"
+              href="/admin/claims-config.html"
+              style="
+                padding: 10px 18px;
+                font-size: 0.92rem;
+                white-space: nowrap;
+              "
+              >Claims Configuration</a
+            >
+            <button
+              type="button"
+              class="btn"
+              id="newClaimBtn"
+              style="
+                padding: 10px 18px;
+                font-weight: 600;
+                font-size: 0.92rem;
+                white-space: nowrap;
+              "
+            >
+              New claim application
+            </button>
+          </div>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+          "
+          id="metricCards"
+        ></div>
+
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              flex-wrap: wrap;
+              align-items: center;
+              margin-bottom: 16px;
+            "
+          >
+            <h2 style="flex: 1" id="tableTitle">All claims</h2>
+            <input
+              type="search"
+              class="field"
+              id="searchInput"
+              placeholder="Search claims…"
+              style="
+                min-width: 220px;
+                width: auto;
+                font-size: 0.9rem;
+                padding: 10px 14px;
+              "
+            />
+          </div>
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Claim</th>
+                <th>Member</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th class="num">Amount</th>
+                <th class="num">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="claimRows"></tbody>
+          </table>
+          <div
+            id="emptyState"
+            style="
+              display: none;
+              padding: 40px 24px;
+              text-align: center;
+              color: var(--muted);
+            "
+          >
+            <strong
+              style="display: block; margin-bottom: 6px; color: var(--ink)"
+              >No claims found</strong
+            >
+            <span style="font-size: 0.9rem"
+              >No claims match the selected status or search.</span
+            >
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding-top: 14px;
+            "
+            id="pagerRow"
+          >
+            <span
+              style="color: var(--faint); font-size: 0.85rem"
+              id="pageLabel"
+            ></span>
+            <div style="display: flex; gap: 8px">
+              <button
+                type="button"
+                class="tbl-btn"
+                id="prevBtn"
+                style="padding: 8px 16px; font-size: 0.88rem"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                class="tbl-btn"
+                id="nextBtn"
+                style="padding: 8px 16px; font-size: 0.88rem"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- New claim application modal -->
+    <div class="modal-backdrop" id="newModal">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+          "
+        >
+          <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700">
+            New claim application
+          </h2>
+          <button type="button" class="btn ghost small" id="newClose">
+            Close
+          </button>
+        </div>
+        <p style="margin: 0 0 20px; color: var(--muted); font-size: 0.88rem">
+          File a claim on a member's behalf. It is saved as a draft — upload the
+          required documents from the processing screen, then submit it for
+          review.
+        </p>
+        <div class="form-error" id="newError"></div>
+        <form id="newForm" style="display: grid; gap: 16px">
+          <div style="position: relative">
+            <label class="field">Member *</label>
+            <input
+              class="field"
+              id="memberSearch"
+              placeholder="Search member by name or email"
+              autocomplete="off"
+              required
+            />
+            <div class="suggest" id="memberSuggest"></div>
+          </div>
+          <div>
+            <label class="field">Claim type *</label>
+            <select class="field" id="claimType"></select>
+            <p
+              style="margin: 6px 0 0; color: var(--faint); font-size: 0.8rem"
+              id="typeHint"
+            ></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
+            <div>
+              <label class="field">Amount requested (GH₵) *</label>
+              <input
+                class="field"
+                type="number"
+                step="0.01"
+                min="0.01"
+                id="claimAmount"
+                required
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label class="field">Event date</label>
+              <input class="field" type="date" id="eventDate" />
+            </div>
+          </div>
+          <div>
+            <label class="field">Description</label>
+            <textarea
+              class="field"
+              id="claimDesc"
+              rows="2"
+              placeholder="What is this claim for?"
+            ></textarea>
+          </div>
+          <button class="btn" type="submit">Create draft claim</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("sideRole").textContent =
+          {
+            admin: "Administrator",
+            supervisor: "Supervisor",
+            accountant: "Accountant",
+            superadmin: "Superadmin",
+          }[user.role] || user.role;
+
+        // Accountants review/process claims but never originate a new application
+        // on a member's behalf.
+        if (!["admin", "supervisor", "superadmin"].includes(user.role)) {
+          document.getElementById("newClaimBtn").style.display = "none";
+        }
+
+        const TITLES = {
+          all: "All claims",
+          draft: "Draft applications",
+          submitted: "Pending review",
+          under_review: "Under review",
+          approved: "Approved & paid",
+          rejected: "Rejected claims",
+        };
+        const canDeleteDrafts = ["admin", "supervisor", "superadmin"].includes(
+          user.role,
+        );
+        const state = { filter: "all", q: "", page: 1, pages: 1, total: 0 };
+        let claimTypes = [];
+
+        // --- Metrics ---
+        async function loadMetrics() {
+          const m = await API.get("/api/claims/metrics");
+          const defs = [
+            { key: "all", label: "Total claims", value: m.total },
+            { key: "draft", label: "Drafts", value: m.drafts || 0 },
+            { key: "submitted", label: "Pending review", value: m.submitted },
+            {
+              key: "under_review",
+              label: "Under review",
+              value: m.underReview,
+            },
+            {
+              key: "approved",
+              label: "Approved / paid",
+              value: m.approvedOrPaid,
+            },
+            { key: "rejected", label: "Rejected", value: m.rejected },
+          ];
+          document.getElementById("metricCards").innerHTML = defs
+            .map(
+              (d) => `
+      <button type="button" class="metric ${state.filter === d.key ? "active" : ""}" data-filter="${d.key}">
+        <span class="value">${d.value}</span>
+        <span class="label">${d.label}</span>
+      </button>`,
+            )
+            .join("");
+          document.querySelectorAll("[data-filter]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              state.filter = btn.dataset.filter;
+              state.page = 1;
+              document
+                .querySelectorAll(".metric")
+                .forEach((b) =>
+                  b.classList.toggle(
+                    "active",
+                    b.dataset.filter === state.filter,
+                  ),
+                );
+              document.getElementById("tableTitle").textContent =
+                TITLES[state.filter];
+              loadList();
+            }),
+          );
+        }
+
+        // --- List ---
+        let allApprovedMode = false;
+        async function fetchPage(statusParam) {
+          const params = new URLSearchParams({ page: state.page, limit: 15 });
+          if (statusParam) params.set("status", statusParam);
+          return API.get("/api/claims?" + params);
+        }
+
+        async function loadList() {
+          // "approved" card covers approved + paid; fetch both and merge.
+          let items, total, pages;
+          if (state.filter === "approved") {
+            const [a, p] = await Promise.all([
+              fetchPage("approved"),
+              fetchPage("paid"),
+            ]);
+            items = [...a.items, ...p.items].sort(
+              (x, y) => new Date(y.createdAt) - new Date(x.createdAt),
+            );
+            total = a.total + p.total;
+            pages = Math.max(a.pages, p.pages);
+          } else {
+            const data = await fetchPage(
+              state.filter === "all" ? "" : state.filter,
+            );
+            items = data.items;
+            total = data.total;
+            pages = data.pages;
+          }
+          state.pages = Math.max(pages, 1);
+          state.total = total;
+
+          const q = state.q.toLowerCase();
+          const rows = q
+            ? items.filter((c) => {
+                const hay =
+                  `${fmt.name(c.memberId)} ${c.claimTypeId ? c.claimTypeId.name : ""} ${c.claimNumber}`.toLowerCase();
+                return hay.includes(q);
+              })
+            : items;
+
+          document.getElementById("emptyState").style.display = rows.length
+            ? "none"
+            : "block";
+          document.getElementById("claimRows").innerHTML = rows
+            .map(
+              (c) => `
+      <tr>
+        <td>
+          <span style="display:block; font-size:0.92rem; font-weight:600; color:var(--ink);">${fmt.esc(c.claimTypeId ? c.claimTypeId.name : "Claim")}</span>
+          <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px; font-weight:400;">${c.claimNumber}</span>
+        </td>
+        <td>${fmt.esc(fmt.name(c.memberId))}</td>
+        <td style="white-space:nowrap;">${c.submittedAt ? fmt.date(c.submittedAt) : fmt.date(c.createdAt)}</td>
+        <td>${pill(c.status)}</td>
+        <td class="num" style="white-space:nowrap;">${fmt.gh(c.amountApproved ?? c.amountRequested)}</td>
+        <td class="num" style="white-space:nowrap;">
+          <a class="tbl-btn" href="/admin/claim-processing.html?id=${c._id}">${c.status === "draft" ? "Open" : "Review"}</a>
+          ${c.status === "draft" && canDeleteDrafts ? `<button type="button" class="tbl-btn" style="color:var(--red-ink); margin-left:6px;" data-delete="${c._id}">Delete</button>` : ""}
+        </td>
+      </tr>`,
+            )
+            .join("");
+
+          document.querySelectorAll("[data-delete]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              if (!confirm("Delete this draft claim? This cannot be undone."))
+                return;
+              try {
+                await API.del("/api/claims/" + btn.dataset.delete);
+                toast("Draft deleted");
+                loadMetrics();
+                loadList();
+              } catch (err) {
+                toast(err.message, true);
+              }
+            }),
+          );
+
+          document.getElementById("pageLabel").textContent =
+            `Page ${state.page} of ${state.pages} · ${state.total} claim${state.total === 1 ? "" : "s"}`;
+          document.getElementById("prevBtn").disabled = state.page <= 1;
+          document.getElementById("nextBtn").disabled =
+            state.page >= state.pages;
+        }
+
+        let debounce;
+        document
+          .getElementById("searchInput")
+          .addEventListener("input", (e) => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+              state.q = e.target.value.trim();
+              loadList();
+            }, 300);
+          });
+        document.getElementById("prevBtn").addEventListener("click", () => {
+          if (state.page > 1) {
+            state.page--;
+            loadList();
+          }
+        });
+        document.getElementById("nextBtn").addEventListener("click", () => {
+          if (state.page < state.pages) {
+            state.page++;
+            loadList();
+          }
+        });
+
+        // --- New claim application ---
+        const newModal = document.getElementById("newModal");
+        const typeSel = document.getElementById("claimType");
+        let selectedMemberId = null;
+
+        async function loadTypes() {
+          claimTypes = (await API.get("/api/claim-types?status=active")).items;
+          typeSel.innerHTML = claimTypes
+            .map((t) => `<option value="${t._id}">${fmt.esc(t.name)}</option>`)
+            .join("");
+          updateTypeHint();
+        }
+        function updateTypeHint() {
+          const t = claimTypes.find((x) => x._id === typeSel.value);
+          if (!t) return;
+          const per =
+            { claim: "per claim", year: "per year", lifetime: "lifetime" }[
+              t.limitPer
+            ] || "";
+          document.getElementById("typeHint").textContent =
+            `Limit ${fmt.gh(t.benefitLimit)} ${per} · ${t.requiredDocuments.length} document${t.requiredDocuments.length === 1 ? "" : "s"} required`;
+        }
+        typeSel.addEventListener("change", updateTypeHint);
+
+        document.getElementById("newClaimBtn").addEventListener("click", () => {
+          document.getElementById("newError").classList.remove("show");
+          document.getElementById("newForm").reset();
+          selectedMemberId = null;
+          updateTypeHint();
+          newModal.classList.add("open");
+        });
+        document
+          .getElementById("newClose")
+          .addEventListener("click", () => newModal.classList.remove("open"));
+        newModal.addEventListener("click", (e) => {
+          if (e.target === newModal) newModal.classList.remove("open");
+        });
+
+        const memberSearch = document.getElementById("memberSearch");
+        const suggest = document.getElementById("memberSuggest");
+        let suggestDebounce;
+        memberSearch.addEventListener("input", () => {
+          selectedMemberId = null;
+          clearTimeout(suggestDebounce);
+          const q = memberSearch.value.trim();
+          if (q.length < 2) {
+            suggest.classList.remove("open");
+            return;
+          }
+          suggestDebounce = setTimeout(async () => {
+            const data = await API.get(
+              "/api/users?limit=6&q=" + encodeURIComponent(q),
+            );
+            suggest.innerHTML = data.items.length
+              ? data.items
+                  .map(
+                    (u) => `
+          <button type="button" data-id="${u._id}" data-label="${fmt.esc(fmt.name(u))}">
+            <strong>${fmt.esc(fmt.name(u))}</strong>${u.memberNumber ? ` · ${fmt.esc(u.memberNumber)}` : ""}
+            <span class="sub">${fmt.esc(u.email)}</span>
+          </button>`,
+                  )
+                  .join("")
+              : '<button type="button" disabled style="color:var(--faint); cursor:default;">No members match</button>';
+            suggest.classList.add("open");
+            suggest.querySelectorAll("button[data-id]").forEach((b) =>
+              b.addEventListener("click", () => {
+                selectedMemberId = b.dataset.id;
+                memberSearch.value = b.dataset.label;
+                suggest.classList.remove("open");
+              }),
+            );
+          }, 250);
+        });
+        document.addEventListener("click", (e) => {
+          if (!suggest.contains(e.target) && e.target !== memberSearch)
+            suggest.classList.remove("open");
+        });
+
+        document
+          .getElementById("newForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const errBox = document.getElementById("newError");
+            errBox.classList.remove("show");
+            if (!selectedMemberId) {
+              errBox.textContent = "Pick a member from the suggestions list";
+              errBox.classList.add("show");
+              return;
+            }
+            try {
+              const data = await API.post("/api/claims", {
+                memberId: selectedMemberId,
+                claimTypeId: typeSel.value,
+                amountRequested: document.getElementById("claimAmount").value,
+                eventDate:
+                  document.getElementById("eventDate").value || undefined,
+                description:
+                  document.getElementById("claimDesc").value.trim() ||
+                  undefined,
+              });
+              toast(
+                "Draft claim created — add documents, then submit it for review",
+              );
+              window.location.href =
+                "/admin/claim-processing.html?id=" + data.claim._id;
+            } catch (err) {
+              errBox.textContent = err.message;
+              errBox.classList.add("show");
+            }
+          });
+
+        document.getElementById("tableTitle").textContent =
+          TITLES[state.filter];
+        await Promise.all([loadMetrics(), loadList(), loadTypes()]);
+      })();
+    </script>
+  </body>
+</html>

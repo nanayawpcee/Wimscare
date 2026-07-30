@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Member Portal — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .pg-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .pg-btn:hover:not([disabled]) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .pg-btn[disabled] {
+        color: var(--faint);
+        cursor: not-allowed;
+      }
+      /* So scrollIntoView() (used when switching panels) doesn't tuck the
+         panel's top edge under the sticky mobile header. */
+      [data-panel-section] {
+        scroll-margin-top: 84px;
+      }
+    </style>
+  </head>
+  <body class="theme-member">
+    <div id="mShell"></div>
+    <div class="portal">
+      <aside class="portal-side">
+        <div class="brand">
+          <a href="/welcome.html">
+            <img src="/assets/logo.png" alt="WIMScare"
+          /></a>
+          <div style="display: grid; gap: 4px">
+            <p>Member Portal</p>
+
+            <span>Contributions, claims and profile in one place.</span>
+          </div>
+        </div>
+
+        <nav aria-label="Member portal navigation" id="portalNav">
+          <button type="button" data-panel="overview" class="active">
+            Overview
+          </button>
+          <button type="button" data-panel="contributions">
+            Contributions
+          </button>
+          <button type="button" data-panel="claims">Claims</button>
+          <button type="button" data-panel="profile">Profile</button>
+        </nav>
+        <div class="foot">
+          <div class="who">
+            <span class="avatar" id="sideAvatar"></span>
+            <div>
+              <strong
+                style="
+                  display: block;
+                  font-size: 0.98rem;
+                  color: #fff;
+                  margin-bottom: 2px;
+                "
+                id="sideName"
+              ></strong>
+              <span style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.68)"
+                >Member</span
+              >
+            </div>
+          </div>
+          <button type="button" class="signout" onclick="WIMS.signOut()">
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main class="portal-main">
+        <!-- Claim outcome banners (approved / paid, dismissible) -->
+        <div id="claimBanners" style="display: grid; gap: 10px"></div>
+
+        <!-- Hero -->
+        <section
+          style="
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            align-items: flex-start;
+            background: #fff;
+            padding: 30px;
+            border-radius: 28px;
+            border: 1px solid var(--line);
+            flex-wrap: wrap;
+          "
+        >
+          <div>
+            <p class="eyebrow" id="heroDate"></p>
+            <h1
+              style="
+                margin: 0;
+                font-size: clamp(2rem, 3.2vw, 2.9rem);
+                line-height: 1.05;
+              "
+              id="heroTitle"
+            ></h1>
+            <p
+              style="
+                margin: 16px 0 0;
+                color: var(--muted);
+                max-width: 580px;
+                line-height: 1.7;
+              "
+            >
+              Review your contribution history, submit claims, and manage your
+              account from one place.
+            </p>
+          </div>
+          <div style="display: grid; gap: 12px; align-items: flex-start">
+            <button
+              type="button"
+              class="btn"
+              style="border-radius: 14px"
+              data-goto="contributions"
+            >
+              View contribution history
+            </button>
+            <a
+              class="btn"
+              style="
+                border-radius: 14px;
+                border: 1px solid rgba(29, 111, 174, 0.18);
+                background: rgba(29, 111, 174, 0.08);
+                color: var(--ink);
+              "
+              href="/member/claims.html"
+              >Apply for support</a
+            >
+          </div>
+        </section>
+
+        <!-- Stat cards -->
+        <div class="portal-cards" id="statCards"></div>
+
+        <!-- Overview -->
+        <section class="panel" data-panel-section="overview">
+          <div style="margin-bottom: 26px">
+            <p class="eyebrow">Overview</p>
+            <h2>Member summary</h2>
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 18px;
+              margin-bottom: 28px;
+            "
+            id="overviewCards"
+          ></div>
+          <div>
+            <p class="eyebrow">Recent activity</p>
+            <div style="display: grid; gap: 16px" id="activityList"></div>
+          </div>
+          <div id="orgContactWrap"></div>
+        </section>
+
+        <!-- Contributions -->
+        <section class="panel" data-panel-section="contributions" hidden>
+          <div
+            style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 16px;
+              justify-content: space-between;
+              align-items: flex-end;
+              margin-bottom: 20px;
+            "
+          >
+            <div>
+              <p class="eyebrow">Contributions</p>
+              <h2>Contribution history</h2>
+            </div>
+            <select
+              class="field"
+              id="periodFilter"
+              style="
+                min-width: 152px;
+                width: auto;
+                font-weight: 600;
+                border-radius: 12px;
+              "
+            >
+              <option value="all">All time</option>
+              <option value="thisMonth">This month</option>
+              <option value="thisYear">This year</option>
+            </select>
+          </div>
+          <div style="overflow-x: auto">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Method</th>
+                  <th>Note</th>
+                  <th>Recorded by</th>
+                  <th class="num">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="contribRows"></tbody>
+            </table>
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 16px 2px 2px;
+              border-top: 1px solid var(--row-line);
+              margin-top: 14px;
+            "
+          >
+            <span
+              style="color: var(--faint); font-size: 0.85rem"
+              id="contribCountLabel"
+            ></span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" class="pg-btn" id="contribPrevBtn">
+                Previous
+              </button>
+              <button type="button" class="pg-btn" id="contribNextBtn">
+                Next
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Claims -->
+        <section class="panel" data-panel-section="claims" hidden>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              gap: 16px;
+              align-items: flex-end;
+              margin-bottom: 26px;
+              flex-wrap: wrap;
+            "
+          >
+            <div>
+              <p class="eyebrow">Claims</p>
+              <h2>Recent claims</h2>
+            </div>
+            <a
+              class="btn"
+              style="border-radius: 14px"
+              href="/member/claims.html"
+              >Submit a claim</a
+            >
+          </div>
+          <div style="display: grid; gap: 18px" id="claimsList"></div>
+        </section>
+
+        <!-- Profile -->
+        <section class="panel" data-panel-section="profile" hidden>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              gap: 16px;
+              align-items: flex-end;
+              margin-bottom: 26px;
+              flex-wrap: wrap;
+            "
+          >
+            <div>
+              <p class="eyebrow">Profile</p>
+              <h2>Account details</h2>
+            </div>
+            <a
+              class="btn"
+              style="
+                border-radius: 14px;
+                border: 1px solid rgba(29, 111, 174, 0.18);
+                background: rgba(29, 111, 174, 0.08);
+                color: var(--ink);
+              "
+              href="/member/profile.html"
+              >Edit profile</a
+            >
+          </div>
+          <div
+            style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 22px"
+            id="profileGrid"
+          ></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["user", "admin", "supervisor", "accountant"],
+        });
+        if (!session) return;
+        const { user } = session;
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("heroDate").textContent = WIMS.todayLong();
+        document.getElementById("heroTitle").textContent =
+          `${WIMS.greeting()}, ${user.firstName}`;
+
+        WIMS.memberShell({
+          user,
+          active: "dashboard",
+          title: "Member Portal",
+          sub: "WIMScare",
+        });
+
+        // --- Claim outcome banners: approved / paid claims the member
+        // hasn't dismissed yet. Dismissals are saved on the claim itself
+        // (not localStorage), so they persist across devices/browsers; an
+        // "approved" banner reappears as a fresh "paid" banner later since
+        // the dismissed status no longer matches the current one.
+        (async () => {
+          try {
+            const att = await API.get("/api/claims/attention");
+            if (att.scope !== "member" || !att.items.length) return;
+            const host = document.getElementById("claimBanners");
+            host.style.marginBottom = "20px";
+            host.innerHTML = att.items
+              .map(
+                (c) => `
+              <div style="display:flex; align-items:center; gap:14px; background:var(--green-bg); border:1px solid #cde3b4; border-radius:16px; padding:15px 18px;" data-claim-id="${c._id}">
+                <span style="font-size:1.2rem;" aria-hidden="true">${c.status === "paid" ? "💸" : "🎉"}</span>
+                <div style="flex:1; min-width:0;">
+                  <span style="display:block; font-weight:700; color:var(--green-ink); font-size:0.95rem;">
+                    Your ${fmt.esc(c.claimTypeId ? c.claimTypeId.name : "claim")} (${fmt.esc(c.claimNumber)}) has been ${c.status === "paid" ? "paid" : "approved"}
+                  </span>
+                  <span style="display:block; color:var(--green-ink); opacity:0.85; font-size:0.85rem;">
+                    ${fmt.gh(c.amountApproved ?? c.amountRequested)}${c.status === "paid" ? (c.paidAt ? " · paid " + fmt.date(c.paidAt) : "") : " · payout is being arranged"}
+                  </span>
+                </div>
+                <a href="/member/claim-status.html?id=${c._id}" style="font-weight:600; font-size:0.88rem; white-space:nowrap;">View claim</a>
+                <button type="button" data-dismiss aria-label="Dismiss" style="border:0; background:none; color:var(--green-ink); font-size:1rem; cursor:pointer; padding:4px 6px;">&#10005;</button>
+              </div>`,
+              )
+              .join("");
+            host.querySelectorAll("[data-dismiss]").forEach((btn) =>
+              btn.addEventListener("click", async () => {
+                const row = btn.closest("[data-claim-id]");
+                btn.disabled = true;
+                try {
+                  await API.post(`/api/claims/${row.dataset.claimId}/dismiss-banner`);
+                  row.remove();
+                  if (!host.children.length) host.style.marginBottom = "0";
+                } catch (e) {
+                  btn.disabled = false;
+                }
+              }),
+            );
+          } catch (e) {
+            /* banners are best-effort */
+          }
+        })();
+
+        // --- Panel switching ---
+        const nav = document.getElementById("portalNav");
+        function showPanel(name) {
+          nav
+            .querySelectorAll("button")
+            .forEach((b) =>
+              b.classList.toggle("active", b.dataset.panel === name),
+            );
+          let target;
+          document.querySelectorAll("[data-panel-section]").forEach((s) => {
+            const match = s.dataset.panelSection === name;
+            s.hidden = !match;
+            if (match) target = s;
+          });
+          // Switching panels doesn't reload the page, so without this the
+          // newly-shown section can land below the fold (e.g. after
+          // scrolling past the hero/stat cards) and go unnoticed.
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        nav.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-panel]");
+          if (btn) showPanel(btn.dataset.panel);
+        });
+        document
+          .querySelectorAll("[data-goto]")
+          .forEach((el) =>
+            el.addEventListener("click", () => showPanel(el.dataset.goto)),
+          );
+        const initial = new URLSearchParams(location.search).get("panel");
+        if (initial) showPanel(initial);
+
+        // --- Data ---
+        const [data, orgResp] = await Promise.all([
+          API.get("/api/dashboard/member"),
+          API.get("/api/organization"),
+        ]);
+        const organization = orgResp.organization;
+
+        const lastLabel = data.lastContribution
+          ? new Date(data.lastContribution.contributionDate).toLocaleDateString(
+              "en-GB",
+              { day: "numeric", month: "short" },
+            )
+          : "—";
+        document.getElementById("statCards").innerHTML = [
+          {
+            label: "Total contributed",
+            value: fmt.gh(data.totalContributed),
+            note: "In good standing",
+          },
+          {
+            label: "Claims submitted",
+            value: String(data.claimsSummary.total),
+            note: `${data.claimsSummary.active} active, ${data.claimsSummary.approved} completed`,
+          },
+          {
+            label: "Monthly total",
+            value: fmt.gh(data.monthTotal),
+            note: "This month",
+          },
+          {
+            label: "Last contribution",
+            value: lastLabel,
+            note: data.lastContribution
+              ? data.lastContribution.method
+              : "No contributions yet",
+          },
+        ]
+          .map(
+            (c) => `
+    <div class="portal-card">
+      <span class="label">${c.label}</span>
+      <strong class="value">${c.value}</strong>
+      <span class="note">${fmt.esc(c.note)}</span>
+    </div>`,
+          )
+          .join("");
+
+        document.getElementById("overviewCards").innerHTML = [
+          { title: "Total contributions", body: fmt.gh(data.totalContributed) },
+          { title: "Current month", body: fmt.gh(data.monthTotal) },
+          {
+            title: "Active claims",
+            body: `${data.claimsSummary.active} claim${data.claimsSummary.active === 1 ? "" : "s"} in progress`,
+          },
+          {
+            title: "Approved claims",
+            body: `${data.claimsSummary.approved} approved`,
+          },
+        ]
+          .map(
+            (c) => `
+    <div style="background:var(--bg); border-radius:20px; padding:22px; border:1px solid rgba(31,41,55,0.08);">
+      <h3 style="margin:0 0 10px; font-size:1rem; font-weight:700;">${c.title}</h3>
+      <p style="margin:0; color:#334155; line-height:1.7; font-size:0.95rem; font-variant-numeric:tabular-nums;">${c.body}</p>
+    </div>`,
+          )
+          .join("");
+
+        // Recent activity: merge contributions + claims by date
+        const activity = [
+          ...data.recentContributions.slice(0, 3).map((c) => ({
+            at: c.contributionDate,
+            title: `Contribution of ${fmt.gh(c.amount)}`,
+            color: "var(--primary)",
+          })),
+          ...data.claims.slice(0, 3).map((c) => ({
+            at: c.updatedAt,
+            title: `${c.claimTypeId ? c.claimTypeId.name : "Claim"} — ${String(c.status).replace(/_/g, " ")}`,
+            color: ["approved", "paid"].includes(c.status)
+              ? "#79b843"
+              : "var(--gold)",
+          })),
+        ]
+          .sort((a, b) => new Date(b.at) - new Date(a.at))
+          .slice(0, 5);
+        document.getElementById("activityList").innerHTML = activity.length
+          ? activity
+              .map(
+                (a) => `
+      <div style="display:flex; gap:14px; align-items:flex-start; padding:18px 20px; border-radius:18px; background:#fff; border:1px solid var(--line);">
+        <span style="flex-shrink:0; width:12px; height:12px; border-radius:50%; margin-top:6px; background:${a.color};"></span>
+        <div style="min-width:0;">
+          <strong style="display:block; font-size:0.98rem; margin-bottom:6px;">${fmt.esc(a.title)}</strong>
+          <span style="color:var(--muted); font-size:0.9rem;">${fmt.date(a.at)}</span>
+        </div>
+      </div>`,
+              )
+              .join("")
+          : '<div class="empty">No activity yet.</div>';
+
+        // Your organization — contact details & social links, read-only.
+        // Only fields the admin has actually filled in (Facility profile >
+        // Contact / Social tabs) are shown; the card is skipped entirely if
+        // none are set.
+        (function renderOrgContact() {
+          const wrap = document.getElementById("orgContactWrap");
+          const f = organization.facility || {};
+          // facility.country defaults to "Ghana" for every org even when no
+          // other address field has been filled in, so it can't alone imply
+          // a real address — only build from it once a concrete line/city
+          // exists, otherwise fall back to the simple top-level address.
+          const facilityAddressParts = [f.addressLine1, f.addressLine2, f.city, f.region, f.postalCode];
+          const address = facilityAddressParts.some(Boolean)
+            ? [...facilityAddressParts, f.country].filter(Boolean).join(", ")
+            : organization.address || "";
+          const asUrl = (v) => (/^https?:\/\//i.test(v) ? v : `https://${v}`);
+          const contacts = [
+            { label: "Phone", value: f.supportHotline || organization.contactPhone, href: (v) => `tel:${v.replace(/[^\d+]/g, "")}` },
+            { label: "Email", value: f.supportEmail || organization.contactEmail, href: (v) => `mailto:${v}` },
+            { label: "WhatsApp", value: f.whatsapp, href: (v) => `https://wa.me/${v.replace(/\D/g, "")}` },
+            { label: "Address", value: address },
+          ].filter((c) => c.value);
+          const socials = [
+            { label: "Website", icon: "🌐", value: f.website },
+            { label: "Facebook", icon: "📘", value: f.facebook },
+            { label: "Twitter / X", icon: "🐦", value: f.twitter },
+            { label: "Instagram", icon: "📷", value: f.instagram },
+            { label: "LinkedIn", icon: "💼", value: f.linkedin },
+          ].filter((s) => s.value);
+
+          if (!contacts.length && !socials.length) return;
+
+          wrap.style.marginTop = "28px";
+          wrap.innerHTML = `
+        <p class="eyebrow">Get in touch</p>
+        <div style="background:#fff; border:1px solid var(--line); border-radius:20px; padding:24px; display:grid; gap:20px;">
+          <div>
+            <h3 style="margin:0 0 4px; font-size:1rem; font-weight:700;">${fmt.esc(f.shortName || organization.name)}</h3>
+            ${f.tagline ? `<p style="margin:0; color:var(--muted); font-size:0.88rem;">${fmt.esc(f.tagline)}</p>` : ""}
+          </div>
+          ${
+            contacts.length
+              ? `<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px;">
+              ${contacts
+                .map(
+                  (c) => `
+                <div>
+                  <span style="display:block; font-size:0.78rem; color:var(--faint); font-weight:700; margin-bottom:4px;">${c.label}</span>
+                  ${
+                    c.href
+                      ? `<a href="${c.href(c.value)}" style="font-size:0.92rem; font-weight:600;">${fmt.esc(c.value)}</a>`
+                      : `<span style="font-size:0.92rem; font-weight:600;">${fmt.esc(c.value)}</span>`
+                  }
+                </div>`,
+                )
+                .join("")}
+            </div>`
+              : ""
+          }
+          ${
+            socials.length
+              ? `<div style="display:flex; flex-wrap:wrap; gap:10px; padding-top:${contacts.length ? "4px" : "0"}; border-top:${contacts.length ? "1px solid var(--line-soft)" : "none"};">
+              ${socials
+                .map(
+                  (s) => `
+                <a href="${asUrl(s.value)}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:999px; border:1px solid var(--line); font-size:0.85rem; font-weight:600; color:var(--ink);">${s.icon} ${s.label}</a>`,
+                )
+                .join("")}
+            </div>`
+              : ""
+          }
+        </div>`;
+        })();
+
+        // Contribution history — paginated from /api/contributions (not the
+        // dashboard summary's capped recentContributions list), so the
+        // period filter and Previous/Next reflect the member's full history.
+        const contribState = { period: "all", page: 1, pages: 1, total: 0 };
+        const periodFilter = document.getElementById("periodFilter");
+
+        function contribPeriodParams() {
+          const now = new Date();
+          if (contribState.period === "thisMonth")
+            return { year: now.getFullYear(), month: now.getMonth() + 1 };
+          if (contribState.period === "thisYear")
+            return { year: now.getFullYear() };
+          return {};
+        }
+
+        async function loadContributions() {
+          const params = new URLSearchParams({
+            page: contribState.page,
+            limit: 15,
+            ...contribPeriodParams(),
+          });
+          const cData = await API.get("/api/contributions?" + params);
+          contribState.total = cData.total;
+          contribState.pages = Math.max(cData.pages, 1);
+
+          document.getElementById("contribRows").innerHTML = cData.items.length
+            ? cData.items
+                .map(
+                  (c) => `
+        <tr>
+          <td>${fmt.date(c.contributionDate)}</td>
+          <td>${fmt.esc(c.method)}</td>
+          <td>${fmt.esc(c.note || "—")}</td>
+          <td>${fmt.esc(fmt.name(c.recordedBy))}</td>
+          <td class="num">${fmt.gh(c.amount)}</td>
+        </tr>`,
+                )
+                .join("")
+            : '<tr><td colspan="5" class="empty">No contributions in this period.</td></tr>';
+
+          document.getElementById("contribCountLabel").textContent =
+            `${cData.items.length} of ${contribState.total} contribution${contribState.total === 1 ? "" : "s"}`;
+          document.getElementById("contribPrevBtn").disabled =
+            contribState.page <= 1;
+          document.getElementById("contribNextBtn").disabled =
+            contribState.page >= contribState.pages;
+        }
+        loadContributions();
+        periodFilter.addEventListener("change", () => {
+          contribState.period = periodFilter.value;
+          contribState.page = 1;
+          loadContributions();
+        });
+        document
+          .getElementById("contribPrevBtn")
+          .addEventListener("click", () => {
+            if (contribState.page > 1) {
+              contribState.page--;
+              loadContributions();
+            }
+          });
+        document
+          .getElementById("contribNextBtn")
+          .addEventListener("click", () => {
+            if (contribState.page < contribState.pages) {
+              contribState.page++;
+              loadContributions();
+            }
+          });
+
+        // Claims cards
+        document.getElementById("claimsList").innerHTML = data.claims.length
+          ? data.claims
+              .map(
+                (c) => `
+      <a href="/member/claim-status.html?id=${c._id}" style="background:#fff; border:1px solid var(--line); border-radius:20px; padding:22px; display:grid; gap:10px; color:inherit;">
+        <div style="display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap; align-items:flex-start;">
+          <div>
+            <h3 style="margin:0 0 6px; font-size:1rem; font-weight:700;">${fmt.esc(c.claimTypeId ? c.claimTypeId.name : "Claim")} <span style="color:var(--faint); font-weight:600; font-size:0.82rem;">${c.claimNumber}</span></h3>
+            <p style="margin:0; color:var(--muted); line-height:1.7; font-size:0.95rem;">${fmt.esc(c.description || "")}</p>
+          </div>
+          ${pill(c.status)}
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <span style="color:var(--muted); font-size:0.9rem;">${fmt.date(c.createdAt)}</span>
+          <strong style="font-variant-numeric:tabular-nums;">${fmt.gh(c.amountApproved ?? c.amountRequested)}</strong>
+        </div>
+      </a>`,
+              )
+              .join("")
+          : '<div class="empty">No claims yet — use “Submit a claim” to apply for support.</div>';
+
+        // Profile panel
+        const profileData = await API.get("/api/profile");
+        const p = profileData.profile || {};
+        const field = (label, value) => `
+    <div>
+      <label style="display:block; margin-bottom:8px; font-size:0.83rem; color:var(--muted); font-weight:700;">${label}</label>
+      <div style="width:100%; box-sizing:border-box; border-radius:12px; border:1px solid #d1d5db; padding:12px 14px; font-size:0.94rem; background:var(--bg);">${fmt.esc(value || "—")}</div>
+    </div>`;
+        document.getElementById("profileGrid").innerHTML = `
+    <div style="background:#fff; border:1px solid var(--line); border-radius:20px; padding:26px;">
+      <div style="display:flex; gap:16px; align-items:center; margin-bottom:24px;">
+        <span class="avatar" style="width:48px; height:48px; background:var(--primary); font-size:1rem;">${fmt.initials(user)}</span>
+        <div>
+          <div style="font-size:1.15rem; font-weight:700;">${fmt.esc(fmt.name(user))}</div>
+          <div style="color:var(--muted); font-size:0.95rem;">${fmt.esc(user.email)}</div>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+        ${field("Role", user.role === "user" ? "Member" : user.role)}
+        ${field("Member since", fmt.date(user.createdAt))}
+        ${field("Phone", user.phone)}
+        ${field("Department", user.department)}
+      </div>
+    </div>
+    <div style="background:#fff; border:1px solid var(--line); border-radius:20px; padding:26px;">
+      <h3 style="margin:0 0 18px; font-size:1rem; font-weight:700;">Member details</h3>
+      <div style="display:grid; gap:18px;">
+        ${field("Member number", user.memberNumber)}
+        ${field("Contribution status", data.totalContributed > 0 ? "Active — in good standing" : "No contributions yet")}
+        ${field("Claims status", data.claimsSummary.active ? `${data.claimsSummary.active} claim(s) in progress` : "No outstanding issues")}
+      </div>
+    </div>`;
+      })();
+    </script>
+  </body>
+</html>

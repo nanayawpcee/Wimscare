@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claim Status — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .stepper {
+        display: flex;
+        align-items: flex-start;
+      }
+      .stepper .step {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+      }
+      .stepper .bar {
+        position: absolute;
+        top: 7px;
+        left: -50%;
+        width: 100%;
+        height: 2px;
+      }
+      .stepper .dot {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        display: block;
+        z-index: 1;
+        position: relative;
+        animation: stepPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+      .stepper .bar {
+        transform-origin: left;
+        animation: barFill 0.3s ease-out backwards;
+      }
+      .stepper .step:nth-child(1) .dot { animation-delay: 0.05s; }
+      .stepper .step:nth-child(2) .bar { animation-delay: 0.15s; }
+      .stepper .step:nth-child(2) .dot { animation-delay: 0.35s; }
+      .stepper .step:nth-child(3) .bar { animation-delay: 0.45s; }
+      .stepper .step:nth-child(3) .dot { animation-delay: 0.65s; }
+      .stepper .step:nth-child(4) .bar { animation-delay: 0.75s; }
+      .stepper .step:nth-child(4) .dot { animation-delay: 0.95s; }
+      .stepper .dot.current {
+        box-shadow: 0 0 0 4px var(--primary-tint);
+      }
+      .stepper .dot.current::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        animation: dotPing 2s ease-out 1.2s infinite;
+      }
+      @keyframes stepPop {
+        from { transform: scale(0); }
+        to { transform: scale(1); }
+      }
+      @keyframes barFill {
+        from { transform: scaleX(0); }
+        to { transform: scaleX(1); }
+      }
+      @keyframes dotPing {
+        0% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 35%, transparent); }
+        75%, 100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--primary) 0%, transparent); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .stepper .dot,
+        .stepper .bar,
+        .stepper .dot.current::after {
+          animation: none;
+        }
+      }
+      .stepper .lbl {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-align: center;
+      }
+      .stepper .sub {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--faint);
+        margin-top: 1px;
+        text-align: center;
+      }
+      .next-banner {
+        background: var(--primary-tint);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 16px;
+        padding: 16px 18px;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 0.9rem;
+      }
+      .detail-row .k {
+        color: var(--faint);
+      }
+      .detail-row .v {
+        font-weight: 600;
+        text-align: right;
+      }
+      .doc-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+      }
+      .tl-row {
+        display: flex;
+        gap: 12px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--row-line);
+        align-items: flex-start;
+      }
+      .tl-row:last-child {
+        border-bottom: 0;
+      }
+      .tl-dot {
+        flex-shrink: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-top: 5px;
+        display: block;
+      }
+      .status-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 900px) {
+        .status-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="theme-member">
+    <div id="mShell"></div>
+    <div class="portal">
+      <aside class="portal-side">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div style="display: grid; gap: 4px">
+            <p>Member Portal</p>
+            <span>Contributions, claims and profile in one place.</span>
+          </div>
+        </div>
+        <nav aria-label="Member portal navigation">
+          <a href="/member/dashboard.html">Dashboard</a>
+          <a href="/member/claims.html" class="active">My claims</a>
+          <a href="/member/profile.html">Profile</a>
+          <a href="/member/preferences.html">Preferences</a>
+        </nav>
+        <div class="foot">
+          <div class="who">
+            <span class="avatar" id="sideAvatar"></span>
+            <div>
+              <strong
+                style="
+                  display: block;
+                  font-size: 0.98rem;
+                  color: #fff;
+                  margin-bottom: 2px;
+                "
+                id="sideName"
+              ></strong>
+              <span style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.68)"
+                >Member</span
+              >
+            </div>
+          </div>
+          <button type="button" class="signout" onclick="WIMS.signOut()">
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main class="portal-main">
+        <a
+          href="/member/claims.html?tab=track"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+          "
+          class="desktop-back m-hide"
+          >← Back to my claims</a
+        >
+
+        <!-- Status hero -->
+        <section class="panel">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              gap: 18px;
+              flex-wrap: wrap;
+              align-items: flex-start;
+              margin-bottom: 24px;
+            "
+          >
+            <div>
+              <p class="eyebrow">Claim status</p>
+              <h1
+                style="margin: 0 0 6px; font-size: 1.5rem; font-weight: 700"
+                id="claimType"
+              ></h1>
+              <span style="color: var(--faint); font-size: 0.88rem" id="claimMeta"
+              ></span>
+            </div>
+            <span id="claimPill"></span>
+          </div>
+          <div class="stepper" id="stepper"></div>
+        </section>
+
+        <!-- What happens next -->
+        <div class="next-banner" id="nextBanner">
+          <span
+            style="
+              display: block;
+              font-weight: 700;
+              color: var(--primary);
+              font-size: 0.92rem;
+              margin-bottom: 2px;
+            "
+            id="nextTitle"
+          ></span>
+          <span style="color: var(--primary-dark); font-size: 0.85rem" id="nextDesc"
+          ></span>
+        </div>
+
+        <div class="status-grid">
+          <!-- Timeline -->
+          <section class="panel">
+            <h2 style="font-size: 1.1rem; margin-bottom: 12px">Timeline</h2>
+            <div id="timeline"></div>
+          </section>
+
+          <div style="display: grid; gap: 14px">
+            <!-- Details -->
+            <section class="panel">
+              <h2 style="font-size: 1.1rem; margin-bottom: 14px">
+                Claim details
+              </h2>
+              <div style="display: grid; gap: 10px" id="detailRows"></div>
+            </section>
+            <!-- Documents -->
+            <section class="panel">
+              <h2 style="font-size: 1.1rem; margin-bottom: 14px">
+                Your documents
+              </h2>
+              <div style="display: grid; gap: 10px" id="docList"></div>
+              <div id="uploadWrap" style="display: none; margin-top: 14px">
+                <input
+                  type="file"
+                  id="docFile"
+                  accept=".pdf,image/jpeg,image/png,image/webp"
+                  multiple
+                  style="display: none"
+                />
+                <button
+                  type="button"
+                  class="btn secondary"
+                  id="uploadBtn"
+                  style="
+                    width: 100%;
+                    padding: 13px;
+                    border-radius: 12px;
+                    color: var(--primary);
+                  "
+                >
+                  Upload another document
+                </button>
+              </div>
+              <div id="submitWrap" style="display: none; margin-top: 10px">
+                <div class="form-error" id="submitError"></div>
+                <button
+                  type="button"
+                  class="btn"
+                  id="submitDraftBtn"
+                  style="width: 100%; padding: 13px; border-radius: 12px"
+                >
+                  Submit application
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["user", "admin", "supervisor", "accountant"],
+        });
+        if (!session) return;
+        const { user } = session;
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+
+        const claimId = new URLSearchParams(location.search).get("id");
+        if (!claimId) {
+          window.location.href = "/member/claims.html?tab=track";
+          return;
+        }
+
+        const STEPS = ["Submitted", "Review", "Approved", "Paid"];
+        const PROGRESS = {
+          draft: -1,
+          submitted: 0,
+          under_review: 1,
+          approved: 2,
+          paid: 3,
+        };
+
+        async function load() {
+          let claim;
+          try {
+            claim = (await API.get("/api/claims/" + claimId)).claim;
+          } catch (err) {
+            toast(err.message, true);
+            window.location.href = "/member/claims.html?tab=track";
+            return;
+          }
+          const type = claim.claimTypeId || {};
+
+          WIMS.memberShell({
+            user,
+            title: "Claim status",
+            sub: claim.claimNumber,
+            backHref: "/member/claims.html?tab=track",
+          });
+
+          document.getElementById("claimType").textContent =
+            type.name || "Claim";
+          document.getElementById("claimMeta").textContent =
+            `${claim.claimNumber} · ${claim.submittedAt ? "Submitted " + fmt.date(claim.submittedAt) : "Draft created " + fmt.date(claim.createdAt)} · ${fmt.gh(claim.amountApproved ?? claim.amountRequested)}`;
+          document.getElementById("claimPill").innerHTML = pill(claim.status);
+
+          // ---- Stepper ----
+          const progress = PROGRESS[claim.status] ?? -1;
+          const rejected = claim.status === "rejected";
+          const dates = {
+            0: claim.submittedAt,
+            2: claim.decidedAt,
+            3: claim.paidAt,
+          };
+          document.getElementById("stepper").innerHTML = STEPS.map(
+            (label, i) => {
+              const done = !rejected && i <= progress;
+              const isRejectedStep = rejected && i === 2;
+              const current = i === progress && !rejected;
+              const dotColor = isRejectedStep
+                ? "var(--red-ink)"
+                : done
+                  ? "var(--primary)"
+                  : "#d5dee3";
+              const barColor =
+                i === 0
+                  ? "transparent"
+                  : done || isRejectedStep
+                    ? "var(--primary)"
+                    : "var(--line)";
+              const sub = dates[i] ? fmt.date(dates[i]) : "—";
+              return `
+            <div class="step">
+              <div class="bar" style="background:${barColor};"></div>
+              <span class="dot ${current ? "current" : ""}" style="background:${dotColor};"></span>
+              <div>
+                <span class="lbl" style="color:${isRejectedStep ? "var(--red-ink)" : done ? "var(--ink)" : "var(--faint)"};">${isRejectedStep ? "Rejected" : label}</span>
+                <span class="sub">${i === 1 && claim.status === "under_review" ? "In progress" : sub}</span>
+              </div>
+            </div>`;
+            },
+          ).join("");
+
+          // ---- Next banner ----
+          const banner = document.getElementById("nextBanner");
+          const nexts = {
+            draft: [
+              "Finish your application",
+              "Upload the required documents below, then submit it for review.",
+            ],
+            submitted: [
+              "Your application has been received",
+              "It is waiting to be picked up for review. You'll be emailed at every step — no action needed.",
+            ],
+            under_review: [
+              "Your claim is being reviewed",
+              "Reviews typically take 5–7 working days. You'll be emailed when a decision is made.",
+            ],
+            approved: [
+              "Your claim has been approved",
+              "Payment is being prepared. Funds usually arrive within 3 working days.",
+            ],
+            paid: [
+              "Your claim has been paid",
+              `${fmt.gh(claim.amountApproved ?? claim.amountRequested)} was disbursed${claim.paymentReference ? " · ref " + fmt.esc(claim.paymentReference) : ""}. Keep the reference for your records.`,
+            ],
+            rejected: [
+              "Your claim was not approved",
+              claim.rejectionReason ||
+                "Contact your welfare administrator for details.",
+            ],
+          };
+          const [nt, nd] = nexts[claim.status] || nexts.submitted;
+          document.getElementById("nextTitle").textContent = nt;
+          document.getElementById("nextDesc").innerHTML = nd;
+          if (claim.status === "rejected") {
+            banner.style.background = "var(--red-bg)";
+            document.getElementById("nextTitle").style.color = "var(--red-ink)";
+            document.getElementById("nextDesc").style.color = "var(--red-ink)";
+          }
+
+          // ---- Timeline ----
+          const dotColor = (ev) =>
+            /reject/i.test(ev)
+              ? "var(--red-ink)"
+              : /approv|paid|reviewed/i.test(ev)
+                ? "#79b843"
+                : /review|information/i.test(ev)
+                  ? "var(--gold)"
+                  : "var(--primary)";
+          const timeline = [...claim.timeline].reverse();
+          document.getElementById("timeline").innerHTML = timeline.length
+            ? timeline
+                .map(
+                  (t) => `
+          <div class="tl-row">
+            <span class="tl-dot" style="background:${dotColor(t.event)};"></span>
+            <div style="min-width:0;">
+              <span style="display:block; font-size:0.9rem; font-weight:600;">${fmt.esc(t.event)}</span>
+              <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;">${fmt.dateTime(t.at)}${t.note ? " — " + fmt.esc(t.note) : ""}</span>
+            </div>
+          </div>`,
+                )
+                .join("")
+            : '<div class="empty">No activity yet.</div>';
+
+          // ---- Details ----
+          document.getElementById("detailRows").innerHTML = [
+            ["Amount requested", fmt.gh(claim.amountRequested)],
+            ...(claim.amountApproved !== undefined &&
+            claim.amountApproved !== null
+              ? [["Amount approved", fmt.gh(claim.amountApproved)]]
+              : []),
+            ["Claim type", type.name || "—"],
+            [
+              "Submitted",
+              claim.submittedAt ? fmt.date(claim.submittedAt) : "Not yet",
+            ],
+            ["Reference", claim.claimNumber],
+          ]
+            .map(
+              ([k, v]) =>
+                `<div class="detail-row"><span class="k">${k}</span><span class="v">${fmt.esc(v)}</span></div>`,
+            )
+            .join("");
+
+          // ---- Documents ----
+          const required = type.requiredDocuments || [];
+          const removable = claim.status === "draft";
+          document.getElementById("docList").innerHTML = claim.documents.length
+            ? claim.documents
+                .map(
+                  (d) => `
+          <div class="doc-row">
+            <span style="font-weight:600; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${fmt.esc(d.label || d.originalName)}</span>
+            <span style="display:flex; gap:8px; flex-shrink:0;">
+              <a class="pill blue" href="/api/claims/${claim._id}/documents/${d._id}/download" target="_blank">View</a>
+              ${removable ? `<button type="button" class="pill red" style="border:0; cursor:pointer; font:inherit;" data-remove-doc="${d._id}">Remove</button>` : ""}
+            </span>
+          </div>`,
+                )
+                .join("")
+            : `<div class="empty" style="padding:12px;">No documents uploaded yet${required.length ? ` — ${required.length} required: ${fmt.esc(required.join(", "))}` : ""}.</div>`;
+          document.querySelectorAll("[data-remove-doc]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                await API.del(`/api/claims/${claimId}/documents/${btn.dataset.removeDoc}`);
+                toast("Document removed");
+                load();
+              } catch (err) {
+                toast(err.message, true);
+                btn.disabled = false;
+              }
+            }),
+          );
+
+          const uploadable = ["draft", "submitted", "under_review"].includes(
+            claim.status,
+          );
+          document.getElementById("uploadWrap").style.display = uploadable
+            ? "block"
+            : "none";
+          document.getElementById("submitWrap").style.display =
+            claim.status === "draft" ? "block" : "none";
+        }
+
+        // ---- Upload another document ----
+        const fileInput = document.getElementById("docFile");
+        document
+          .getElementById("uploadBtn")
+          .addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", async () => {
+          if (!fileInput.files.length) return;
+          const fd = new FormData();
+          for (const f of fileInput.files) fd.append("documents", f);
+          try {
+            await API.upload(`/api/claims/${claimId}/documents`, fd);
+            toast(
+              `${fileInput.files.length} document${fileInput.files.length === 1 ? "" : "s"} uploaded`,
+            );
+            fileInput.value = "";
+            load();
+          } catch (err) {
+            toast(err.message, true);
+          }
+        });
+
+        // ---- Submit draft ----
+        document
+          .getElementById("submitDraftBtn")
+          .addEventListener("click", async () => {
+            const errBox = document.getElementById("submitError");
+            errBox.classList.remove("show");
+            try {
+              await API.post(`/api/claims/${claimId}/submit`);
+              toast("Application submitted for review");
+              load();
+            } catch (err) {
+              errBox.textContent = err.message;
+              errBox.classList.add("show");
+            }
+          });
+
+        await load();
+      })();
+    </script>
+  </body>
+</html>

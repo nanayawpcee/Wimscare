@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Claims — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .tab-pill {
+        flex: 1;
+        max-width: 220px;
+        padding: 12px 20px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.92rem;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s ease;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--muted);
+      }
+      .tab-pill.on {
+        border: 0;
+        background: var(--primary);
+        color: #fff;
+      }
+      .type-btn {
+        text-align: left;
+        border-radius: 14px;
+        padding: 15px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s ease;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+      }
+      .type-btn.on {
+        border: 1px solid var(--primary);
+        background: var(--primary-tint);
+        color: var(--primary);
+        box-shadow: 0 0 0 1px var(--primary) inset;
+      }
+      .type-btn .t {
+        display: block;
+        font-weight: 700;
+        font-size: 0.92rem;
+      }
+      .type-btn .d {
+        display: block;
+        font-size: 0.78rem;
+        margin-top: 3px;
+        opacity: 0.75;
+      }
+      .type-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .dropzone {
+        border: 2px dashed var(--input-line);
+        border-radius: 14px;
+        padding: 22px 16px;
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+        text-align: center;
+      }
+      .doc-req {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      .doc-req .tick {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.62rem;
+        font-weight: 700;
+        background: #e9eff2;
+        color: var(--muted);
+      }
+      .doc-req.ok .tick {
+        background: var(--green-bg);
+        color: var(--green-ink);
+      }
+      .file-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+      }
+      .file-item .thumb {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        object-fit: cover;
+        flex-shrink: 0;
+        background: var(--bg);
+      }
+      .file-item .icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: var(--primary-tint);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.68rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .file-item .meta {
+        flex: 1;
+        min-width: 0;
+      }
+      .file-item .name {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .file-item .size {
+        display: block;
+        font-size: 0.76rem;
+        color: var(--muted);
+      }
+      .file-item .remove {
+        border: 0;
+        background: none;
+        color: var(--red-ink, #b4372a);
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 6px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .stepper {
+        display: flex;
+        align-items: flex-start;
+      }
+      .stepper .step {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        position: relative;
+      }
+      .stepper .bar {
+        position: absolute;
+        top: 5px;
+        left: -50%;
+        width: 100%;
+        height: 2px;
+      }
+      .stepper .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: block;
+        z-index: 1;
+        animation: stepPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+      .stepper .bar {
+        transform-origin: left;
+        animation: barFill 0.3s ease-out backwards;
+      }
+      .stepper .step:nth-child(1) .dot { animation-delay: 0.05s; }
+      .stepper .step:nth-child(2) .bar { animation-delay: 0.12s; }
+      .stepper .step:nth-child(2) .dot { animation-delay: 0.28s; }
+      .stepper .step:nth-child(3) .bar { animation-delay: 0.36s; }
+      .stepper .step:nth-child(3) .dot { animation-delay: 0.52s; }
+      .stepper .step:nth-child(4) .bar { animation-delay: 0.6s; }
+      .stepper .step:nth-child(4) .dot { animation-delay: 0.76s; }
+      @keyframes stepPop {
+        from { transform: scale(0); }
+        to { transform: scale(1); }
+      }
+      @keyframes barFill {
+        from { transform: scaleX(0); }
+        to { transform: scaleX(1); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .stepper .dot,
+        .stepper .bar {
+          animation: none;
+        }
+      }
+      .stepper .lbl {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-align: center;
+      }
+      .claim-card {
+        display: block;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        color: var(--ink);
+      }
+      .claim-card:hover {
+        border-color: var(--primary);
+        color: var(--ink);
+      }
+      @media (max-width: 900px) {
+        .type-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+        .head-stats {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body class="theme-member">
+    <div id="mShell"></div>
+    <div class="portal">
+      <aside class="portal-side">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div style="display: grid; gap: 4px">
+            <p>Member Portal</p>
+            <span>Contributions, claims and profile in one place.</span>
+          </div>
+        </div>
+        <nav aria-label="Member portal navigation">
+          <a href="/member/dashboard.html">Dashboard</a>
+          <a href="/member/claims.html" class="active">My claims</a>
+          <a href="/member/profile.html">Profile</a>
+          <a href="/member/preferences.html">Preferences</a>
+        </nav>
+        <div class="foot">
+          <div class="who">
+            <span class="avatar" id="sideAvatar"></span>
+            <div>
+              <strong
+                style="
+                  display: block;
+                  font-size: 0.98rem;
+                  color: #fff;
+                  margin-bottom: 2px;
+                "
+                id="sideName"
+              ></strong>
+              <span style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.68)"
+                >Member</span
+              >
+            </div>
+          </div>
+          <button type="button" class="signout" onclick="WIMS.signOut()">
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main class="portal-main">
+        <!-- Header -->
+        <section
+          class="panel m-hide"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+          "
+        >
+          <div>
+            <h1 style="margin: 0 0 6px; font-size: 1.7rem; font-weight: 700">
+              My Claims
+            </h1>
+            <p style="margin: 0; color: var(--muted)">
+              Apply for claims and track your applications
+            </p>
+          </div>
+          <div
+            class="head-stats"
+            style="display: flex; gap: 28px; align-items: center"
+          >
+            <div>
+              <div
+                style="
+                  font-size: 1.4rem;
+                  font-weight: 700;
+                  font-variant-numeric: tabular-nums;
+                "
+                id="statContrib"
+              >
+                —
+              </div>
+              <div
+                style="font-size: 0.8rem; color: var(--faint); font-weight: 600"
+              >
+                Total contributions
+              </div>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 1.4rem;
+                  font-weight: 700;
+                  font-variant-numeric: tabular-nums;
+                "
+                id="statActive"
+              >
+                —
+              </div>
+              <div
+                style="font-size: 0.8rem; color: var(--faint); font-weight: 600"
+              >
+                Active claims
+              </div>
+            </div>
+            <div>
+              <span class="pill green">Active member</span>
+              <div
+                style="
+                  font-size: 0.8rem;
+                  color: var(--faint);
+                  font-weight: 600;
+                  margin-top: 4px;
+                "
+              >
+                Account status
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tabs -->
+        <div style="display: flex; gap: 8px">
+          <button type="button" class="tab-pill on" id="tabApply">
+            New claim
+          </button>
+          <button type="button" class="tab-pill" id="tabTrack">
+            Track claims
+          </button>
+        </div>
+
+        <!-- ===== Apply ===== -->
+        <div id="applyWrap" style="display: grid; gap: 14px">
+          <section class="panel">
+            <h2 style="font-size: 1.15rem; margin-bottom: 3px">Claim type</h2>
+            <p style="margin: 0 0 14px; color: var(--muted); font-size: 0.88rem">
+              What support are you applying for?
+            </p>
+            <div class="type-grid" id="typeGrid"></div>
+            <p
+              style="margin: 12px 0 0; color: var(--faint); font-size: 0.82rem"
+              id="typeHint"
+            ></p>
+          </section>
+
+          <section class="panel">
+            <h2 style="font-size: 1.15rem; margin-bottom: 14px">
+              Application details
+            </h2>
+            <div class="form-error" id="applyError"></div>
+            <div class="form-grid">
+              <div>
+                <label class="field">Full name</label>
+                <input class="field" id="fName" readonly />
+              </div>
+              <div>
+                <label class="field">Department</label>
+                <input class="field" id="fDept" readonly />
+              </div>
+              <div>
+                <label class="field" id="fAmountLabel"
+                  >Amount requested (GH₵) *</label
+                >
+                <input
+                  class="field"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  id="fAmount"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label class="field">Event date</label>
+                <input class="field" type="date" id="fEventDate" />
+              </div>
+              <div style="grid-column: 1 / -1">
+                <label class="field">Additional details (optional)</label>
+                <textarea
+                  class="field"
+                  id="fDetails"
+                  rows="3"
+                  placeholder="Any supporting information"
+                ></textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2 style="font-size: 1.15rem; margin-bottom: 3px">
+              Supporting documents
+            </h2>
+            <p style="margin: 0 0 12px; color: var(--muted); font-size: 0.88rem">
+              Upload clear, legible copies — required before your application
+              can be submitted
+            </p>
+            <div id="reqDocs" style="display: grid; gap: 8px; margin-bottom: 14px"></div>
+            <div class="dropzone">
+              <span style="font-weight: 600; font-size: 0.88rem" id="fileCount"
+                >Tap to take a photo or choose files</span
+              >
+              <input
+                type="file"
+                id="fFiles"
+                accept=".pdf,image/jpeg,image/png,image/webp"
+                multiple
+                style="display: none"
+              />
+              <button
+                type="button"
+                class="btn secondary small"
+                id="browseBtn"
+                style="color: var(--primary)"
+              >
+                Browse files
+              </button>
+            </div>
+            <div id="fileList" style="display: grid; gap: 8px; margin-top: 10px"></div>
+          </section>
+
+          <div style="display: grid; gap: 10px">
+            <button type="button" class="btn" id="submitBtn" style="padding: 15px; border-radius: 14px">
+              Submit application
+            </button>
+            <button
+              type="button"
+              class="btn secondary"
+              id="draftBtn"
+              style="padding: 15px; border-radius: 14px"
+            >
+              Save draft
+            </button>
+          </div>
+        </div>
+
+        <!-- ===== Track ===== -->
+        <div id="trackWrap" style="display: none; gap: 14px">
+          <div id="claimList" style="display: grid; gap: 14px"></div>
+          <div
+            id="trackEmpty"
+            class="empty"
+            style="display: none; background: #fff; border-radius: 18px; border: 1px solid var(--line)"
+          >
+            No claims yet — switch to “New claim” to apply for support.
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["user", "admin", "supervisor", "accountant"],
+        });
+        if (!session) return;
+        const { user } = session;
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        WIMS.memberShell({
+          user,
+          active: "claims",
+          title: "My Claims",
+          sub: "Apply and track applications",
+        });
+
+        // ---- Header stats ----
+        API.get("/api/dashboard/member").then((d) => {
+          document.getElementById("statContrib").textContent = fmt.gh(
+            d.totalContributed,
+          );
+          document.getElementById("statActive").textContent = String(
+            d.claimsSummary.active,
+          );
+        });
+
+        // ---- Tabs ----
+        const tabApply = document.getElementById("tabApply");
+        const tabTrack = document.getElementById("tabTrack");
+        function showTab(which) {
+          tabApply.classList.toggle("on", which === "apply");
+          tabTrack.classList.toggle("on", which === "track");
+          document.getElementById("applyWrap").style.display =
+            which === "apply" ? "grid" : "none";
+          document.getElementById("trackWrap").style.display =
+            which === "track" ? "grid" : "none";
+          if (which === "track") loadClaims();
+        }
+        tabApply.addEventListener("click", () => showTab("apply"));
+        tabTrack.addEventListener("click", () => showTab("track"));
+        if (new URLSearchParams(location.search).get("tab") === "track")
+          showTab("track");
+
+        // ---- Prefill applicant details ----
+        document.getElementById("fName").value = fmt.name(user);
+        document.getElementById("fDept").value = user.department || "—";
+
+        // ---- Claim types ----
+        let types = [];
+        let selectedType = null;
+        let selectedFiles = [];
+        const typeGrid = document.getElementById("typeGrid");
+
+        function renderTypes() {
+          typeGrid.innerHTML = types
+            .map(
+              (t) => `
+        <button type="button" class="type-btn ${selectedType && selectedType._id === t._id ? "on" : ""}" data-type="${t._id}">
+          <span class="t">${fmt.esc(t.name)}</span>
+          <span class="d">${fmt.esc(t.description || "")}</span>
+        </button>`,
+            )
+            .join("");
+          typeGrid.querySelectorAll("[data-type]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              selectedType = types.find((t) => t._id === btn.dataset.type);
+              renderTypes();
+              renderTypeInfo();
+            }),
+          );
+        }
+
+        function renderTypeInfo() {
+          const hint = document.getElementById("typeHint");
+          const reqDocs = document.getElementById("reqDocs");
+          const amountInput = document.getElementById("fAmount");
+          const amountLabel = document.getElementById("fAmountLabel");
+          if (!selectedType) {
+            hint.textContent = "";
+            reqDocs.innerHTML = "";
+            return;
+          }
+          const docsBit = `${selectedType.requiredDocuments.length} document${selectedType.requiredDocuments.length === 1 ? "" : "s"} required`;
+          const fixed = selectedType.amountMode !== "capped";
+          if (fixed) {
+            // Admin-set benefit: the amount is locked to the exact figure.
+            hint.textContent = `Fixed benefit of ${fmt.gh(selectedType.benefitLimit)} — set by your administrator · ${docsBit}`;
+            amountInput.value = selectedType.benefitLimit;
+            amountInput.readOnly = true;
+            amountInput.style.background = "var(--primary-tint)";
+            amountInput.style.fontWeight = "700";
+            amountLabel.textContent = "Benefit amount (GH₵) — fixed";
+          } else {
+            const per = { claim: "per claim", year: "per year", lifetime: "lifetime" }[
+              selectedType.limitPer
+            ];
+            hint.textContent = `Limit ${fmt.gh(selectedType.benefitLimit)} ${per} · ${docsBit}`;
+            if (amountInput.readOnly) amountInput.value = "";
+            amountInput.readOnly = false;
+            amountInput.style.background = "";
+            amountInput.style.fontWeight = "";
+            amountLabel.textContent = "Amount requested (GH₵) *";
+          }
+          updateReqDocs();
+        }
+
+        function updateReqDocs() {
+          const reqDocs = document.getElementById("reqDocs");
+          if (!selectedType) return;
+          const fileCount = selectedFiles.length;
+          reqDocs.innerHTML = selectedType.requiredDocuments
+            .map(
+              (d, i) => `
+        <div class="doc-req ${i < fileCount ? "ok" : ""}">
+          <span class="tick">${i < fileCount ? "✓" : i + 1}</span>
+          <span>${fmt.esc(d)}</span>
+        </div>`,
+            )
+            .join("");
+        }
+
+        types = (await API.get("/api/claim-types")).items;
+        if (types.length) selectedType = types[0];
+        renderTypes();
+        renderTypeInfo();
+
+        // ---- File picker: preview + remove before anything is uploaded ----
+        const fileInput = document.getElementById("fFiles");
+        const fileListEl = document.getElementById("fileList");
+        function humanSize(bytes) {
+          if (bytes < 1024) return `${bytes} B`;
+          if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+          return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        }
+        function renderFileList() {
+          document.getElementById("fileCount").textContent = selectedFiles.length
+            ? `${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"} selected`
+            : "Tap to take a photo or choose files";
+          fileListEl.innerHTML = selectedFiles
+            .map((f, i) => {
+              const isImage = f.type.startsWith("image/");
+              const preview = isImage
+                ? `<img class="thumb" src="${URL.createObjectURL(f)}" alt="">`
+                : `<span class="icon">${fmt.esc((f.name.split(".").pop() || "FILE").slice(0, 4).toUpperCase())}</span>`;
+              return `
+        <div class="file-item">
+          ${preview}
+          <div class="meta">
+            <span class="name">${fmt.esc(f.name)}</span>
+            <span class="size">${humanSize(f.size)}</span>
+          </div>
+          <button type="button" class="remove" data-remove="${i}" aria-label="Remove ${fmt.esc(f.name)}">Remove</button>
+        </div>`;
+            })
+            .join("");
+          fileListEl.querySelectorAll("[data-remove]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              selectedFiles.splice(Number(btn.dataset.remove), 1);
+              renderFileList();
+            }),
+          );
+          updateReqDocs();
+        }
+        document
+          .getElementById("browseBtn")
+          .addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", () => {
+          for (const f of fileInput.files) selectedFiles.push(f);
+          fileInput.value = ""; // allow re-picking the same file later
+          renderFileList();
+        });
+
+        // ---- Create draft → upload → (submit) ----
+        const errBox = document.getElementById("applyError");
+        function showError(msg) {
+          errBox.textContent = msg;
+          errBox.classList.add("show");
+          errBox.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
+
+        async function createClaim(andSubmit) {
+          errBox.classList.remove("show");
+          if (!selectedType) return showError("Choose a claim type first");
+          const amount = document.getElementById("fAmount").value;
+          if (!(Number(amount) > 0))
+            return showError("Enter the amount you are requesting");
+
+          const submitBtn = document.getElementById("submitBtn");
+          const draftBtn = document.getElementById("draftBtn");
+          submitBtn.disabled = draftBtn.disabled = true;
+          try {
+            const created = await API.post("/api/claims", {
+              claimTypeId: selectedType._id,
+              amountRequested: amount,
+              eventDate: document.getElementById("fEventDate").value || undefined,
+              description:
+                document.getElementById("fDetails").value.trim() || undefined,
+            });
+            const claimId = created.claim._id;
+
+            if (selectedFiles.length) {
+              const fd = new FormData();
+              for (const f of selectedFiles) fd.append("documents", f);
+              await API.upload(`/api/claims/${claimId}/documents`, fd);
+            }
+
+            if (andSubmit) {
+              await API.post(`/api/claims/${claimId}/submit`);
+              toast("Application submitted for review");
+              window.location.href = `/member/claim-status.html?id=${claimId}`;
+            } else {
+              toast("Draft saved — finish it any time from Track claims");
+              showTab("track");
+            }
+            selectedFiles = [];
+            renderFileList();
+          } catch (err) {
+            showError(err.message);
+          } finally {
+            submitBtn.disabled = draftBtn.disabled = false;
+          }
+        }
+        document
+          .getElementById("submitBtn")
+          .addEventListener("click", () => createClaim(true));
+        document
+          .getElementById("draftBtn")
+          .addEventListener("click", () => createClaim(false));
+
+        // ---- Track claims ----
+        const STEPS = ["Submitted", "Review", "Approved", "Paid"];
+        const PROGRESS = {
+          draft: -1,
+          submitted: 0,
+          under_review: 1,
+          approved: 2,
+          paid: 3,
+        };
+        function stepper(claim) {
+          if (claim.status === "draft")
+            return `<span class="pill gray">Draft — not yet submitted</span>`;
+          const progress = PROGRESS[claim.status] ?? 0;
+          const rejected = claim.status === "rejected";
+          return `
+        <div class="stepper">
+          ${STEPS.map((label, i) => {
+            const done = !rejected && i <= progress;
+            const isRejectedStep = rejected && i === 2;
+            const dotColor = isRejectedStep
+              ? "var(--red-ink)"
+              : done
+                ? "var(--primary)"
+                : "#d5dee3";
+            const barColor =
+              i === 0
+                ? "transparent"
+                : done || isRejectedStep
+                  ? "var(--primary)"
+                  : "var(--line)";
+            return `
+            <div class="step">
+              <div class="bar" style="background:${barColor};"></div>
+              <span class="dot" style="background:${dotColor};"></span>
+              <span class="lbl" style="color:${isRejectedStep ? "var(--red-ink)" : done ? "var(--ink)" : "var(--faint)"};">${isRejectedStep ? "Rejected" : label}</span>
+            </div>`;
+          }).join("")}
+        </div>`;
+        }
+
+        async function loadClaims() {
+          const { items } = await API.get("/api/claims?limit=50");
+          document.getElementById("trackEmpty").style.display = items.length
+            ? "none"
+            : "block";
+          document.getElementById("claimList").innerHTML = items
+            .map(
+              (c) => `
+        <a class="claim-card" href="/member/claim-status.html?id=${c._id}">
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:4px;">
+            <strong style="font-size:0.98rem;">${fmt.esc(c.claimTypeId ? c.claimTypeId.name : "Claim")}</strong>
+            ${WIMS.pill(c.status)}
+          </div>
+          <span style="display:block; color:var(--faint); font-size:0.8rem; margin-bottom:14px;">
+            ${c.claimNumber} · ${fmt.date(c.submittedAt || c.createdAt)} · ${fmt.gh(c.amountApproved ?? c.amountRequested)}
+          </span>
+          ${stepper(c)}
+        </a>`,
+            )
+            .join("");
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1046 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Superadmin Console — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #c3ced4 transparent; }
+      body {
+        margin: 0; background: #f4f7f8; color: #12242e; font-size: 15px; line-height: 1.45;
+        font-family: "Instrument Sans", system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+      }
+      a { color: #1d6fae; text-decoration: none; }
+      button { font-family: inherit; cursor: pointer; }
+
+      .sa-shell { display: flex; min-height: 100vh; }
+      .sa-side {
+        position: fixed; inset: 0 auto 0 0; width: 232px; background: #0f2c3f;
+        display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; overflow-y: auto; z-index: 100;
+      }
+      .sa-brand { display: flex; align-items: center; gap: 10px; padding: 4px 12px 12px; }
+      .sa-brand img { width: 34px; height: 34px; border-radius: 9px; background: #fff; padding: 3px; object-fit: contain; }
+      .sa-brand .nm { color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; display: block; }
+      .sa-brand .tag { color: #e8b54a; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; }
+      .sa-portal-chip {
+        margin: 0 12px 14px; padding: 8px 10px; border-radius: 9px;
+        background: rgba(232, 181, 74, 0.12); border: 1px solid rgba(232, 181, 74, 0.3);
+      }
+      .sa-portal-chip .t { display: block; color: #e8b54a; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; }
+      .sa-portal-chip .s { display: block; color: #9fc2da; font-size: 0.72rem; margin-top: 2px; }
+      .sa-nav-btn {
+        display: flex; align-items: center; width: 100%; padding: 11px 12px; border-radius: 9px;
+        font-weight: 600; font-size: 0.95rem; color: #9fc2da; border: 0; background: none; text-align: left;
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+      .sa-nav-btn:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
+      .sa-nav-btn.active { background: #1d6fae; color: #fff; }
+      .sa-who {
+        margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.12); padding: 14px 0 0 6px;
+        display: flex; align-items: center; gap: 10px;
+      }
+      .sa-who .av {
+        width: 36px; height: 36px; border-radius: 999px; background: #e8b54a; color: #0f2c3f;
+        display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+      }
+      .sa-who .nm { color: #fff; font-weight: 600; font-size: 0.88rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sa-who .sub { color: #5e86a0; font-size: 0.75rem; display: block; }
+      .sa-signout { border: 0; background: none; color: #5e86a0; font-size: 0.78rem; font-weight: 600; padding: 8px 0 0 6px; text-align: left; }
+      .sa-signout:hover { color: #fff; }
+
+      .sa-main { flex: 1; margin-left: 232px; padding: 36px 40px 64px; max-width: 1120px; }
+      .sa-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 24px; flex-wrap: wrap; }
+      .sa-head h1 { margin: 0 0 6px; font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; }
+      .sa-head p { margin: 0; color: #5a6b75; }
+
+      .btn { padding: 11px 18px; border-radius: 10px; border: 0; background: #1d6fae; color: #fff; font-weight: 700; font-size: 0.92rem; }
+      .btn:hover { background: #185e93; }
+      .btn.sm { padding: 7px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; }
+      .btn.ghost { background: #fff; border: 1px solid #d5dee3; color: #1d6fae; }
+      .btn.ghost:hover { background: #fff; border-color: #1d6fae; }
+      .btn.warn { background: #fff; border: 1px solid #d5dee3; color: #8a5e14; }
+      .btn.warn:hover { background: #fff; border-color: #b97f24; }
+      .btn.danger { background: #fff; border: 1px solid #d5dee3; color: #b4372a; }
+      .btn.danger:hover { background: #fff; border-color: #b4372a; }
+      .btn.neutral { background: #fff; border: 1px solid #d5dee3; color: #12242e; font-weight: 600; }
+      .btn.neutral:hover { background: #fff; border-color: #1d6fae; color: #1d6fae; }
+
+      .card { background: #fff; border: 1px solid #e2e9ec; border-radius: 14px; padding: 24px; }
+      .card h2 { margin: 0 0 4px; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
+      .card .sub { margin: 0 0 18px; color: #5a6b75; font-size: 0.85rem; }
+
+      .pill { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+      .pill.green { background: #eef6e4; color: #4e7a22; }
+      .pill.amber { background: #fbf3e2; color: #8a5e14; }
+      .pill.red { background: #f9e9e6; color: #b4372a; }
+      .pill.gray { background: #e9eff2; color: #5a6b75; }
+      .pill.blue { background: #e8f1f8; color: #1d6fae; }
+
+      table.sa { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+      table.sa th {
+        text-align: left; padding: 14px 16px 12px; color: #8a98a1; font-size: 0.75rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #edf1f4;
+      }
+      table.sa th:first-child { padding-left: 0; }
+      table.sa th.num, table.sa td.num { text-align: right; padding-right: 0; }
+      table.sa td { padding: 13px 16px; border-bottom: 1px solid #f0f4f6; font-size: 0.9rem; color: #5a6b75; }
+      table.sa td:first-child { padding-left: 0; }
+      table.sa tbody tr:hover { background: rgba(15, 44, 63, 0.025); }
+      table.sa td .strong { display: block; font-size: 0.92rem; font-weight: 600; color: #12242e; }
+      table.sa td .faint { display: block; font-size: 0.78rem; color: #8a98a1; }
+      .mono { font-family: ui-monospace, monospace; }
+
+      .field-label { display: block; margin-bottom: 6px; font-size: 0.8rem; color: #5a6b75; font-weight: 700; }
+      input.f, select.f, textarea.f {
+        width: 100%; border-radius: 10px; border: 1px solid #d5dee3; padding: 12px 14px;
+        font-size: 0.92rem; font-family: inherit; background: #fff; color: #12242e;
+      }
+      textarea.f { resize: vertical; }
+
+      .feat-chip { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid #e2e9ec; background: #f4f7f8; color: #8a98a1; }
+      .feat-chip.on { background: #e8f1f8; color: #1d6fae; border-color: #c4dcee; }
+      .feat-chip.off-strike { text-decoration: line-through; }
+      button.feat-chip { cursor: pointer; }
+
+      .overlay { position: fixed; inset: 0; background: rgba(6, 20, 30, 0.45); z-index: 200; }
+      .drawer {
+        position: fixed; top: 0; right: 0; bottom: 0; width: 440px; max-width: 92vw; background: #fff; z-index: 210;
+        box-shadow: -16px 0 48px rgba(6, 20, 30, 0.25); padding: 28px; overflow-y: auto;
+        animation: drawerIn 0.25s ease-out;
+      }
+      @keyframes drawerIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+      .modal {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 520px; max-width: 94vw;
+        max-height: 86vh; overflow-y: auto; background: #fff; border-radius: 18px; z-index: 210;
+        box-shadow: 0 24px 64px rgba(6, 20, 30, 0.3); padding: 28px;
+      }
+      /* Confirmation dialog — stacks above a drawer/modal already in #layer,
+         so it appends rather than replacing layer.innerHTML. */
+      .overlay.confirm-overlay { z-index: 300; }
+      .modal.confirm-modal { z-index: 310; width: 420px; padding: 26px; }
+      .x-btn { width: 34px; height: 34px; border-radius: 9px; border: 1px solid #e2e9ec; background: #fff; color: #5a6b75; font-size: 1rem; flex-shrink: 0; }
+      .x-btn:hover { border-color: #1d6fae; color: #1d6fae; }
+
+      .kv { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9rem; }
+      .kv .k { color: #8a98a1; }
+      .kv .v { font-weight: 600; text-align: right; }
+
+      .toast {
+        position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); background: #0f2c3f;
+        color: #fff; padding: 12px 22px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; opacity: 0;
+        pointer-events: none; transition: all 0.25s ease; z-index: 400; max-width: 90vw;
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      .toast.error { background: #b4372a; }
+
+      @media (max-width: 900px) {
+        .sa-side { position: static; width: 100%; inset: auto; }
+        .sa-shell { flex-direction: column; }
+        .sa-main { margin-left: 0; padding: 24px 18px 48px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sa-shell">
+      <aside class="sa-side">
+        <div class="sa-brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="nm">WIMScare</span>
+            <span class="tag">SUPERADMIN</span>
+          </div>
+        </div>
+        <div class="sa-portal-chip">
+          <span class="t">DEVELOPER PORTAL</span>
+          <span class="s">All organizations · bypasses tenant checks</span>
+        </div>
+        <nav id="nav" style="display: grid; gap: 2px"></nav>
+        <div class="sa-who">
+          <span class="av" id="whoAv">SA</span>
+          <div style="min-width: 0">
+            <span class="nm" id="whoName"></span>
+            <span class="sub" id="whoSub">Superadmin</span>
+          </div>
+        </div>
+        <button type="button" class="sa-signout" id="signOutBtn">Sign out</button>
+      </aside>
+
+      <main class="sa-main">
+        <div class="sa-head">
+          <div>
+            <h1 id="pageTitle"></h1>
+            <p id="pageDesc"></p>
+          </div>
+          <div id="headAction"></div>
+        </div>
+        <div id="content"></div>
+      </main>
+    </div>
+
+    <div id="layer"></div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async () => {
+        const { API, fmt, toast } = WIMS;
+        const session = await WIMS.requireSession({ roles: ["superadmin"] });
+        if (!session) return;
+        // Returning to the portal always resets any "open as" org context.
+        sessionStorage.removeItem("wims.devOrg");
+
+        document.getElementById("whoAv").textContent = fmt.initials(session.user);
+        document.getElementById("whoName").textContent = fmt.name(session.user);
+        document.getElementById("signOutBtn").addEventListener("click", WIMS.signOut);
+
+        const $ = (id) => document.getElementById(id);
+        const content = $("content");
+        const layer = $("layer");
+
+        // In-app confirmation dialog (replaces window.confirm). Appends to
+        // #layer rather than replacing it, so it stacks above a drawer/modal
+        // already open there instead of wiping it out.
+        function confirmDialog({ title, body, confirmLabel = "Confirm", cancelLabel = "Cancel" }) {
+          return new Promise((resolve) => {
+            const wrap = document.createElement("div");
+            wrap.innerHTML = `
+              <div class="overlay confirm-overlay" data-confirm-close></div>
+              <div class="modal confirm-modal">
+                <h3 style="margin:0 0 10px; font-size:1.1rem; font-weight:700; letter-spacing:-0.01em;">${fmt.esc(title)}</h3>
+                <p style="margin:0 0 22px; color:#5a6b75; font-size:0.9rem; line-height:1.55;">${body}</p>
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                  <button type="button" class="btn ghost" data-confirm-cancel style="padding:11px 16px;">${fmt.esc(cancelLabel)}</button>
+                  <button type="button" class="btn" data-confirm-ok style="padding:11px 16px;">${fmt.esc(confirmLabel)}</button>
+                </div>
+              </div>`;
+            layer.appendChild(wrap);
+            const settle = (result) => { wrap.remove(); resolve(result); };
+            wrap.querySelector("[data-confirm-close]").addEventListener("click", () => settle(false));
+            wrap.querySelector("[data-confirm-cancel]").addEventListener("click", () => settle(false));
+            wrap.querySelector("[data-confirm-ok]").addEventListener("click", () => settle(true));
+          });
+        }
+
+        // ---------- Section registry ----------
+        const SECTIONS = [
+          { key: "overview", label: "Overview", title: "Superadmin overview", desc: () => "All organizations on this deployment · " + new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" }) },
+          { key: "licenses", label: "Licenses", title: "Licenses", desc: () => "Create, renew, suspend and cancel organization licenses" },
+          { key: "orgs", label: "Organizations", title: "Organizations", desc: () => "Every tenant on this deployment, with cross-org access" },
+          { key: "credentials", label: "Credentials", title: "Superadmin credentials", desc: () => "Monthly rotating credentials for portal and organization access" },
+          { key: "backups", label: "Backups", title: "Backups", desc: () => "Backup jobs and schedules across all organizations" },
+          { key: "audit", label: "Audit log", title: "Audit log", desc: () => "Every superadmin action is recorded and immutable" },
+          { key: "updates", label: "System updates", title: "System updates", desc: () => "Release notes published to every organization's console" },
+        ];
+        const renderers = {};
+
+        const nav = $("nav");
+        nav.innerHTML = SECTIONS.map((s) => `<button type="button" class="sa-nav-btn" data-sec="${s.key}">${s.label}</button>`).join("");
+        nav.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-sec]");
+          if (btn) show(btn.dataset.sec);
+        });
+
+        function show(key) {
+          const sec = SECTIONS.find((s) => s.key === key) || SECTIONS[0];
+          location.hash = sec.key;
+          nav.querySelectorAll(".sa-nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.sec === sec.key));
+          $("pageTitle").textContent = sec.title;
+          $("pageDesc").textContent = sec.desc();
+          $("headAction").innerHTML = sec.key === "licenses" ? `<button type="button" class="btn" id="openCreate">Create license</button>` : "";
+          content.innerHTML = `<div style="color:#8a98a1; padding:30px 0;">Loading…</div>`;
+          renderers[sec.key]().catch((err) => {
+            content.innerHTML = `<div class="card" style="color:#b4372a;">${fmt.esc(err.message)}</div>`;
+          });
+        }
+
+        // ---------- Shared bits ----------
+        const PILL = {
+          active: "green", pending: "amber", expired: "red", suspended: "gray", cancelled: "gray",
+          revoked: "gray", trial: "blue", operational: "green", degraded: "amber", down: "red",
+          completed: "green", failed: "red",
+        };
+        const pill = (status) => `<span class="pill ${PILL[String(status).toLowerCase()] || "gray"}">${fmt.esc(String(status).charAt(0).toUpperCase() + String(status).slice(1))}</span>`;
+        const planName = (p) => ({ free: "Free", standard: "Standard", pro: "Pro", trial: "Trial (legacy)", professional: "Professional (legacy)", enterprise: "Enterprise (legacy)", premium: "Premium (legacy)" })[p] || p;
+        // Mirrors utils/plans.js — defaults applied when picking a plan in
+        // the create-license modal.
+        const PLAN_DEFAULTS = {
+          free: { maxUsers: 3, maxMembers: 100, features: ["claimsManagement", "contributionsManagement"] },
+          standard: { maxUsers: 15, maxMembers: 500, features: ["claimsManagement", "contributionsManagement", "accountsManagement", "reports"] },
+          pro: { maxUsers: 100, maxMembers: 5000, features: null }, // null = all
+        };
+        const FEATURES = {
+          claimsManagement: "Claims", contributionsManagement: "Contributions", accountsManagement: "Accounts",
+          reports: "Reports", auditTrail: "Audit trail", customBranding: "Custom branding",
+        };
+        const dot = (c) => `<span style="flex-shrink:0; width:10px; height:10px; border-radius:50%; margin-top:5px; background:${c}; display:block;"></span>`;
+        const DAY = 86400000;
+        const soonCutoff = () => new Date(Date.now() + 30 * DAY);
+        const rel = (d) => {
+          if (!d) return "—";
+          const days = Math.floor((Date.now() - new Date(d).getTime()) / DAY);
+          return days <= 0 ? "Today" : days === 1 ? "Yesterday" : `${days}d ago`;
+        };
+        const expSoon = (lic) => lic.status === "active" && lic.expiresAt && new Date(lic.expiresAt) > new Date() && new Date(lic.expiresAt) <= soonCutoff();
+
+        // ---------- Overview ----------
+        renderers.overview = async () => {
+          const ov = await API.get("/api/developer/overview");
+          const bars = [
+            ["Active", ov.byStatus.active, "#79b843"],
+            ["Trial", ov.byStatus.trial, "#1d6fae"],
+            ["Pending", ov.byStatus.pending, "#e8b54a"],
+            ["Expired", ov.byStatus.expired, "#b4372a"],
+            ["Suspended", ov.byStatus.suspended, "#8a98a1"],
+          ];
+          const maxCount = Math.max(1, ...bars.map((b) => b[1]));
+          const stats = [
+            { label: "Total licenses", value: ov.stats.totalLicenses, sub: `${ov.stats.activeLicenses} active · ${ov.stats.trialLicenses} trial` },
+            { label: "Organizations", value: ov.stats.organizations, sub: "On this deployment" },
+            { label: "Total users", value: Number(ov.stats.users).toLocaleString(), sub: `${ov.stats.admins} admins` },
+            { label: "Expiring soon", value: ov.stats.expiringSoon, sub: "Within 30 days" },
+          ];
+          const reqs = ov.renewalRequests || [];
+          // Admin-initiated renewal requests — a distinct blue notification
+          // banner so it stands out from the amber "expiring soon" one.
+          const renewalBanner = reqs.length
+            ? `<div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:#e8f1f8; border:1px solid #c4dcee; border-radius:14px; padding:16px 20px; margin-bottom:20px;">
+                <div style="min-width:0;">
+                  <span style="display:block; font-weight:700; color:#185e93; font-size:0.95rem;">${reqs.length} renewal request${reqs.length > 1 ? "s" : ""} from organization admins</span>
+                  <span style="display:block; color:#185e93; font-size:0.85rem; opacity:0.85;">${reqs.slice(0, 3).map((r) => `${fmt.esc(r.org)} (${planName(r.plan)})`).join(", ")}${reqs.length > 3 ? ` and ${reqs.length - 3} more` : ""} asked to renew</span>
+                </div>
+                <button type="button" class="btn sm" data-go="licenses" style="padding:9px 16px; white-space:nowrap;">Review licenses</button>
+              </div>`
+            : "";
+          const planReqs = ov.planRequests || [];
+          const planBanner = planReqs.length
+            ? `<div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:#e8f1f8; border:1px solid #c4dcee; border-radius:14px; padding:16px 20px; margin-bottom:20px;">
+                <div style="min-width:0;">
+                  <span style="display:block; font-weight:700; color:#185e93; font-size:0.95rem;">${planReqs.length} plan upgrade request${planReqs.length > 1 ? "s" : ""} from organization admins</span>
+                  <span style="display:block; color:#185e93; font-size:0.85rem; opacity:0.85;">${planReqs.slice(0, 3).map((r) => `${fmt.esc(r.org)} (${planName(r.plan)} → ${planName(r.requestedPlan)})`).join(", ")}${planReqs.length > 3 ? ` and ${planReqs.length - 3} more` : ""}</span>
+                </div>
+                <button type="button" class="btn sm" data-go="licenses" style="padding:9px 16px; white-space:nowrap;">Review licenses</button>
+              </div>`
+            : "";
+          const delReqs = ov.deletionRequests || { admins: [], organizations: [] };
+          const delCount = delReqs.admins.length + delReqs.organizations.length;
+          const deletionBanner = delCount
+            ? `<div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:#f9e9e6; border:1px solid #f3c7c2; border-radius:14px; padding:16px 20px; margin-bottom:20px;">
+                <div style="min-width:0;">
+                  <span style="display:block; font-weight:700; color:#b4372a; font-size:0.95rem;">${delCount} deletion request${delCount > 1 ? "s" : ""} awaiting your review</span>
+                  <span style="display:block; color:#b4372a; font-size:0.85rem; opacity:0.85;">${[...delReqs.organizations.map((o) => `${fmt.esc(o.org)} (organization)`), ...delReqs.admins.map((a) => `${fmt.esc(a.name)} (admin account)`)].slice(0, 3).join(", ")}${delCount > 3 ? ` and ${delCount - 3} more` : ""}</span>
+                </div>
+              </div>`
+            : "";
+          const banner = ov.expiring.length
+            ? `<div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:#fbf3e2; border:1px solid #ebd9a9; border-radius:14px; padding:16px 20px; margin-bottom:20px;">
+                <div>
+                  <span style="display:block; font-weight:700; color:#8a5e14; font-size:0.95rem;">${ov.expiring.length} license${ov.expiring.length > 1 ? "s" : ""} expiring within 30 days</span>
+                  <span style="color:#8a5e14; font-size:0.85rem; opacity:0.85;">${ov.expiring.map((e) => `${fmt.esc(e.org)} (${planName(e.plan)})`).join(" and ")} need renewal</span>
+                </div>
+                <button type="button" class="btn warn sm" data-go="licenses" style="padding:9px 16px; white-space:nowrap;">Review licenses</button>
+              </div>`
+            : "";
+          content.innerHTML = `
+            ${renewalBanner}
+            ${planBanner}
+            ${deletionBanner}
+            ${banner}
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
+              ${stats.map((s) => `
+                <div class="card" style="padding:20px 22px;">
+                  <div style="color:#8a98a1; font-size:0.8rem; font-weight:600; margin-bottom:8px;">${s.label}</div>
+                  <div style="font-size:1.5rem; font-weight:700; letter-spacing:-0.01em; font-variant-numeric:tabular-nums;">${s.value}</div>
+                  <div style="color:#8a98a1; font-size:0.78rem; margin-top:4px;">${s.sub}</div>
+                </div>`).join("")}
+            </div>
+            <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px; margin-bottom:20px;">
+              <div class="card">
+                <h2>Licenses by status</h2>
+                <p class="sub">All organizations on this deployment</p>
+                <div style="display:grid; gap:12px;">
+                  ${bars.map(([label, count, color]) => `
+                    <div style="display:grid; grid-template-columns:90px 1fr 32px; gap:12px; align-items:center;">
+                      <span style="font-size:0.85rem; font-weight:600; color:#5a6b75;">${label}</span>
+                      <div style="height:10px; border-radius:999px; background:#edf1f4; overflow:hidden;">
+                        <div style="height:100%; border-radius:999px; width:${count === 0 ? 1 : Math.round((count / maxCount) * 100)}%; background:${color}; transition:width 0.6s ease;"></div>
+                      </div>
+                      <span style="font-size:0.85rem; font-weight:700; font-variant-numeric:tabular-nums; text-align:right;">${count}</span>
+                    </div>`).join("")}
+                </div>
+              </div>
+              <div class="card">
+                <h2>System health</h2>
+                <p class="sub">Live service status</p>
+                <div style="display:grid; gap:10px;">
+                  ${ov.health.map((svc) => `
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid #edf1f4; border-radius:10px;" ${svc.note ? `title="${fmt.esc(svc.note)}"` : ""}>
+                      <span style="font-size:0.88rem; font-weight:600;">${fmt.esc(svc.name)}</span>
+                      ${pill(svc.status)}
+                    </div>`).join("")}
+                </div>
+              </div>
+            </div>
+            ${
+              delCount
+                ? `<div class="card" style="margin-bottom:20px;">
+                     <h2>Pending deletion requests</h2>
+                     <p class="sub">Approving locks the account/organization out immediately — data is kept, not erased</p>
+                     <div style="display:grid; gap:2px;">
+                       ${delReqs.organizations.map((o) => `
+                         <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid #f0f4f6;">
+                           <div style="min-width:0;">
+                             <span style="display:block; font-weight:600; font-size:0.9rem;">${fmt.esc(o.org)} <span class="pill red" style="font-size:0.68rem; padding:2px 8px;">Organization</span></span>
+                             <span style="display:block; color:#8a98a1; font-size:0.8rem; margin-top:2px;">Requested by ${fmt.esc(o.requestedBy)} · ${rel(o.requestedAt)}${o.reason ? ` · "${fmt.esc(o.reason)}"` : ""}</span>
+                           </div>
+                           <div style="display:flex; gap:8px; flex-shrink:0;">
+                             <button type="button" class="btn ghost sm" data-reject-org="${o.organizationId}">Decline</button>
+                             <button type="button" class="btn danger sm" data-approve-org="${o.organizationId}" data-org-name="${fmt.esc(o.org)}">Approve</button>
+                           </div>
+                         </div>`).join("")}
+                       ${delReqs.admins.map((a) => `
+                         <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid #f0f4f6;">
+                           <div style="min-width:0;">
+                             <span style="display:block; font-weight:600; font-size:0.9rem;">${fmt.esc(a.name)} <span class="pill blue" style="font-size:0.68rem; padding:2px 8px;">Admin account</span></span>
+                             <span style="display:block; color:#8a98a1; font-size:0.8rem; margin-top:2px;">${fmt.esc(a.email)} · ${fmt.esc(a.org)} · ${rel(a.requestedAt)}${a.reason ? ` · "${fmt.esc(a.reason)}"` : ""}</span>
+                           </div>
+                           <div style="display:flex; gap:8px; flex-shrink:0;">
+                             <button type="button" class="btn ghost sm" data-reject-admin="${a.userId}">Decline</button>
+                             <button type="button" class="btn danger sm" data-approve-admin="${a.userId}" data-admin-name="${fmt.esc(a.name)}">Approve</button>
+                           </div>
+                         </div>`).join("")}
+                     </div>
+                   </div>`
+                : ""
+            }
+            <div class="card">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px;">
+                <h2 style="margin:0;">Recent superadmin activity</h2>
+                <button type="button" data-go="audit" style="border:0; background:none; color:#1d6fae; font-size:0.88rem; font-weight:600; padding:0;">View audit log</button>
+              </div>
+              <div style="display:grid;">
+                ${ov.recent.length ? ov.recent.map((item) => `
+                  <div style="display:flex; gap:12px; padding:11px 0; border-bottom:1px solid #f0f4f6; align-items:flex-start;">
+                    ${dot(auditColor(item.action))}
+                    <div style="min-width:0; flex:1;">
+                      <span style="display:block; font-size:0.9rem; font-weight:600;">${auditTitle(item)}</span>
+                      <span style="display:block; font-size:0.78rem; color:#8a98a1; margin-top:2px;">${auditMeta(item)}</span>
+                    </div>
+                  </div>`).join("") : `<span style="color:#8a98a1; font-size:0.88rem;">No superadmin activity yet.</span>`}
+              </div>
+            </div>`;
+          content.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => show(b.dataset.go)));
+
+          content.querySelectorAll("[data-approve-org]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              const ok = await confirmDialog({
+                title: "Delete this organization?",
+                body: `<strong>${fmt.esc(btn.dataset.orgName)}</strong> and every admin, staff member and member in it will be locked out immediately. Data is kept for records, not erased.`,
+                confirmLabel: "Approve deletion",
+              });
+              if (!ok) return;
+              try {
+                await API.post(`/api/developer/organizations/${btn.dataset.approveOrg}/approve-deletion`);
+                toast("Organization deleted");
+                show("overview");
+              } catch (err) {
+                toast(err.message, true);
+              }
+            }));
+          content.querySelectorAll("[data-reject-org]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              try {
+                await API.post(`/api/developer/organizations/${btn.dataset.rejectOrg}/reject-deletion`);
+                toast("Deletion request declined");
+                show("overview");
+              } catch (err) {
+                toast(err.message, true);
+              }
+            }));
+          content.querySelectorAll("[data-approve-admin]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              const ok = await confirmDialog({
+                title: "Delete this admin account?",
+                body: `<strong>${fmt.esc(btn.dataset.adminName)}</strong> will be permanently locked out. Their contributions, claims and ledger history stay on record for reporting.`,
+                confirmLabel: "Approve deletion",
+              });
+              if (!ok) return;
+              try {
+                await API.post(`/api/developer/users/${btn.dataset.approveAdmin}/approve-deletion`);
+                toast("Account deleted");
+                show("overview");
+              } catch (err) {
+                toast(err.message, true);
+              }
+            }));
+          content.querySelectorAll("[data-reject-admin]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              try {
+                await API.post(`/api/developer/users/${btn.dataset.rejectAdmin}/reject-deletion`);
+                toast("Deletion request declined");
+                show("overview");
+              } catch (err) {
+                toast(err.message, true);
+              }
+            }));
+        };
+
+        // ---------- Licenses ----------
+        let licenseCache = [];
+        renderers.licenses = async () => {
+          const { items } = await API.get("/api/developer/licenses");
+          licenseCache = items;
+          content.innerHTML = `
+            <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+              <input type="text" class="f" id="licSearch" placeholder="Search key, organization or contact…" style="flex:1; min-width:220px; width:auto; padding:11px 14px;" />
+              <select class="f" id="licStatus" style="width:auto; padding:11px 14px; font-weight:600;">
+                <option value="">All statuses</option>
+                ${["active", "pending", "expired", "suspended", "cancelled", "revoked"].map((s) => `<option value="${s}">${s[0].toUpperCase() + s.slice(1)}</option>`).join("")}
+              </select>
+              <select class="f" id="licPlan" style="width:auto; padding:11px 14px; font-weight:600;">
+                <option value="">All types</option>
+                ${["free", "standard", "pro", "trial"].map((p) => `<option value="${p}">${planName(p)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="card" style="padding:8px 24px 16px;">
+              <table class="sa">
+                <thead><tr>
+                  <th>Organization</th><th>License key</th><th>Type</th><th>Users / Members</th><th>Expires</th><th>Status</th><th class="num"></th>
+                </tr></thead>
+                <tbody id="licRows"></tbody>
+              </table>
+            </div>`;
+          const draw = () => {
+            const q = $("licSearch").value.trim().toLowerCase();
+            const st = $("licStatus").value;
+            const pl = $("licPlan").value;
+            const rows = licenseCache.filter((l) => {
+              const orgName = l.organizationId ? l.organizationId.name : "";
+              if (st && l.status !== st) return false;
+              if (pl && l.plan !== pl) return false;
+              if (q && !`${orgName} ${l.key} ${l.contactEmail || ""}`.toLowerCase().includes(q)) return false;
+              return true;
+            });
+            $("licRows").innerHTML = rows.length ? rows.map((l) => `
+              <tr>
+                <td>
+                  <span class="strong">${fmt.esc(l.organizationId ? l.organizationId.name : "—")}${l.renewalRequestedAt ? ` <span class="pill blue" style="font-size:0.68rem; padding:2px 8px;">Renewal requested</span>` : ""}${l.planRequestedAt ? ` <span class="pill blue" style="font-size:0.68rem; padding:2px 8px;">${planName(l.requestedPlan)} requested</span>` : ""}</span>
+                  <span class="faint">${fmt.esc(l.contactEmail || "")}</span>
+                </td>
+                <td class="mono" style="font-size:0.82rem;">${fmt.esc(l.key)}</td>
+                <td>${planName(l.plan)}</td>
+                <td>${l.maxUsers ?? "—"} / ${Number(l.maxMembers || 0).toLocaleString()}</td>
+                <td style="color:${expSoon(l) ? "#b4372a" : "#5a6b75"};">${l.activatedAt || l.status !== "pending" ? fmt.date(l.expiresAt) : "—"}</td>
+                <td>${pill(l.status)}</td>
+                <td class="num"><button type="button" class="btn ghost sm" data-manage="${l._id}">Manage</button></td>
+              </tr>`).join("") : `<tr><td colspan="7" style="color:#8a98a1; padding:24px 0;">No licenses match.</td></tr>`;
+            $("licRows").querySelectorAll("[data-manage]").forEach((b) => b.addEventListener("click", () => openDrawer(b.dataset.manage)));
+          };
+          ["licSearch", "licStatus", "licPlan"].forEach((id) => $(id).addEventListener("input", draw));
+          draw();
+          $("openCreate")?.addEventListener("click", openCreateModal);
+        };
+
+        function openDrawer(id) {
+          const l = licenseCache.find((x) => x._id === id);
+          if (!l) return;
+          const feats = Object.entries(FEATURES).map(([k, label]) =>
+            `<span class="feat-chip ${l.features && l.features[k] ? "on" : "off-strike"}">${label}</span>`).join("");
+          const act = (label, cls, action, months) =>
+            `<button type="button" class="btn ${cls}" data-act="${action}" ${months ? `data-months="${months}"` : ""} style="padding:12px;">${label}</button>`;
+          layer.innerHTML = `
+            <div class="overlay" data-close></div>
+            <aside class="drawer">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:4px;">
+                <h2 style="margin:0; font-size:1.3rem; font-weight:700; letter-spacing:-0.02em;">${fmt.esc(l.organizationId ? l.organizationId.name : "—")}</h2>
+                <button type="button" class="x-btn" data-close aria-label="Close">&#10005;</button>
+              </div>
+              <span style="display:inline-block; margin-bottom:18px;">${pill(l.status)}</span>
+              <div style="background:#f4f7f8; border:1px solid #e2e9ec; border-radius:12px; padding:14px 16px; margin-bottom:18px;">
+                <span style="display:block; font-size:0.72rem; color:#8a98a1; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px;">License key</span>
+                <span class="mono" style="font-weight:700; font-size:0.95rem;">${fmt.esc(l.key)}</span>
+              </div>
+              <div style="display:grid; gap:10px; margin-bottom:18px;">
+                <div class="kv"><span class="k">Type</span><span class="v">${planName(l.plan)}</span></div>
+                <div class="kv"><span class="k">Contact</span><span class="v">${fmt.esc(l.contactEmail || (l.organizationId && l.organizationId.code) || "—")}</span></div>
+                <div class="kv"><span class="k">Capacity</span><span class="v">${l.maxUsers ?? "—"} users / ${Number(l.maxMembers || 0).toLocaleString()} members</span></div>
+                <div class="kv"><span class="k">Activated</span><span class="v">${l.activatedAt ? fmt.date(l.activatedAt) : "—"}</span></div>
+                <div class="kv"><span class="k">Expires</span><span class="v" style="color:${expSoon(l) ? "#b4372a" : "#12242e"};">${l.status === "pending" && !l.activatedAt ? "—" : fmt.date(l.expiresAt)}</span></div>
+                <div class="kv"><span class="k">Issued</span><span class="v">${fmt.date(l.issuedAt || l.createdAt)}</span></div>
+                ${l.notes ? `<div class="kv"><span class="k">Notes</span><span class="v">${fmt.esc(l.notes)}</span></div>` : ""}
+              </div>
+              <h3 style="margin:0 0 10px; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:#5a6b75; font-weight:700;">Feature flags</h3>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px;">${feats}</div>
+              <h3 style="margin:0 0 10px; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:#5a6b75; font-weight:700;">Renewal history</h3>
+              <div style="margin-bottom:22px;">
+                ${
+                  (l.renewals && l.renewals.length)
+                    ? `<div style="display:grid; gap:2px;">${l.renewals
+                        .slice()
+                        .reverse()
+                        .map((r) => `
+                          <div style="display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid #f0f4f6; font-size:0.85rem;">
+                            <span style="color:#5a6b75;">${fmt.date(r.at)} · +${r.months} mo${r.note ? ` · ${fmt.esc(r.note)}` : ""}</span>
+                            <span style="font-weight:600; white-space:nowrap;">→ ${fmt.date(r.newExpiresAt)}</span>
+                          </div>`).join("")}</div>
+                       <div style="margin-top:8px; font-size:0.8rem; color:#8a98a1;">${l.renewals.length} renewal${l.renewals.length > 1 ? "s" : ""} on record</div>`
+                    : `<span style="font-size:0.85rem; color:#8a98a1;">No renewals yet.</span>`
+                }
+              </div>
+              <div style="display:grid; gap:10px;">
+                ${
+                  !["cancelled", "revoked"].includes(l.status)
+                    ? `${
+                         l.requestedPlan
+                           ? `<div style="padding:12px 16px; border-radius:12px; background:#e8f1f8; color:#185e93; font-weight:600; font-size:0.85rem;">Admin requested <strong>${planName(l.requestedPlan)}</strong>${l.planRequestNote ? ` — "${fmt.esc(l.planRequestNote)}"` : ""}</div>`
+                           : ""
+                       }
+                       <div style="display:grid; grid-template-columns:1fr auto; gap:10px;">
+                         <select class="f" id="changePlanSelect" style="padding:12px 10px;">
+                           ${["free", "standard", "pro"]
+                             .map(
+                               (p) =>
+                                 `<option value="${p}" ${(l.requestedPlan || l.plan) === p ? "selected" : ""}>${planName(p)}${p === l.plan ? " (current)" : ""}</option>`,
+                             )
+                             .join("")}
+                         </select>
+                         <button type="button" class="btn" data-act="change-plan" style="padding:12px 18px; white-space:nowrap;">Change plan</button>
+                       </div>`
+                    : ""
+                }
+                ${
+                  ["active", "expired", "suspended"].includes(l.status)
+                    ? `<div style="display:grid; grid-template-columns:1fr auto; gap:10px;">
+                         <select class="f" id="renewMonths" style="padding:12px 10px;">
+                           <option value="6">6 months</option>
+                           <option value="12" selected>12 months</option>
+                           <option value="24">24 months</option>
+                           <option value="36">36 months</option>
+                           <option value="48">48 months</option>
+                         </select>
+                         <button type="button" class="btn" data-act="renew" style="padding:12px 18px; white-space:nowrap;">Renew license</button>
+                       </div>`
+                    : ""
+                }
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  ${l.status === "suspended" ? act("Reactivate", "warn", "reactivate") : ["active", "pending"].includes(l.status) ? act("Suspend", "warn", "suspend") : ""}
+                  ${["active", "pending", "suspended", "expired"].includes(l.status) ? act("Cancel license", "danger", "cancel") : ""}
+                </div>
+              </div>
+            </aside>`;
+          layer.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => (layer.innerHTML = "")));
+          layer.querySelectorAll("[data-act]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              const action = btn.dataset.act;
+              const orgLabel = l.organizationId ? l.organizationId.name : "this organization";
+              if (action === "cancel") {
+                const ok = await confirmDialog({
+                  title: "Cancel this license?",
+                  body: `Cancel the license for <strong>${fmt.esc(orgLabel)}</strong>? Their console access will stop immediately.`,
+                  confirmLabel: "Cancel license",
+                });
+                if (!ok) return;
+              }
+              if (action === "suspend") {
+                const ok = await confirmDialog({
+                  title: "Suspend this license?",
+                  body: `Suspend the license for <strong>${fmt.esc(orgLabel)}</strong>? Their console access will be blocked until reactivated.`,
+                  confirmLabel: "Suspend",
+                });
+                if (!ok) return;
+              }
+              let months;
+              let plan;
+              if (action === "change-plan") {
+                plan = document.getElementById("changePlanSelect").value;
+                if (plan === l.plan) return toast(`Already on the ${planName(plan)} plan`, true);
+                const ok = await confirmDialog({
+                  title: "Change this license's plan?",
+                  body: `Move <strong>${fmt.esc(orgLabel)}</strong> from ${planName(l.plan)} to <strong>${planName(plan)}</strong>.<br><br>Capacity and feature flags will reset to the ${planName(plan)} plan's defaults.`,
+                  confirmLabel: "Change plan",
+                });
+                if (!ok) return;
+              }
+              if (action === "renew") {
+                months = Number(document.getElementById("renewMonths").value) || 12;
+                // Mirror the server's date math exactly so the confirmation
+                // shows the real resulting expiry, not an approximation.
+                const base = new Date(l.expiresAt) > new Date() ? new Date(l.expiresAt) : new Date();
+                base.setMonth(base.getMonth() + months);
+                const newExpiryLabel = base.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+                const ok = await confirmDialog({
+                  title: "Renew this license?",
+                  body: `Renew the license for <strong>${fmt.esc(orgLabel)}</strong> by ${months} months.<br><br>New expiry: <strong>${fmt.esc(newExpiryLabel)}</strong><br><br>This cannot be undone — double-check you have the right organization.`,
+                  confirmLabel: "Renew license",
+                });
+                if (!ok) return;
+              }
+              try {
+                btn.disabled = true;
+                const body = action === "renew" ? { months } : action === "change-plan" ? { plan } : {};
+                await API.post(`/api/developer/licenses/${l._id}/${action}`, body);
+                toast(
+                  action === "renew"
+                    ? `License renewed by ${months} months`
+                    : action === "change-plan"
+                      ? `Plan changed to ${planName(plan)}`
+                      : `License ${action === "cancel" ? "cancelled" : action + "ed"}`,
+                );
+                layer.innerHTML = "";
+                show("licenses");
+              } catch (err) {
+                toast(err.message, true);
+                btn.disabled = false;
+              }
+            }));
+        }
+
+        function openCreateModal() {
+          const flags = { claimsManagement: true, contributionsManagement: true };
+          layer.innerHTML = `
+            <div class="overlay" data-close></div>
+            <div class="modal">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:4px;">
+                <h2 style="margin:0; font-size:1.3rem; font-weight:700; letter-spacing:-0.02em;">Create license</h2>
+                <button type="button" class="x-btn" data-close aria-label="Close">&#10005;</button>
+              </div>
+              <p style="margin:0 0 20px; color:#5a6b75; font-size:0.88rem;">A license key is generated and an activation link is emailed to the contact.</p>
+              <form id="createForm" style="display:grid; gap:14px;">
+                <div><label class="field-label">Organization name *</label><input class="f" id="cOrg" placeholder="e.g. ST. ELIZA WELFARE" required /></div>
+                <div>
+                  <label class="field-label">Organization email *</label>
+                  <input class="f" type="email" id="cOrgEmail" placeholder="e.g. info@steliza.org" required />
+                  <span style="display:block; margin-top:4px; font-size:0.78rem; color:#8a98a1;">The org's own professional address — used as reply-to on its notifications. Must differ from the contact email below, and stays editable only from this portal.</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                  <div><label class="field-label">Contact name *</label><input class="f" id="cName" required /></div>
+                  <div><label class="field-label">Contact email *</label><input class="f" type="email" id="cEmail" required /></div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                  <div><label class="field-label">Plan *</label>
+                    <select class="f" id="cPlan" style="padding:12px 10px;">
+                      <option value="free">Free</option>
+                      <option value="standard">Standard</option>
+                      <option value="pro">Pro</option>
+                    </select>
+                  </div>
+                  <div><label class="field-label">Max users</label><input class="f" type="number" id="cUsers" value="3" min="1" /></div>
+                  <div><label class="field-label">Max members</label><input class="f" type="number" id="cMembers" value="100" min="1" /></div>
+                </div>
+                <div>
+                  <label class="field-label" style="margin-bottom:8px;">Feature flags</label>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;" id="cFlags">
+                    ${Object.entries(FEATURES).map(([k, label]) => `<button type="button" class="feat-chip ${flags[k] ? "on" : ""}" data-flag="${k}">${label}</button>`).join("")}
+                  </div>
+                </div>
+                <div><label class="field-label">Notes</label><textarea class="f" id="cNotes" rows="2"></textarea></div>
+                <div style="display:flex; gap:10px; margin-top:8px; justify-content:flex-end;">
+                  <button type="button" class="btn neutral" data-close style="padding:12px 20px;">Cancel</button>
+                  <button type="submit" class="btn" style="padding:12px 20px;">Generate license</button>
+                </div>
+              </form>
+            </div>`;
+          layer.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => (layer.innerHTML = "")));
+          // Picking a plan loads its capacity + feature defaults; the chips
+          // stay hand-editable afterwards.
+          $("cPlan").addEventListener("change", () => {
+            const d = PLAN_DEFAULTS[$("cPlan").value];
+            if (!d) return;
+            $("cUsers").value = d.maxUsers;
+            $("cMembers").value = d.maxMembers;
+            Object.keys(FEATURES).forEach((k) => {
+              flags[k] = d.features === null || d.features.includes(k);
+            });
+            $("cFlags").querySelectorAll("[data-flag]").forEach((chip) =>
+              chip.classList.toggle("on", !!flags[chip.dataset.flag]));
+          });
+          $("cFlags").addEventListener("click", (e) => {
+            const chip = e.target.closest("[data-flag]");
+            if (!chip) return;
+            flags[chip.dataset.flag] = !flags[chip.dataset.flag];
+            chip.classList.toggle("on", flags[chip.dataset.flag]);
+          });
+          $("createForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('[type="submit"]');
+            btn.disabled = true;
+            try {
+              await API.post("/api/developer/licenses", {
+                organizationName: $("cOrg").value.trim(),
+                organizationEmail: $("cOrgEmail").value.trim(),
+                contactName: $("cName").value.trim(),
+                contactEmail: $("cEmail").value.trim(),
+                plan: $("cPlan").value,
+                maxUsers: Number($("cUsers").value) || 5,
+                maxMembers: Number($("cMembers").value) || 400,
+                features: flags,
+                notes: $("cNotes").value.trim() || undefined,
+              });
+              toast("License created — activation email sent");
+              layer.innerHTML = "";
+              show("licenses");
+            } catch (err) {
+              toast(err.message, true);
+              btn.disabled = false;
+            }
+          });
+        }
+
+        // ---------- Organizations ----------
+        renderers.orgs = async () => {
+          const { items } = await API.get("/api/developer/organizations");
+          content.innerHTML = `
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px;">
+              ${items.map((org) => {
+                const licStatus = org.license ? (org.license.status === "active" && org.license.plan === "trial" ? "trial" : org.license.status) : null;
+                return `
+                <div class="card" style="padding:22px;">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:6px;">
+                    <div>
+                      <h2 style="margin:0 0 2px; letter-spacing:-0.01em;">${fmt.esc(org.name)}</h2>
+                      <span class="mono" style="font-size:0.78rem; color:#8a98a1;">${fmt.esc(org.code)}</span>
+                    </div>
+                    ${licStatus ? pill(licStatus) : pill(org.status)}
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin:16px 0; padding:14px 0; border-top:1px solid #f0f4f6; border-bottom:1px solid #f0f4f6;">
+                    <div><span style="display:block; font-size:0.72rem; color:#8a98a1; font-weight:600;">Users</span><span style="font-size:1.05rem; font-weight:700; font-variant-numeric:tabular-nums;">${org.staffCount}</span></div>
+                    <div><span style="display:block; font-size:0.72rem; color:#8a98a1; font-weight:600;">Members</span><span style="font-size:1.05rem; font-weight:700; font-variant-numeric:tabular-nums;">${org.memberCount}</span></div>
+                    <div><span style="display:block; font-size:0.72rem; color:#8a98a1; font-weight:600;">Last backup</span><span style="font-size:1.05rem; font-weight:700;">${rel(org.lastBackupAt)}</span></div>
+                  </div>
+                  <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn" data-open="${org._id}" style="flex:1; padding:10px; font-size:0.85rem;">Open as superadmin</button>
+                    <button type="button" class="btn neutral" data-go="backups" style="flex:1; padding:10px; font-size:0.85rem;">View backups</button>
+                  </div>
+                </div>`;
+              }).join("")}
+            </div>`;
+          content.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => show(b.dataset.go)));
+          content.querySelectorAll("[data-open]").forEach((b) =>
+            b.addEventListener("click", () => {
+              sessionStorage.setItem("wims.devOrg", b.dataset.open);
+              window.location.href = "/admin/dashboard.html";
+            }));
+        };
+
+        // ---------- Credentials ----------
+        renderers.credentials = async () => {
+          const cred = await API.get("/api/developer/credentials");
+          let revealed = false;
+          const monthLabel = new Date(cred.month + "-01").toLocaleDateString("en-GB", { month: "long" });
+          content.innerHTML = `
+            <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; align-items:start;">
+              <div class="card">
+                <h2>Current credentials</h2>
+                <p class="sub">Rotates monthly · valid through ${fmt.date(cred.validThrough)}, with a grace period until ${fmt.date(cred.graceEnds)}</p>
+                <div style="display:grid; gap:12px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:#f4f7f8; border:1px solid #e2e9ec; border-radius:12px;">
+                    <div>
+                      <span style="display:block; font-size:0.72rem; color:#8a98a1; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Username</span>
+                      <span class="mono" style="font-weight:700; font-size:1rem;">${fmt.esc(cred.username)}</span>
+                    </div>
+                    <button type="button" class="btn ghost sm" data-copy="${fmt.esc(cred.username)}">Copy</button>
+                  </div>
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:#f4f7f8; border:1px solid #e2e9ec; border-radius:12px;">
+                    <div>
+                      <span style="display:block; font-size:0.72rem; color:#8a98a1; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Password · ${monthLabel}</span>
+                      <span class="mono" id="pwDisplay" style="font-weight:700; font-size:1rem;">•••••••••••</span>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                      <button type="button" class="btn neutral sm" id="revealBtn">Reveal</button>
+                      <button type="button" class="btn ghost sm" data-copy="${fmt.esc(cred.password)}">Copy</button>
+                    </div>
+                  </div>
+                </div>
+                <div style="margin-top:16px; background:#fbf3e2; border:1px solid #ebd9a9; border-radius:12px; padding:13px 16px;">
+                  <span style="font-size:0.83rem; color:#8a5e14;"><strong>Same credentials, two doors.</strong> They open this portal and any organization's app login, bypassing all license and permission checks.</span>
+                </div>
+              </div>
+              <div class="card">
+                <h2>Security policy</h2>
+                <p class="sub" style="margin-bottom:14px;">Enforced on every superadmin login</p>
+                <div style="display:grid; gap:2px;">
+                  ${cred.policies.map((p) => `
+                    <div class="kv" style="padding:11px 0; border-bottom:1px solid #f0f4f6; font-size:0.88rem;">
+                      <span class="k" style="color:#5a6b75;">${fmt.esc(p.label)}</span>
+                      <span class="v">${fmt.esc(p.value)}</span>
+                    </div>`).join("")}
+                </div>
+              </div>
+            </div>`;
+          $("revealBtn").addEventListener("click", () => {
+            revealed = !revealed;
+            $("pwDisplay").textContent = revealed ? cred.password : "•••••••••••";
+            $("revealBtn").textContent = revealed ? "Hide" : "Reveal";
+          });
+          content.querySelectorAll("[data-copy]").forEach((b) =>
+            b.addEventListener("click", async () => {
+              await navigator.clipboard.writeText(b.dataset.copy);
+              toast("Copied to clipboard");
+            }));
+        };
+
+        // ---------- Backups ----------
+        renderers.backups = async () => {
+          const { items } = await API.get("/api/developer/backups");
+          const size = (b) => (b.sizeBytes ? (b.sizeBytes / 1048576).toFixed(1) + " MB" : "—");
+          content.innerHTML = `
+            <div class="card" style="padding:8px 24px 16px;">
+              <table class="sa">
+                <thead><tr><th>Organization</th><th>Backup</th><th>Trigger</th><th>Size</th><th>Status</th><th class="num"></th></tr></thead>
+                <tbody>
+                  ${items.length ? items.map((b) => `
+                    <tr>
+                      <td><span class="strong">${fmt.esc(b.organizationId ? b.organizationId.name : "System")}</span></td>
+                      <td>
+                        <span style="display:block; font-size:0.88rem; color:#12242e;">${fmt.esc(b.fileName)}</span>
+                        <span class="faint">${fmt.dateTime(b.createdAt)}</span>
+                      </td>
+                      <td>${b.trigger === "scheduled" ? "Scheduled (nightly)" : "Manual"}</td>
+                      <td>${size(b)}</td>
+                      <td>${pill(b.status)}</td>
+                      <td class="num">
+                        <div style="display:inline-flex; gap:8px;">
+                          <a class="btn ghost sm" href="/api/developer/backups/${b._id}/download" style="display:inline-block;">Download</a>
+                          ${b.status === "completed" && b.organizationId ? `<button type="button" class="btn danger sm" data-restore="${b._id}" data-org="${fmt.esc(b.organizationId.name)}">Restore</button>` : ""}
+                        </div>
+                      </td>
+                    </tr>`).join("") : `<tr><td colspan="6" style="color:#8a98a1; padding:24px 0;">No backups yet.</td></tr>`}
+                </tbody>
+              </table>
+            </div>`;
+          content.querySelectorAll("[data-restore]").forEach((b) =>
+            b.addEventListener("click", async () => {
+              const typed = prompt(`Restoring replaces ALL current data for ${b.dataset.org}. Type RESTORE to confirm:`);
+              if (typed !== "RESTORE") return;
+              try {
+                b.disabled = true;
+                const res = await API.post(`/api/developer/backups/${b.dataset.restore}/restore`, { confirm: "RESTORE" });
+                toast(res.message || "Restore completed");
+              } catch (err) {
+                toast(err.message, true);
+                b.disabled = false;
+              }
+            }));
+        };
+
+        // ---------- Audit log ----------
+        function auditColor(action) {
+          if (/restore|revoke|cancel|fail/.test(action)) return "#b4372a";
+          if (/renew/.test(action)) return "#79b843";
+          if (/suspend|credentials/.test(action)) return "#e8b54a";
+          return "#1d6fae";
+        }
+        function auditTitle(item) {
+          const labels = {
+            "developer.license_issue": "License created",
+            "developer.license_renew": "License renewed",
+            "developer.license_change_plan": "License plan changed",
+            "developer.license_suspend": "License suspended",
+            "developer.license_reactivate": "License reactivated",
+            "developer.license_cancel": "License cancelled",
+            "developer.license_revoke": "License revoked",
+            "developer.org_create": "Organization provisioned",
+            "developer.org_update": "Organization updated",
+            "developer.backup_create": "Backup created",
+            "developer.backup_download": "Backup downloaded",
+            "developer.backup_restore": "Backup restore initiated",
+            "developer.update_publish": "System update published",
+            "developer.credentials_view": "Credentials viewed",
+          };
+          let title = labels[item.action] || item.action;
+          if (item.detail && item.detail.org) title += " — " + item.detail.org;
+          else if (item.organizationId && item.organizationId.name) title += " — " + item.organizationId.name;
+          return fmt.esc(title);
+        }
+        function auditMeta(item) {
+          const actor = item.actorId ? (item.actorId.email || fmt.name(item.actorId)) : "system";
+          const bits = [actor];
+          if (item.ip) bits.push(item.ip);
+          if (item.detail) {
+            if (item.detail.months) bits.push(`${item.detail.months} months`);
+            if (item.detail.plan) bits.push(item.detail.plan);
+            if (item.detail.month) bits.push(item.detail.month);
+          }
+          return fmt.esc(bits.join(" · "));
+        }
+        renderers.audit = async () => {
+          const { items } = await API.get("/api/developer/audit?action=^developer");
+          content.innerHTML = `
+            <div class="card">
+              <div style="display:grid;">
+                ${items.length ? items.map((item) => `
+                  <div style="display:flex; gap:14px; padding:13px 0; border-bottom:1px solid #f0f4f6; align-items:flex-start;">
+                    ${dot(auditColor(item.action))}
+                    <div style="min-width:0; flex:1;">
+                      <span style="display:block; font-size:0.92rem; font-weight:600;">${auditTitle(item)}</span>
+                      <span style="display:block; font-size:0.8rem; color:#8a98a1; margin-top:2px;">${auditMeta(item)}</span>
+                    </div>
+                    <span style="font-size:0.8rem; color:#8a98a1; white-space:nowrap;">${fmt.dateTime(item.createdAt)}</span>
+                  </div>`).join("") : `<span style="color:#8a98a1; font-size:0.88rem;">No superadmin actions recorded yet.</span>`}
+              </div>
+            </div>`;
+        };
+
+        // ---------- System updates ----------
+        renderers.updates = async () => {
+          const { items } = await API.get("/api/developer/updates");
+          content.innerHTML = `
+            <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:16px; align-items:start;">
+              <div class="card">
+                <h2>Publish an update</h2>
+                <p class="sub">Visible on every organization's System updates panel</p>
+                <form id="updForm" style="display:grid; gap:14px;">
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div><label class="field-label">Version *</label><input class="f" id="uVersion" placeholder="e.g. 1.4.0" required /></div>
+                    <div><label class="field-label">Kind</label>
+                      <select class="f" id="uKind" style="padding:12px 10px;">
+                        <option value="release">Release</option><option value="security">Security</option><option value="maintenance">Maintenance</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div><label class="field-label">Title *</label><input class="f" id="uTitle" required /></div>
+                  <div><label class="field-label">Notes</label><textarea class="f" id="uBody" rows="4"></textarea></div>
+                  <button type="submit" class="btn" style="justify-self:start; padding:12px 20px;">Publish</button>
+                </form>
+              </div>
+              <div class="card">
+                <h2>Published updates</h2>
+                <p class="sub">Latest first</p>
+                <div style="display:grid;">
+                  ${items.length ? items.map((u) => `
+                    <div style="padding:13px 0; border-bottom:1px solid #f0f4f6;">
+                      <div style="display:flex; justify-content:space-between; gap:12px;">
+                        <span style="font-size:0.92rem; font-weight:600;">v${fmt.esc(u.version)} — ${fmt.esc(u.title)}</span>
+                        <span style="font-size:0.8rem; color:#8a98a1; white-space:nowrap;">${fmt.date(u.publishedAt || u.createdAt)}</span>
+                      </div>
+                      ${u.body ? `<span style="display:block; font-size:0.83rem; color:#5a6b75; margin-top:3px; white-space:pre-wrap;">${fmt.esc(u.body)}</span>` : ""}
+                    </div>`).join("") : `<span style="color:#8a98a1; font-size:0.88rem;">Nothing published yet.</span>`}
+                </div>
+              </div>
+            </div>`;
+          $("updForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            try {
+              await API.post("/api/developer/updates", {
+                version: $("uVersion").value.trim(),
+                title: $("uTitle").value.trim(),
+                body: $("uBody").value.trim() || undefined,
+                kind: $("uKind").value,
+              });
+              toast("Update published");
+              show("updates");
+            } catch (err) {
+              toast(err.message, true);
+            }
+          });
+        };
+
+        show(location.hash.replace("#", "") || "overview");
+      })();
+    </script>
+  </body>
+</html>

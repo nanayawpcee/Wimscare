@@ -1,0 +1,1609 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Accounts & Expenditure — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .tbl-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .tbl-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 44, 63, 0.45);
+        z-index: 300;
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 48px 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal {
+        background: #fff;
+        border-radius: 18px;
+        padding: 28px;
+        width: 100%;
+        max-width: 560px;
+        box-sizing: border-box;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line-soft);
+        font-size: 0.92rem;
+      }
+      .detail-row:last-child {
+        border-bottom: 0;
+      }
+      .detail-row .k {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .detail-row .v {
+        text-align: right;
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .tab-bar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+      .tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        font-family: inherit;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--muted);
+      }
+      .tab-btn.on {
+        border-color: var(--primary);
+        background: var(--primary-tint);
+        color: var(--primary);
+      }
+      .tab-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: var(--gold);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+      }
+      .chip-filter {
+        padding: 7px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .chip-filter.on {
+        border-color: var(--primary);
+        background: var(--primary-tint);
+        color: var(--primary);
+      }
+      .fund-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px 22px;
+        cursor: pointer;
+      }
+      .fund-card:hover {
+        border-color: var(--primary);
+      }
+      .fund-card .label {
+        color: var(--faint);
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .fund-card .bal {
+        font-size: 1.3rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .fund-card .kv {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .disabled-note {
+        padding: 14px 18px;
+        border-radius: 12px;
+        background: var(--bg);
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html" class="active">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1>Accounts &amp; Expenditure</h1>
+            <p style="max-width: 560px">
+              Claims payouts, office operations, fund accounts and reversal
+              approvals — with a complete audit trail
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px" id="headActions">
+            <button
+              type="button"
+              class="btn secondary"
+              id="exportBtn"
+              style="padding: 10px 18px; font-size: 0.92rem"
+            >
+              Export snapshot
+            </button>
+            <button
+              type="button"
+              class="btn"
+              id="newEntryBtn"
+              style="
+                padding: 10px 18px;
+                font-weight: 600;
+                font-size: 0.92rem;
+                white-space: nowrap;
+              "
+            >
+              New account entry
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="readOnlyNote"
+          class="disabled-note"
+          style="display: none; margin-bottom: 20px"
+        >
+          You have view-only access to Accounts. Ask an administrator to grant
+          "Manage accounts" if you need to record or approve entries.
+        </div>
+
+        <div class="tab-bar" id="tabBar"></div>
+
+        <!-- ===== Overview tab ===== -->
+        <div id="tabOverview">
+          <div class="stat-grid" id="summaryCards"></div>
+
+          <div class="card" style="margin-bottom: 20px">
+            <div
+              style="
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                align-items: center;
+                margin-bottom: 16px;
+              "
+            >
+              <input
+                type="search"
+                class="field"
+                id="searchInput"
+                placeholder="Search description, ref, department…"
+                style="
+                  flex: 1;
+                  min-width: 220px;
+                  width: auto;
+                  font-size: 0.9rem;
+                  padding: 10px 14px;
+                "
+              />
+              <select
+                class="field"
+                id="statusFilter"
+                style="
+                  width: auto;
+                  font-weight: 600;
+                  padding: 10px 14px;
+                  font-size: 0.9rem;
+                "
+              >
+                <option value="">All statuses</option>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <select
+                class="field"
+                id="categoryFilter"
+                style="
+                  width: auto;
+                  font-weight: 600;
+                  padding: 10px 14px;
+                  font-size: 0.9rem;
+                "
+              >
+                <option value="">All categories</option>
+                <option value="claims_payout">Claims payout</option>
+                <option value="reimbursement">Reimbursement</option>
+                <option value="operating_expense">Operating expense</option>
+                <option value="investment">Investment</option>
+                <option value="adjustment">Adjustment</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <table class="data">
+              <thead>
+                <tr>
+                  <th>Entry</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Department</th>
+                  <th>Prepared by</th>
+                  <th class="num">Amount</th>
+                  <th class="num">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="entryRows"></tbody>
+            </table>
+            <div
+              id="emptyState"
+              style="
+                display: none;
+                padding: 40px 24px;
+                text-align: center;
+                color: var(--muted);
+              "
+            >
+              <strong
+                style="display: block; margin-bottom: 6px; color: var(--ink)"
+                >No entries found</strong
+              >
+              <span style="font-size: 0.9rem"
+                >Try adjusting the filters or search.</span
+              >
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding-top: 14px;
+                border-top: 1px solid var(--row-line);
+                margin-top: 4px;
+              "
+            >
+              <span
+                style="color: var(--faint); font-size: 0.85rem"
+                id="pageLabel"
+              ></span>
+              <div style="display: flex; gap: 8px">
+                <button
+                  type="button"
+                  class="tbl-btn"
+                  id="prevBtn"
+                  style="padding: 8px 16px; font-size: 0.88rem"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  class="tbl-btn"
+                  id="nextBtn"
+                  style="padding: 8px 16px; font-size: 0.88rem"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Fund Accounts & Ledger tab ===== -->
+        <div id="tabFunds" style="display: none">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 16px;
+              margin-bottom: 16px;
+            "
+          >
+            <div
+              class="stat-grid"
+              id="fundSummary"
+              style="flex: 1; margin-bottom: 0"
+            ></div>
+          </div>
+          <div id="fundListWrap">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+              "
+            >
+              <h2 style="font-size: 1.05rem; font-weight: 700">
+                Fund accounts
+              </h2>
+              <div style="display: flex; gap: 8px">
+                <button type="button" class="btn small ghost" id="moveFundsBtn">
+                  Move funds
+                </button>
+                <button type="button" class="btn small" id="createFundBtn">
+                  Create fund account
+                </button>
+              </div>
+            </div>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 16px;
+              "
+              id="fundCards"
+            ></div>
+          </div>
+          <div id="ledgerWrap" style="display: none">
+            <button
+              type="button"
+              class="btn ghost"
+              id="backToFunds"
+              style="padding: 0; margin-bottom: 12px"
+            >
+              ← Back to fund accounts
+            </button>
+            <div class="card" style="margin-bottom: 20px">
+              <div
+                style="
+                  display: flex;
+                  align-items: flex-start;
+                  justify-content: space-between;
+                  gap: 16px;
+                  margin-bottom: 18px;
+                  flex-wrap: wrap;
+                "
+              >
+                <div>
+                  <h2 id="ledgerTitle" style="font-size: 1.2rem"></h2>
+                  <span
+                    style="color: var(--faint); font-size: 0.85rem"
+                    id="ledgerMeta"
+                  ></span>
+                </div>
+                <button type="button" class="btn small" id="newLedgerEntryBtn">
+                  New ledger entry
+                </button>
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(3, minmax(0, 1fr));
+                  gap: 14px;
+                "
+              >
+                <div class="tile">
+                  <span
+                    class="k"
+                    style="
+                      display: block;
+                      color: var(--faint);
+                      font-size: 0.75rem;
+                      text-transform: uppercase;
+                      margin-bottom: 4px;
+                    "
+                    >Opening balance</span
+                  ><span
+                    class="v"
+                    style="font-weight: 700; font-size: 1.1rem"
+                    id="ledgerOpening"
+                  ></span>
+                </div>
+                <div class="tile">
+                  <span
+                    class="k"
+                    style="
+                      display: block;
+                      color: var(--faint);
+                      font-size: 0.75rem;
+                      text-transform: uppercase;
+                      margin-bottom: 4px;
+                    "
+                    >Period movement</span
+                  ><span
+                    class="v"
+                    style="font-weight: 700; font-size: 1.1rem"
+                    id="ledgerMovement"
+                  ></span>
+                </div>
+                <div class="tile">
+                  <span
+                    class="k"
+                    style="
+                      display: block;
+                      color: var(--faint);
+                      font-size: 0.75rem;
+                      text-transform: uppercase;
+                      margin-bottom: 4px;
+                    "
+                    >Closing balance</span
+                  ><span
+                    class="v"
+                    style="font-weight: 700; font-size: 1.1rem"
+                    id="ledgerClosing"
+                  ></span>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Entry</th>
+                    <th>Posted by</th>
+                    <th class="num">Debit</th>
+                    <th class="num">Credit</th>
+                    <th class="num">Balance</th>
+                  </tr>
+                </thead>
+                <tbody id="ledgerRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Reversal Approvals tab ===== -->
+        <div id="tabReversals" style="display: none">
+          <div class="card" style="margin-bottom: 20px">
+            <h2 style="margin-bottom: 4px">Pending reversal requests</h2>
+            <p class="sub" style="margin-bottom: 16px">
+              Approving removes the contribution from the member's record and
+              posts a ledger adjustment
+            </p>
+            <div id="reversalPending"></div>
+            <div
+              id="reversalEmpty"
+              style="
+                display: none;
+                padding: 30px;
+                text-align: center;
+                color: var(--muted);
+              "
+            >
+              All clear — no pending requests.
+            </div>
+          </div>
+          <div class="card">
+            <h2 style="margin-bottom: 12px">Recent decisions</h2>
+            <div id="reversalHistory"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- New account entry modal -->
+    <div class="modal-backdrop" id="newModal">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+          "
+        >
+          <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700">
+            New account entry
+          </h2>
+          <button type="button" class="btn ghost small" data-close="newModal">
+            Close
+          </button>
+        </div>
+        <p style="margin: 0 0 20px; color: var(--muted); font-size: 0.88rem">
+          Entries start as pending and need administrator approval before
+          payout.
+        </p>
+        <div class="form-error" id="newError"></div>
+        <form
+          id="newForm"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px"
+        >
+          <div style="grid-column: span 2">
+            <label class="field">Title *</label>
+            <input
+              class="field"
+              id="nTitle"
+              required
+              placeholder="e.g. Office supplies Q3"
+            />
+          </div>
+          <div>
+            <label class="field">Category *</label>
+            <select class="field" id="nCategory">
+              <option value="operating_expense">Operating expense</option>
+              <option value="reimbursement">Reimbursement</option>
+              <option value="investment">Investment</option>
+              <option value="adjustment">Adjustment</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="field">Amount (GH₵) *</label>
+            <input
+              class="field"
+              type="number"
+              step="0.01"
+              min="0.01"
+              id="nAmount"
+              required
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label class="field">Department</label>
+            <input class="field" id="nDept" placeholder="General Fund" />
+          </div>
+          <div>
+            <label class="field">Entry date</label>
+            <input class="field" type="date" id="nDate" />
+          </div>
+          <div>
+            <label class="field">Payout account</label>
+            <select class="field" id="nAccount">
+              <option value="bank">Bank</option>
+              <option value="cash">Cash</option>
+              <option value="mobile_money">Mobile Money</option>
+            </select>
+          </div>
+          <div style="grid-column: span 2">
+            <label class="field">Note</label>
+            <textarea
+              class="field"
+              id="nNote"
+              rows="2"
+              placeholder="Optional context for approvers"
+            ></textarea>
+          </div>
+          <div style="grid-column: span 2">
+            <button class="btn" type="submit">Create entry</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- View / act modal -->
+    <div class="modal-backdrop" id="viewModal">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+          "
+        >
+          <h2
+            style="margin: 0; font-size: 1.2rem; font-weight: 700"
+            id="vTitle"
+          ></h2>
+          <button type="button" class="btn ghost small" data-close="viewModal">
+            Close
+          </button>
+        </div>
+        <p
+          style="margin: 0 0 16px; color: var(--muted); font-size: 0.88rem"
+          id="vRef"
+        ></p>
+        <div id="vDetails" style="margin-bottom: 20px"></div>
+        <div class="form-error" id="vError"></div>
+        <div
+          id="vActions"
+          style="display: flex; gap: 10px; flex-wrap: wrap"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Create fund account modal -->
+    <div class="modal-backdrop" id="fundModal">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+          "
+        >
+          <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700">
+            Create fund account
+          </h2>
+          <button type="button" class="btn ghost small" data-close="fundModal">
+            Close
+          </button>
+        </div>
+        <div class="form-error" id="fundError"></div>
+        <form id="fundForm" style="display: grid; gap: 16px">
+          <div>
+            <label class="field">Account name *</label>
+            <input
+              class="field"
+              id="fName"
+              required
+              placeholder="e.g. Building Fund"
+            />
+          </div>
+          <div>
+            <label class="field">Type</label>
+            <select class="field" id="fType">
+              <option value="operating">Operating</option>
+              <option value="benefits">Benefits</option>
+              <option value="investment">Investment</option>
+              <option value="reserve">Reserve</option>
+            </select>
+          </div>
+          <div>
+            <label class="field">Description</label>
+            <textarea class="field" id="fDesc" rows="2"></textarea>
+          </div>
+          <button class="btn" type="submit">Create account</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Move funds (transfer) modal -->
+    <div class="modal-backdrop" id="transferModal">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+          "
+        >
+          <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700">
+            Move funds
+          </h2>
+          <button
+            type="button"
+            class="btn ghost small"
+            data-close="transferModal"
+          >
+            Close
+          </button>
+        </div>
+        <p style="margin: 0 0 16px; color: var(--muted); font-size: 0.88rem">
+          Reallocate money between funds. The organisation total doesn't change
+          — only how it's split.
+        </p>
+        <div class="form-error" id="transferError"></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+          <div>
+            <label class="field">From fund</label>
+            <select class="field" id="transferFrom"></select>
+          </div>
+          <div>
+            <label class="field">To fund</label>
+            <select class="field" id="transferTo"></select>
+          </div>
+          <div>
+            <label class="field">Amount (GH₵) *</label>
+            <input
+              class="field"
+              type="number"
+              step="0.01"
+              min="0.01"
+              id="transferAmount"
+            />
+          </div>
+          <div>
+            <label class="field">Note (optional)</label>
+            <input
+              class="field"
+              id="transferNote"
+              placeholder="e.g. FY allocation"
+            />
+          </div>
+          <div style="grid-column: span 2">
+            <button class="btn" type="button" id="transferConfirm">
+              Transfer funds
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New ledger entry modal -->
+    <div class="modal-backdrop" id="ledgerModal">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+          "
+        >
+          <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700">
+            New ledger entry
+          </h2>
+          <button
+            type="button"
+            class="btn ghost small"
+            data-close="ledgerModal"
+          >
+            Close
+          </button>
+        </div>
+        <p
+          style="margin: 0 0 20px; color: var(--muted); font-size: 0.88rem"
+          id="ledgerModalSub"
+        >
+          Entries post to this fund account and appear in the audit trail
+        </p>
+        <div class="form-error" id="ledgerError"></div>
+        <form
+          id="ledgerForm"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px"
+        >
+          <div
+            style="
+              grid-column: span 2;
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px;
+            "
+          >
+            <button
+              type="button"
+              class="chip-filter on"
+              data-dir="credit"
+              style="text-align: left; padding: 12px 14px"
+            >
+              <strong style="display: block">Credit (money in)</strong>
+              <span style="font-size: 0.78rem; opacity: 0.75"
+                >Contribution, return, transfer in</span
+              >
+            </button>
+            <button
+              type="button"
+              class="chip-filter"
+              data-dir="debit"
+              style="text-align: left; padding: 12px 14px"
+            >
+              <strong style="display: block">Debit (money out)</strong>
+              <span style="font-size: 0.78rem; opacity: 0.75"
+                >Payout, expense, transfer out</span
+              >
+            </button>
+          </div>
+          <div>
+            <label class="field">Amount (GH₵) *</label>
+            <input
+              class="field"
+              type="number"
+              step="0.01"
+              min="0.01"
+              id="lAmount"
+              required
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label class="field">Category</label>
+            <select class="field" id="lCategory">
+              <option value="member_dues">Member dues</option>
+              <option value="claims_payout">Claims payout</option>
+              <option value="operating_expense">Operating expense</option>
+              <option value="investment_return">Investment return</option>
+              <option value="transfer">Inter-account transfer</option>
+              <option value="adjustment">Adjustment</option>
+            </select>
+          </div>
+          <div style="grid-column: span 2">
+            <label class="field">Description *</label>
+            <input
+              class="field"
+              id="lDesc"
+              required
+              placeholder="What is this entry for?"
+            />
+          </div>
+          <div style="grid-column: span 2">
+            <label class="field">Reference (optional)</label>
+            <input
+              class="field"
+              id="lRef"
+              placeholder="e.g. receipt or invoice number"
+            />
+          </div>
+          <div style="grid-column: span 2">
+            <button class="btn" type="submit">Post entry</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+
+        // Accountant gets its own full workspace, not this page.
+        if (user.role === "accountant") {
+          window.location.href = "/admin/accounts-v2.html";
+          return;
+        }
+
+        const isAdmin = ["admin", "superadmin"].includes(user.role);
+        const canManage = WIMS.can("manage_accounts");
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("sideRole").textContent =
+          {
+            admin: "Administrator",
+            supervisor: "Supervisor",
+            superadmin: "Superadmin",
+          }[user.role] || user.role;
+
+        if (!canManage) {
+          document.getElementById("headActions").style.display = "none";
+          document.getElementById("readOnlyNote").style.display = "block";
+        }
+
+        const CATEGORY_LABELS = {
+          claims_payout: "Claims payout",
+          reimbursement: "Reimbursement",
+          operating_expense: "Operating expense",
+          investment: "Investment",
+          adjustment: "Adjustment",
+          other: "Other",
+        };
+        const ACCOUNT_LABELS = {
+          bank: "Bank",
+          cash: "Cash",
+          mobile_money: "Mobile Money",
+        };
+
+        // ===== Tabs =====
+        const TABS = [
+          { key: "overview", label: "Overview" },
+          { key: "funds", label: "Fund Accounts & Ledger" },
+          {
+            key: "reversals",
+            label: "Reversal Approvals",
+            badgeAsync: loadPendingReversalCount,
+          },
+        ];
+        let activeTab = "overview";
+
+        async function loadPendingReversalCount() {
+          try {
+            const { items } = await API.get("/api/reversals?status=pending");
+            return items.length;
+          } catch {
+            return 0;
+          }
+        }
+
+        async function renderTabs() {
+          const badges = await Promise.all(
+            TABS.map((t) => (t.badgeAsync ? t.badgeAsync() : null)),
+          );
+          document.getElementById("tabBar").innerHTML = TABS.map(
+            (t, i) => `
+      <button type="button" class="tab-btn ${activeTab === t.key ? "on" : ""}" data-tab="${t.key}">
+        ${t.label}${badges[i] ? `<span class="tab-badge">${badges[i]}</span>` : ""}
+      </button>`,
+          ).join("");
+          document
+            .querySelectorAll("[data-tab]")
+            .forEach((btn) =>
+              btn.addEventListener("click", () => switchTab(btn.dataset.tab)),
+            );
+        }
+
+        function switchTab(key) {
+          activeTab = key;
+          document.getElementById("tabOverview").style.display =
+            key === "overview" ? "" : "none";
+          document.getElementById("tabFunds").style.display =
+            key === "funds" ? "" : "none";
+          document.getElementById("tabReversals").style.display =
+            key === "reversals" ? "" : "none";
+          document
+            .querySelectorAll("[data-tab]")
+            .forEach((b) => b.classList.toggle("on", b.dataset.tab === key));
+          if (key === "overview") loadOverview();
+          if (key === "funds") loadFunds();
+          if (key === "reversals") loadReversals();
+        }
+
+        // ===== Overview tab (existing AccountEntry register) =====
+        const state = { q: "", status: "", category: "", page: 1, pages: 1 };
+        function query() {
+          const params = new URLSearchParams({ page: state.page, limit: 15 });
+          if (state.q) params.set("q", state.q);
+          if (state.status) params.set("status", state.status);
+          if (state.category) params.set("category", state.category);
+          return params;
+        }
+
+        async function loadSummary() {
+          const s = await API.get("/api/accounts/summary");
+          const monthName = new Date(
+            new Date().getFullYear(),
+            0,
+          ).toLocaleDateString("en-GB", { month: "short" });
+          const nowMonth = new Date().toLocaleDateString("en-GB", {
+            month: "short",
+          });
+          document.getElementById("summaryCards").innerHTML = [
+            {
+              label: "Period expenditure",
+              value: fmt.gh(s.periodExpenditure),
+              sub: `${monthName} – ${nowMonth} ${s.year}`,
+            },
+            {
+              label: "Pending approval",
+              value: fmt.gh(s.pending.total),
+              sub: `${s.pending.count} entr${s.pending.count === 1 ? "y" : "ies"}`,
+            },
+            {
+              label: "Claims payouts",
+              value: fmt.gh(s.claimsPayouts.total),
+              sub: `${s.claimsPayouts.count} claim${s.claimsPayouts.count === 1 ? "" : "s"}`,
+            },
+            {
+              label: "Operating costs",
+              value: fmt.gh(s.operatingCosts.total),
+              sub: `${s.operatingCosts.count} entr${s.operatingCosts.count === 1 ? "y" : "ies"}`,
+            },
+          ]
+            .map(
+              (c) =>
+                `<div class="stat"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub}</div></div>`,
+            )
+            .join("");
+        }
+
+        async function loadList() {
+          const data = await API.get("/api/accounts?" + query());
+          state.pages = Math.max(data.pages, 1);
+          document.getElementById("emptyState").style.display = data.items
+            .length
+            ? "none"
+            : "block";
+          document.getElementById("entryRows").innerHTML = data.items
+            .map(
+              (e) => `
+      <tr>
+        <td>
+          <span style="display:block; font-size:0.92rem; font-weight:600; color:var(--ink);">${fmt.esc(e.title)}</span>
+          <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px; font-weight:400;">${e.ref} · ${fmt.date(e.entryDate)}</span>
+        </td>
+        <td>${CATEGORY_LABELS[e.category] || e.category}</td>
+        <td>${pill(e.status)}</td>
+        <td>${fmt.esc(e.department || "—")}</td>
+        <td>${fmt.esc(fmt.name(e.preparedBy))}</td>
+        <td class="num" style="white-space:nowrap;">${fmt.gh(e.amount)}</td>
+        <td class="num"><button type="button" class="tbl-btn" data-view="${e._id}">View</button></td>
+      </tr>`,
+            )
+            .join("");
+          document.getElementById("pageLabel").textContent =
+            `Page ${state.page} of ${state.pages}`;
+          document.getElementById("prevBtn").disabled = state.page <= 1;
+          document.getElementById("nextBtn").disabled =
+            state.page >= state.pages;
+          document
+            .querySelectorAll("[data-view]")
+            .forEach((btn) =>
+              btn.addEventListener("click", () => openView(btn.dataset.view)),
+            );
+        }
+        const loadOverview = () => Promise.all([loadSummary(), loadList()]);
+
+        let debounce;
+        document
+          .getElementById("searchInput")
+          .addEventListener("input", (e) => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+              state.q = e.target.value.trim();
+              state.page = 1;
+              loadList();
+            }, 300);
+          });
+        document
+          .getElementById("statusFilter")
+          .addEventListener("change", (e) => {
+            state.status = e.target.value;
+            state.page = 1;
+            loadList();
+          });
+        document
+          .getElementById("categoryFilter")
+          .addEventListener("change", (e) => {
+            state.category = e.target.value;
+            state.page = 1;
+            loadList();
+          });
+        document.getElementById("prevBtn").addEventListener("click", () => {
+          if (state.page > 1) {
+            state.page--;
+            loadList();
+          }
+        });
+        document.getElementById("nextBtn").addEventListener("click", () => {
+          if (state.page < state.pages) {
+            state.page++;
+            loadList();
+          }
+        });
+        document.getElementById("exportBtn").addEventListener("click", () => {
+          window.location.href = "/api/accounts/export.xlsx?" + query();
+        });
+
+        document
+          .querySelectorAll("[data-close]")
+          .forEach((btn) =>
+            btn.addEventListener("click", () =>
+              document
+                .getElementById(btn.dataset.close)
+                .classList.remove("open"),
+            ),
+          );
+        document.querySelectorAll(".modal-backdrop").forEach((bd) =>
+          bd.addEventListener("click", (e) => {
+            if (e.target === bd) bd.classList.remove("open");
+          }),
+        );
+
+        if (canManage) {
+          document
+            .getElementById("newEntryBtn")
+            .addEventListener("click", () => {
+              document.getElementById("newError").classList.remove("show");
+              document.getElementById("newForm").reset();
+              document.getElementById("newModal").classList.add("open");
+            });
+          document
+            .getElementById("newForm")
+            .addEventListener("submit", async (e) => {
+              e.preventDefault();
+              const errBox = document.getElementById("newError");
+              errBox.classList.remove("show");
+              try {
+                await API.post("/api/accounts", {
+                  title: document.getElementById("nTitle").value.trim(),
+                  category: document.getElementById("nCategory").value,
+                  amount: document.getElementById("nAmount").value,
+                  department:
+                    document.getElementById("nDept").value.trim() || undefined,
+                  entryDate:
+                    document.getElementById("nDate").value || undefined,
+                  payoutAccount: document.getElementById("nAccount").value,
+                  note:
+                    document.getElementById("nNote").value.trim() || undefined,
+                });
+                toast("Entry created — pending approval");
+                document.getElementById("newModal").classList.remove("open");
+                loadOverview();
+              } catch (err) {
+                errBox.textContent = err.message;
+                errBox.classList.add("show");
+              }
+            });
+        }
+
+        async function openView(id) {
+          const { entry } = await API.get("/api/accounts/" + id);
+          document.getElementById("vError").classList.remove("show");
+          document.getElementById("vTitle").textContent = entry.title;
+          document.getElementById("vRef").textContent =
+            `${entry.ref} · ${CATEGORY_LABELS[entry.category]}`;
+          const rows = [
+            ["Status", String(entry.status).toUpperCase()],
+            ["Amount", fmt.gh(entry.amount)],
+            ["Department", entry.department || "—"],
+            ["Entry date", fmt.date(entry.entryDate)],
+            [
+              "Payout account",
+              ACCOUNT_LABELS[entry.payoutAccount] || entry.payoutAccount,
+            ],
+            ["Prepared by", fmt.name(entry.preparedBy)],
+          ];
+          if (entry.sourceClaimId)
+            rows.push(["Source claim", entry.sourceClaimId.claimNumber]);
+          if (entry.decidedBy)
+            rows.push([
+              entry.status === "rejected" ? "Rejected by" : "Approved by",
+              `${fmt.name(entry.decidedBy)} · ${fmt.date(entry.decidedAt)}`,
+            ]);
+          if (entry.decisionNote)
+            rows.push(["Decision note", entry.decisionNote]);
+          if (entry.paidBy)
+            rows.push([
+              "Paid by",
+              `${fmt.name(entry.paidBy)} · ${fmt.date(entry.paidAt)}`,
+            ]);
+          if (entry.paymentReference)
+            rows.push(["Payment ref", entry.paymentReference]);
+          if (entry.note) rows.push(["Note", entry.note]);
+          document.getElementById("vDetails").innerHTML = rows
+            .map(
+              ([k, v]) =>
+                `<div class="detail-row"><span class="k">${k}</span><span class="v">${fmt.esc(v)}</span></div>`,
+            )
+            .join("");
+
+          const actions = document.getElementById("vActions");
+          actions.innerHTML = "";
+          if (entry.status === "pending" && isAdmin) {
+            actions.innerHTML = `<button type="button" class="btn" id="approveBtn">Approve</button><button type="button" class="btn danger" id="rejectBtn">Reject</button>`;
+            document
+              .getElementById("approveBtn")
+              .addEventListener("click", () =>
+                decideEntry(entry._id, "approved"),
+              );
+            document
+              .getElementById("rejectBtn")
+              .addEventListener("click", () => {
+                const note =
+                  prompt("Reason for rejection (optional):") || undefined;
+                decideEntry(entry._id, "rejected", note);
+              });
+          } else if (entry.status === "approved" && canManage) {
+            actions.innerHTML = `<button type="button" class="btn" id="payBtn">Mark as paid</button>`;
+            document
+              .getElementById("payBtn")
+              .addEventListener("click", async () => {
+                const ref =
+                  prompt("Payment reference (optional):") || undefined;
+                try {
+                  await API.post(`/api/accounts/${entry._id}/pay`, {
+                    paymentReference: ref,
+                  });
+                  toast("Entry paid and posted to the ledger");
+                  document.getElementById("viewModal").classList.remove("open");
+                  loadOverview();
+                } catch (err) {
+                  showViewError(err.message);
+                }
+              });
+          }
+          document.getElementById("viewModal").classList.add("open");
+        }
+        function showViewError(msg) {
+          const box = document.getElementById("vError");
+          box.textContent = msg;
+          box.classList.add("show");
+        }
+        async function decideEntry(id, decision, note) {
+          try {
+            await API.post(`/api/accounts/${id}/decide`, { decision, note });
+            toast(
+              decision === "approved" ? "Entry approved" : "Entry rejected",
+            );
+            document.getElementById("viewModal").classList.remove("open");
+            loadOverview();
+          } catch (err) {
+            showViewError(err.message);
+          }
+        }
+
+        // ===== Fund Accounts & Ledger tab =====
+        let activeFundAccount = null;
+        let fundsCache = [];
+
+        async function loadFunds() {
+          document.getElementById("fundListWrap").style.display = "";
+          document.getElementById("ledgerWrap").style.display = "none";
+          activeFundAccount = null;
+          document.getElementById("createFundBtn").style.display = isAdmin
+            ? ""
+            : "none";
+
+          const { items, summary } = await API.get("/api/fund-accounts");
+          fundsCache = items;
+          document.getElementById("moveFundsBtn").style.display =
+            canManage && items.length > 1 ? "" : "none";
+          document.getElementById("fundSummary").innerHTML = [
+            {
+              label: "Total balance",
+              value: fmt.gh(summary.balance),
+              sub: `Across ${items.length} fund account${items.length === 1 ? "" : "s"}`,
+            },
+            {
+              label: "Inflows YTD",
+              value: fmt.gh(summary.inflow),
+              sub: "Contributions + returns",
+            },
+            {
+              label: "Outflows YTD",
+              value: fmt.gh(summary.outflow),
+              sub: "Payouts + operations",
+            },
+          ]
+            .map(
+              (c) =>
+                `<div class="stat"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub}</div></div>`,
+            )
+            .join("");
+
+          document.getElementById("fundCards").innerHTML = items.length
+            ? items
+                .map(
+                  (a) => `
+        <div class="fund-card" data-fund="${a._id}" data-name="${fmt.esc(a.name)}">
+          <div class="label">${fmt.esc(a.name)} · ${a.type}</div>
+          <div class="bal">${fmt.gh(a.balance)}</div>
+          <div class="kv"><span>Inflow ${fmt.gh(a.inflowYtd)}</span><span>Outflow ${fmt.gh(a.outflowYtd)}</span></div>
+        </div>`,
+                )
+                .join("")
+            : '<div class="empty">No fund accounts yet.</div>';
+          document
+            .querySelectorAll("[data-fund]")
+            .forEach((card) =>
+              card.addEventListener("click", () =>
+                openLedger(card.dataset.fund, card.dataset.name),
+              ),
+            );
+        }
+
+        document
+          .getElementById("backToFunds")
+          .addEventListener("click", loadFunds);
+
+        // ===== Move funds (transfer between fund accounts) =====
+        document
+          .getElementById("moveFundsBtn")
+          .addEventListener("click", () => {
+            const active = fundsCache.filter((f) => f.status !== "closed");
+            const opts = () =>
+              active
+                .map(
+                  (f) =>
+                    `<option value="${f._id}">${fmt.esc(f.name)} · ${fmt.gh(f.balance)}</option>`,
+                )
+                .join("");
+            document.getElementById("transferFrom").innerHTML = opts();
+            document.getElementById("transferTo").innerHTML = opts();
+            if (active.length > 1)
+              document.getElementById("transferTo").selectedIndex = 1;
+            document.getElementById("transferAmount").value = "";
+            document.getElementById("transferNote").value = "";
+            document.getElementById("transferError").classList.remove("show");
+            document.getElementById("transferModal").classList.add("open");
+          });
+        document
+          .getElementById("transferConfirm")
+          .addEventListener("click", async () => {
+            const errBox = document.getElementById("transferError");
+            errBox.classList.remove("show");
+            try {
+              const res = await API.post("/api/fund-accounts/transfer", {
+                fromFundId: document.getElementById("transferFrom").value,
+                toFundId: document.getElementById("transferTo").value,
+                amount: document.getElementById("transferAmount").value,
+                description:
+                  document.getElementById("transferNote").value.trim() ||
+                  undefined,
+              });
+              toast(`Transferred from ${res.from} to ${res.to}`);
+              document.getElementById("transferModal").classList.remove("open");
+              loadFunds();
+            } catch (err) {
+              errBox.textContent = err.message;
+              errBox.classList.add("show");
+            }
+          });
+
+        async function openLedger(id, name) {
+          activeFundAccount = id;
+          document.getElementById("fundListWrap").style.display = "none";
+          document.getElementById("ledgerWrap").style.display = "";
+          document.getElementById("ledgerTitle").textContent =
+            `${name} — ledger`;
+          document.getElementById("newLedgerEntryBtn").style.display = canManage
+            ? ""
+            : "none";
+
+          const data = await API.get(`/api/fund-accounts/${id}/ledger`);
+          document.getElementById("ledgerMeta").textContent =
+            `${data.items.length} recent entries`;
+          document.getElementById("ledgerOpening").textContent = fmt.gh(
+            data.opening,
+          );
+          document.getElementById("ledgerClosing").textContent = fmt.gh(
+            data.closing,
+          );
+          const mv = data.movement;
+          document.getElementById("ledgerMovement").textContent =
+            (mv >= 0 ? "+" : "−") + fmt.gh(Math.abs(mv));
+          document.getElementById("ledgerMovement").style.color =
+            mv >= 0 ? "var(--green-ink)" : "var(--red-ink)";
+
+          document.getElementById("ledgerRows").innerHTML = data.items.length
+            ? data.items
+                .map(
+                  (e) => `
+        <tr>
+          <td style="white-space:nowrap;">${fmt.date(e.entryDate)}</td>
+          <td>
+            <span style="display:block; font-weight:600; font-size:0.92rem;">${fmt.esc(e.description)}</span>
+            <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;">${fmt.esc(e.reference || e.sourceType)}</span>
+          </td>
+          <td>${fmt.esc(fmt.name(e.createdBy))}</td>
+          <td class="num" style="color:var(--red-ink);">${e.fundDirection === "out" ? fmt.gh(e.amount) : "—"}</td>
+          <td class="num" style="color:var(--green-ink);">${e.fundDirection === "in" ? fmt.gh(e.amount) : "—"}</td>
+          <td class="num" style="font-weight:700;">${fmt.gh(e.balance)}</td>
+        </tr>`,
+                )
+                .join("")
+            : '<tr><td colspan="6" class="empty">No entries yet.</td></tr>';
+        }
+
+        if (isAdmin) {
+          document
+            .getElementById("createFundBtn")
+            .addEventListener("click", () => {
+              document.getElementById("fundError").classList.remove("show");
+              document.getElementById("fundForm").reset();
+              document.getElementById("fundModal").classList.add("open");
+            });
+          document
+            .getElementById("fundForm")
+            .addEventListener("submit", async (e) => {
+              e.preventDefault();
+              const errBox = document.getElementById("fundError");
+              errBox.classList.remove("show");
+              try {
+                await API.post("/api/fund-accounts", {
+                  name: document.getElementById("fName").value.trim(),
+                  type: document.getElementById("fType").value,
+                  description:
+                    document.getElementById("fDesc").value.trim() || undefined,
+                });
+                toast("Fund account created");
+                document.getElementById("fundModal").classList.remove("open");
+                loadFunds();
+              } catch (err) {
+                errBox.textContent = err.message;
+                errBox.classList.add("show");
+              }
+            });
+        }
+
+        if (canManage) {
+          document
+            .getElementById("newLedgerEntryBtn")
+            .addEventListener("click", () => {
+              document.getElementById("ledgerError").classList.remove("show");
+              document.getElementById("ledgerForm").reset();
+              document
+                .querySelectorAll("#ledgerForm [data-dir]")
+                .forEach((b) =>
+                  b.classList.toggle("on", b.dataset.dir === "credit"),
+                );
+              document.getElementById("ledgerModal").classList.add("open");
+            });
+          document.querySelectorAll("#ledgerForm [data-dir]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              document
+                .querySelectorAll("#ledgerForm [data-dir]")
+                .forEach((b) => b.classList.toggle("on", b === btn));
+            }),
+          );
+          document
+            .getElementById("ledgerForm")
+            .addEventListener("submit", async (e) => {
+              e.preventDefault();
+              const errBox = document.getElementById("ledgerError");
+              errBox.classList.remove("show");
+              const direction = document.querySelector(
+                "#ledgerForm [data-dir].on",
+              ).dataset.dir;
+              try {
+                await API.post(
+                  `/api/fund-accounts/${activeFundAccount}/ledger`,
+                  {
+                    direction,
+                    amount: document.getElementById("lAmount").value,
+                    category: document.getElementById("lCategory").value,
+                    description: document.getElementById("lDesc").value.trim(),
+                    reference:
+                      document.getElementById("lRef").value.trim() || undefined,
+                  },
+                );
+                toast("Ledger entry posted");
+                document.getElementById("ledgerModal").classList.remove("open");
+                openLedger(
+                  activeFundAccount,
+                  document
+                    .getElementById("ledgerTitle")
+                    .textContent.replace(" — ledger", ""),
+                );
+                loadFunds();
+              } catch (err) {
+                errBox.textContent = err.message;
+                errBox.classList.add("show");
+              }
+            });
+        }
+
+        // ===== Reversal Approvals tab =====
+        const RECOMMENDATION_LABEL = {
+          recommend: "Accountant recommends reversal",
+          flag: "Accountant flagged as invalid",
+        };
+        async function loadReversals() {
+          const { items } = await API.get("/api/reversals");
+          const pending = items.filter((r) => r.status === "pending");
+          const decided = items
+            .filter((r) => r.status !== "pending")
+            .slice(0, 10);
+
+          document.getElementById("reversalEmpty").style.display =
+            pending.length ? "none" : "block";
+          document.getElementById("reversalPending").innerHTML = pending
+            .map(
+              (r) => `
+      <div style="border:1px solid var(--line-soft); border-radius:12px; padding:16px 18px; margin-bottom:12px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <span style="display:block; font-weight:700; font-size:0.95rem;">${fmt.esc(fmt.name(r.contributionId?.memberId))} — ${fmt.gh(r.contributionId?.amount)}</span>
+            <span style="display:block; font-size:0.85rem; color:var(--muted); margin-top:3px;">${fmt.esc(r.reason)}</span>
+            <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:3px;">Requested ${fmt.date(r.createdAt)} by ${fmt.esc(fmt.name(r.requestedBy))}</span>
+          </div>
+          ${
+            isAdmin
+              ? `
+          <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <button type="button" class="btn small" data-approve="${r._id}">Approve</button>
+            <button type="button" class="btn small secondary" style="color:var(--red-ink);" data-reject="${r._id}">Reject</button>
+          </div>`
+              : ""
+          }
+        </div>
+        ${r.recommendation ? `<div style="margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--bg); font-size:0.85rem;"><strong>${RECOMMENDATION_LABEL[r.recommendation]}</strong>${r.recommendationNote ? " — " + fmt.esc(r.recommendationNote) : ""}</div>` : ""}
+      </div>`,
+            )
+            .join("");
+
+          document.getElementById("reversalHistory").innerHTML = decided.length
+            ? decided
+                .map(
+                  (r) => `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 0; border-bottom:1px solid var(--row-line);">
+          <div>
+            <span style="display:block; font-size:0.92rem; font-weight:600;">${fmt.esc(fmt.name(r.contributionId?.memberId))} — ${fmt.gh(r.contributionId?.amount)}</span>
+            <span style="display:block; font-size:0.82rem; color:var(--faint); margin-top:2px;">decided ${fmt.date(r.decidedAt)} by ${fmt.esc(fmt.name(r.decidedBy))}</span>
+          </div>
+          <span class="pill ${r.status === "approved" ? "green" : "red"}">${r.status === "approved" ? "REVERSED" : "REJECTED"}</span>
+        </div>`,
+                )
+                .join("")
+            : '<div class="empty">No decisions yet.</div>';
+
+          if (isAdmin) {
+            document
+              .querySelectorAll("[data-approve]")
+              .forEach((btn) =>
+                btn.addEventListener("click", () =>
+                  decideReversal(btn.dataset.approve, "approved"),
+                ),
+              );
+            document.querySelectorAll("[data-reject]").forEach((btn) =>
+              btn.addEventListener("click", () => {
+                const note =
+                  prompt("Reason for rejecting this reversal (optional):") ||
+                  undefined;
+                decideReversal(btn.dataset.reject, "rejected", note);
+              }),
+            );
+          }
+        }
+        async function decideReversal(id, decision, note) {
+          try {
+            await API.post(`/api/reversals/${id}/decide`, { decision, note });
+            toast(
+              decision === "approved"
+                ? "Reversal approved"
+                : "Reversal rejected",
+            );
+            loadReversals();
+            renderTabs();
+          } catch (err) {
+            toast(err.message, true);
+          }
+        }
+
+        await renderTabs();
+        await loadOverview();
+      })();
+    </script>
+  </body>
+</html>

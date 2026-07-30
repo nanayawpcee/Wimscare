@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claims Configuration — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+      }
+      .track {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        border-radius: 999px;
+        border: 0;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s ease;
+        background: var(--input-line);
+        padding: 0;
+      }
+      .track.on {
+        background: var(--primary);
+      }
+      .track .knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        transition: left 0.2s ease;
+        display: block;
+      }
+      .track.on .knob {
+        left: 23px;
+      }
+      .tile {
+        background: var(--bg);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .tile .k {
+        display: block;
+        color: var(--faint);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+      .tile .v {
+        font-weight: 700;
+        font-size: 1rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .type-btn {
+        padding: 7px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        font-family: inherit;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .type-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .type-btn.danger {
+        color: var(--red-ink);
+      }
+      .type-btn.danger:hover {
+        border-color: var(--red-ink);
+        color: var(--red-ink);
+      }
+      .type-btn.enable {
+        color: var(--green-ink);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html" class="active">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role">Administrator</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <a
+              href="/admin/claims.html"
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-weight: 600;
+                font-size: 0.9rem;
+                margin-bottom: 12px;
+              "
+              >← Back to claims</a
+            >
+            <h1>Claims Configuration</h1>
+            <p>
+              Claim types, benefit limits, eligibility rules and required
+              documents
+            </p>
+          </div>
+          <a
+            class="btn"
+            href="/admin/claim-type.html"
+            style="
+              padding: 10px 18px;
+              font-weight: 600;
+              font-size: 0.92rem;
+              white-space: nowrap;
+            "
+            >Add claim type</a
+          >
+        </div>
+
+        <!-- Global rules -->
+        <div class="card" style="margin-bottom: 20px">
+          <h2 style="margin-bottom: 14px">Global eligibility rules</h2>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+              gap: 14px;
+            "
+          >
+            <div>
+              <label
+                style="
+                  display: block;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  margin-bottom: 6px;
+                "
+                >Minimum membership period</label
+              >
+              <select class="field" id="minMembership">
+                <option value="3">3 months</option>
+                <option value="6">6 months</option>
+                <option value="12">12 months</option>
+              </select>
+            </div>
+            <div>
+              <label
+                style="
+                  display: block;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  margin-bottom: 6px;
+                "
+                >Contribution standing required</label
+              >
+              <select class="field" id="standingRule">
+                <option value="no_arrears_2m">No arrears over 2 months</option>
+                <option value="fully_paid">Fully paid up</option>
+                <option value="none">No requirement</option>
+              </select>
+            </div>
+            <div>
+              <label
+                style="
+                  display: block;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  margin-bottom: 6px;
+                "
+                >Max claims per member / year</label
+              >
+              <input
+                class="field"
+                type="number"
+                min="1"
+                max="50"
+                id="maxClaims"
+              />
+            </div>
+          </div>
+          <div
+            style="display: grid; gap: 10px; margin-top: 16px"
+            id="toggles"
+          ></div>
+        </div>
+
+        <!-- Claim types -->
+        <div style="display: grid; gap: 16px" id="typeCards"></div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "superadmin"],
+        });
+        if (!session) return;
+        document.getElementById("sideAvatar").textContent = fmt.initials(
+          session.user,
+        );
+        document.getElementById("sideName").textContent = fmt.name(
+          session.user,
+        );
+
+        const TOGGLE_DEFS = [
+          {
+            key: "autoAck",
+            title: "Auto-acknowledge submissions",
+            desc: "Email members instantly when a claim is received",
+          },
+          {
+            key: "allowDrafts",
+            title: "Allow draft applications",
+            desc: "Members can save incomplete applications",
+          },
+          {
+            key: "notifyChain",
+            title: "Notify full approval chain",
+            desc: "Alert all approvers at submission, not sequentially",
+          },
+        ];
+        let settings = {};
+
+        // --- Global rules ---
+        async function saveSettings(patch) {
+          try {
+            const data = await API.patch(
+              "/api/organization/claim-settings",
+              patch,
+            );
+            settings = data.organization.claimSettings;
+            renderToggles();
+            toast("Settings saved");
+          } catch (err) {
+            toast(err.message, true);
+          }
+        }
+
+        function renderToggles() {
+          document.getElementById("toggles").innerHTML = TOGGLE_DEFS.map(
+            (t) => `
+      <div class="toggle-row">
+        <div>
+          <span style="display:block; font-weight:600; font-size:0.9rem;">${t.title}</span>
+          <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:2px;">${t.desc}</span>
+        </div>
+        <button type="button" class="track ${settings[t.key] ? "on" : ""}" data-toggle="${t.key}" role="switch" aria-checked="${!!settings[t.key]}">
+          <span class="knob"></span>
+        </button>
+      </div>`,
+          ).join("");
+          document
+            .querySelectorAll("[data-toggle]")
+            .forEach((btn) =>
+              btn.addEventListener("click", () =>
+                saveSettings({
+                  [btn.dataset.toggle]: !settings[btn.dataset.toggle],
+                }),
+              ),
+            );
+        }
+
+        async function loadSettings() {
+          const data = await API.get("/api/organization");
+          settings = data.organization.claimSettings || {};
+          const minSel = document.getElementById("minMembership");
+          if (
+            ![...minSel.options].some(
+              (o) => o.value === String(settings.minMembershipMonths),
+            )
+          ) {
+            minSel.insertAdjacentHTML(
+              "beforeend",
+              `<option value="${settings.minMembershipMonths}">${settings.minMembershipMonths} months</option>`,
+            );
+          }
+          minSel.value = String(settings.minMembershipMonths ?? 6);
+          document.getElementById("standingRule").value =
+            settings.standingRule || "no_arrears_2m";
+          document.getElementById("maxClaims").value =
+            settings.maxClaimsPerYear ?? 3;
+          renderToggles();
+        }
+        document
+          .getElementById("minMembership")
+          .addEventListener("change", (e) =>
+            saveSettings({ minMembershipMonths: e.target.value }),
+          );
+        document
+          .getElementById("standingRule")
+          .addEventListener("change", (e) =>
+            saveSettings({ standingRule: e.target.value }),
+          );
+        document
+          .getElementById("maxClaims")
+          .addEventListener("change", (e) =>
+            saveSettings({ maxClaimsPerYear: e.target.value }),
+          );
+
+        // --- Claim types ---
+        const CHAIN_LABELS = {
+          admin: "Admin only",
+          supervisor_admin: "Supervisor → Accountant → Admin",
+          committee: "Committee",
+        };
+        const PER_LABELS = {
+          claim: "/ claim",
+          year: "/ year",
+          lifetime: "lifetime",
+        };
+
+        async function loadTypes() {
+          const { items } = await API.get("/api/claim-types");
+          document.getElementById("typeCards").innerHTML = items.length
+            ? items
+                .map((t) => {
+                  const disabled = t.status === "archived";
+                  const statusPill = disabled
+                    ? '<span class="pill gray">Disabled</span>'
+                    : t.status === "draft"
+                      ? '<span class="pill amber">DRAFT</span>'
+                      : '<span class="pill green">Active</span>';
+                  return `
+        <div class="card">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <h2>${fmt.esc(t.name)}</h2>
+                ${statusPill}
+              </div>
+              <p style="margin:6px 0 0; color:var(--muted); font-size:0.88rem;">${fmt.esc(t.description || "")}</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <a class="type-btn" href="/admin/claim-type.html?id=${t._id}">Edit</a>
+              ${
+                disabled
+                  ? `<button type="button" class="type-btn enable" data-enable="${t._id}">Enable</button>`
+                  : `<button type="button" class="type-btn danger" data-disable="${t._id}">Disable</button>`
+              }
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px;">
+            <div class="tile"><span class="k">${t.amountMode === "capped" ? "Benefit limit" : "Fixed benefit"}</span><span class="v">${t.amountMode === "capped" ? "Up to " : ""}${fmt.gh(t.benefitLimit)} ${PER_LABELS[t.limitPer] || ""}</span></div>
+            <div class="tile"><span class="k">Waiting period</span><span class="v">${t.waitingPeriodMonths ? t.waitingPeriodMonths + " months" : "None"}</span></div>
+            <div class="tile"><span class="k">Approval chain</span><span class="v">${CHAIN_LABELS[t.approvalChain] || t.approvalChain}</span></div>
+            <div class="tile"><span class="k">Required documents</span><span class="v">${t.requiredDocuments.length} required</span></div>
+          </div>
+        </div>`;
+                })
+                .join("")
+            : '<div class="card empty">No claim types yet — use “Add claim type” to create the first one.</div>';
+
+          document.querySelectorAll("[data-disable]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              try {
+                await API.del("/api/claim-types/" + btn.dataset.disable);
+                toast(
+                  "Claim type disabled — members can no longer apply for it",
+                );
+                loadTypes();
+              } catch (err) {
+                toast(err.message, true);
+              }
+            }),
+          );
+          document.querySelectorAll("[data-enable]").forEach((btn) =>
+            btn.addEventListener("click", async () => {
+              try {
+                await API.patch("/api/claim-types/" + btn.dataset.enable, {
+                  status: "active",
+                });
+                toast("Claim type enabled");
+                loadTypes();
+              } catch (err) {
+                toast(err.message, true);
+              }
+            }),
+          );
+        }
+
+        await Promise.all([loadSettings(), loadTypes()]);
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>About — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #0f2c3f;
+        --blue: #1d6fae;
+        --blue-hover: #185e93;
+        --bg: #f4f7f8;
+        --ink: #12242e;
+        --muted: #5a6b75;
+        --muted-2: #8a98a1;
+        --border: #e2e9ec;
+        --green-bg: #eef6e4;
+        --green-ink: #4e7a22;
+        --green-dot: #79b843;
+        --gold: #b97f24;
+        --blue-bg: #e8f1f8;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+      a:hover {
+        color: var(--blue-hover);
+      }
+      img {
+        max-width: 100%;
+        display: block;
+      }
+
+      .wc-header {
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+      }
+      .wc-header-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 16px 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .wc-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .wc-brand img {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        object-fit: cover;
+      }
+      .wc-brand span {
+        font-weight: 700;
+        font-size: 1.15rem;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      .wc-nav {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+        align-items: center;
+      }
+      .wc-nav-link {
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 0.95rem;
+        padding: 8px 14px;
+        border-radius: 8px;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+      .wc-nav-link:hover {
+        background: var(--bg);
+        color: var(--ink);
+      }
+      .wc-nav-link.current {
+        background: var(--bg);
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .wc-nav-cta {
+        color: #fff;
+        background: var(--blue);
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 9px 18px;
+        border-radius: 9px;
+        margin-left: 8px;
+        transition: background 0.15s ease;
+      }
+      .wc-nav-cta:hover {
+        background: var(--blue-hover);
+        color: #fff;
+      }
+
+      .container {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-left: 32px;
+        padding-right: 32px;
+      }
+
+      .about-intro {
+        padding-top: 80px;
+        padding-bottom: 56px;
+      }
+      .about-intro-inner {
+        max-width: 44rem;
+      }
+      .about-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--blue-bg);
+        color: var(--blue);
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 999px;
+        margin-bottom: 20px;
+        letter-spacing: 0.02em;
+      }
+      .about-intro h1 {
+        font-size: clamp(2rem, 3.8vw, 2.8rem);
+        line-height: 1.1;
+        margin: 0 0 20px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+      .about-intro p {
+        font-size: 1.15rem;
+        color: var(--muted);
+        line-height: 1.65;
+        margin: 0;
+      }
+
+      .audience {
+        padding-bottom: 56px;
+      }
+      .audience-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .aud-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 28px;
+      }
+      .aud-card.navy {
+        background: var(--navy);
+        color: #fff;
+        border: 0;
+      }
+      .aud-eyebrow {
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted-2);
+        margin-bottom: 14px;
+      }
+      .aud-card.navy .aud-eyebrow {
+        color: #9fc2da;
+      }
+      .aud-card h3 {
+        margin: 0 0 10px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .aud-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.65;
+      }
+      .aud-card.navy p {
+        color: #9fc2da;
+      }
+
+      .coverage {
+        padding-bottom: 56px;
+      }
+      .coverage-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 20px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 32px;
+      }
+      .panel h2 {
+        margin: 0 0 24px;
+        font-size: 1.3rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .panel.small {
+        padding: 28px;
+      }
+      .panel.small h2 {
+        font-size: 1.05rem;
+        margin-bottom: 16px;
+      }
+      .feature-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px 28px;
+      }
+      .feature {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .feature-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-top: 6px;
+        flex-shrink: 0;
+      }
+      .feature h4 {
+        font-weight: 600;
+        font-size: 0.98rem;
+        margin: 0 0 4px;
+      }
+      .feature p {
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.6;
+        margin: 0;
+      }
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .check-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .check-item {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .check-mark {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--green-bg);
+        color: var(--green-ink);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .check-item span:last-child {
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+      .steps-hint {
+        margin: 0 0 16px;
+        color: var(--muted-2);
+        font-size: 0.85rem;
+      }
+      .steps {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.9;
+      }
+
+      .company {
+        padding-bottom: 96px;
+      }
+      .company-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 32px;
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr;
+        gap: 32px;
+        align-items: start;
+      }
+      .company-brand {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .company-logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: var(--navy);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+      }
+      .company-eyebrow {
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted-2);
+        margin-bottom: 6px;
+      }
+      .company-name {
+        font-weight: 600;
+        line-height: 1.4;
+      }
+      .company-sub {
+        color: var(--muted);
+        font-size: 0.88rem;
+        margin-top: 4px;
+      }
+      .company-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+      .company-list a {
+        font-weight: 500;
+      }
+      .dev-logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: #fff;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+      }
+      .wc-footer {
+        background: var(--navy);
+        color: #fff;
+      }
+      .wc-footer-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 40px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .wc-footer-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .wc-footer-brand img {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        object-fit: cover;
+        background: #fff;
+      }
+      .wc-footer-brand span {
+        font-weight: 600;
+      }
+      .wc-footer-version {
+        color: #9fc2da;
+        font-size: 0.85rem;
+        margin-left: 6px;
+      }
+      .wc-footer-copy {
+        margin: 0;
+        color: #9fc2da;
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 960px) {
+        .audience-grid {
+          grid-template-columns: 1fr;
+        }
+        .coverage-grid {
+          grid-template-columns: 1fr;
+        }
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+        .company-card {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+        .about-intro {
+          padding-top: 56px;
+        }
+        .wc-nav-link {
+          display: none;
+        }
+        .wc-nav-link.current {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="wc-header">
+      <div class="wc-header-inner">
+        <a class="wc-brand" href="/welcome.html">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <span>WIMScare</span>
+        </a>
+        <nav class="wc-nav">
+          <a href="/welcome.html" class="wc-nav-link">Home</a>
+          <a href="/about.html" class="wc-nav-link current" aria-current="page"
+            >About</a
+          >
+          <a href="/login.html" class="wc-nav-cta" id="navAuthCta">Sign in</a>
+        </nav>
+      </div>
+    </header>
+
+    <section class="about-intro container">
+      <div class="about-intro-inner">
+        <div class="about-badge">About WIMScare</div>
+        <h1>Built so no member's contribution goes unseen.</h1>
+        <p>
+          WIMScare — the Welfare Information Management System — replaces
+          spreadsheets and paper ledgers with one trusted platform for
+          contributions, claims and reporting. Made for hospitals, churches and
+          associations that run welfare programs for their people.
+        </p>
+      </div>
+    </section>
+
+    <section class="audience container">
+      <div class="audience-grid">
+        <div class="aud-card navy">
+          <div class="aud-eyebrow">For members</div>
+          <h3>Your welfare, in the open</h3>
+          <p>
+            See every cedi you've contributed, apply for wedding or funeral
+            support in minutes, and follow each claim from submission to payout
+            — with notifications along the way.
+          </p>
+        </div>
+        <div class="aud-card">
+          <div class="aud-eyebrow">For administrators</div>
+          <h3>Full oversight, less paperwork</h3>
+          <p>
+            Manage members and roles, record contributions individually or in
+            bulk, process claims with a clear review workflow, and keep the
+            accounts ledger tidy.
+          </p>
+        </div>
+        <div class="aud-card">
+          <div class="aud-eyebrow">For the board</div>
+          <h3>Reports you can stand behind</h3>
+          <p>
+            Every action is logged in an audit trail. Generate contribution,
+            claims and financial reports, and export them to CSV, Excel or PDF
+            for meetings and audits.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="coverage container">
+      <div class="coverage-grid">
+        <div class="panel">
+          <h2>What the platform covers</h2>
+          <div class="feature-grid">
+            <div class="feature">
+              <span class="feature-dot" style="background: var(--blue)"></span>
+              <div>
+                <h4>Contribution tracking</h4>
+                <p>
+                  Individual and bulk CSV entry, scheduled dues, receipts and
+                  full member history.
+                </p>
+              </div>
+            </div>
+            <div class="feature">
+              <span
+                class="feature-dot"
+                style="background: var(--green-dot)"
+              ></span>
+              <div>
+                <h4>Claims processing</h4>
+                <p>
+                  Applications with document uploads, staged review workflow and
+                  status notifications.
+                </p>
+              </div>
+            </div>
+            <div class="feature">
+              <span class="feature-dot" style="background: var(--gold)"></span>
+              <div>
+                <h4>Reporting &amp; analytics</h4>
+                <p>
+                  Filterable reports with CSV, Excel and PDF export, plus visual
+                  summaries.
+                </p>
+              </div>
+            </div>
+            <div class="feature">
+              <span class="feature-dot" style="background: var(--blue)"></span>
+              <div>
+                <h4>Member management</h4>
+                <p>
+                  Invitations, activation, profiles with family and beneficiary
+                  records.
+                </p>
+              </div>
+            </div>
+            <div class="feature">
+              <span
+                class="feature-dot"
+                style="background: var(--green-dot)"
+              ></span>
+              <div>
+                <h4>Financial accounting</h4>
+                <p>
+                  Income and expense ledger, financial statements and
+                  contribution summaries.
+                </p>
+              </div>
+            </div>
+            <div class="feature">
+              <span class="feature-dot" style="background: var(--gold)"></span>
+              <div>
+                <h4>Role-based access</h4>
+                <p>
+                  Admin, supervisor, accountant and member roles with granular
+                  permissions.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar">
+          <div class="panel small">
+            <h2>Security &amp; privacy</h2>
+            <div class="check-list">
+              <div class="check-item">
+                <span class="check-mark">✓</span
+                ><span>Role-based access control across every screen</span>
+              </div>
+              <div class="check-item">
+                <span class="check-mark">✓</span
+                ><span>Secure cookie-based authentication</span>
+              </div>
+              <div class="check-item">
+                <span class="check-mark">✓</span
+                ><span>Single-use, time-limited activation links</span>
+              </div>
+              <div class="check-item">
+                <span class="check-mark">✓</span
+                ><span>Encrypted password storage</span>
+              </div>
+              <div class="check-item">
+                <span class="check-mark">✓</span
+                ><span>Audit trails for all administrative actions</span>
+              </div>
+            </div>
+          </div>
+          <div class="panel small">
+            <h2 style="margin-bottom: 4px">Getting started</h2>
+            <p class="steps-hint">Membership is by invitation.</p>
+            <ol class="steps">
+              <li>Your administrator sends an invitation email</li>
+              <li>Open the single-use activation link</li>
+              <li>Set your password and sign in</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="company container">
+      <div class="company-card">
+        <div class="company-brand">
+          <img
+            src="/assets/dev_logo.png"
+            alt="REKONSTECH Trading and Consultancy Services"
+            class="dev-logo"
+          />
+          <div>
+            <div class="company-eyebrow">Built by</div>
+            <div class="company-name">
+              REKONSTECH Trading and Consultancy Services
+            </div>
+            <div class="company-sub">
+              Software &amp; consultancy partner · Kumasi, Ghana
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="company-eyebrow">Contact</div>
+          <div class="company-list">
+            <a href="mailto:prince.acheampong1@gmail.com"
+              >prince.acheampong1@gmail.com</a
+            >
+            <span>+233 55 646 8659</span>
+            <span>+233 20 776 0838</span>
+          </div>
+        </div>
+        <div>
+          <div class="company-eyebrow">System</div>
+          <div class="company-list">
+            <span>WIMScare v2.0</span>
+            <span>Web-based application</span>
+            <span>Released 2026</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="wc-footer">
+      <div class="wc-footer-inner">
+        <div class="wc-footer-brand">
+          <img src="/assets/logo.png" alt="" />
+          <span>WIMScare</span>
+          <span class="wc-footer-version">v2.0</span>
+        </div>
+        <p class="wc-footer-copy">
+          &copy; 2026 REKONSTECH Trading and Consultancy Services
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      // Point the header CTA at the visitor's dashboard if already signed in.
+      (async function () {
+        try {
+          const res = await fetch("/api/auth/me", {
+            credentials: "include",
+          }).catch(() => null);
+          if (!res || !res.ok) return;
+          const data = await res.json().catch(() => null);
+          if (!data || !data.user) return;
+          const role = String(data.user.role || "").toLowerCase();
+          const cta = document.getElementById("navAuthCta");
+          if (cta) {
+            cta.textContent = "Go to your dashboard";
+            cta.href =
+              role === "superadmin"
+                ? "/developer/"
+                : role === "user"
+                  ? "/member/dashboard.html"
+                  : "/admin/dashboard.html";
+          }
+        } catch (e) {
+          /* page works fully without this */
+        }
+      })();
+    </script>
+  </body>
+</html>

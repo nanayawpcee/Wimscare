@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Users — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .dir-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 16px;
+        border-radius: 10px;
+      }
+      .dir-row:hover {
+        background: var(--bg);
+      }
+      .dir-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+      }
+      .chip {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+      .chip.member {
+        background: #e9eff2;
+        color: var(--muted);
+      }
+      .chip.admin {
+        background: var(--primary-tint);
+        color: var(--primary);
+      }
+      .chip.supervisor {
+        background: var(--amber-bg);
+        color: var(--amber-ink);
+      }
+      .chip.accountant {
+        background: var(--green-bg);
+        color: var(--green-ink);
+      }
+      .chip.suspended {
+        background: #fae7e5;
+        color: var(--red-ink);
+      }
+      .chip.pending {
+        background: #e9eff2;
+        color: var(--muted);
+      }
+      .row-btn {
+        padding: 7px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .row-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .pg-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .pg-btn:hover:not([disabled]) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .pg-btn[disabled] {
+        color: var(--faint);
+        cursor: not-allowed;
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 44, 63, 0.45);
+        z-index: 300;
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 48px 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal {
+        background: #fff;
+        border-radius: 18px;
+        padding: 28px;
+        width: 100%;
+        max-width: 560px;
+        box-sizing: border-box;
+      }
+      .modal-backdrop.confirm-backdrop {
+        align-items: center;
+        padding: 20px;
+      }
+      .modal.confirm-modal {
+        max-width: 420px;
+        padding: 26px;
+      }
+      .chip.deletion {
+        background: #fae7e5;
+        color: var(--red-ink);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html" class="active">Users</a>
+          <a href="/admin/accounts.html">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role" id="sideRole"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1>Users</h1>
+            <p>Search, manage and configure member accounts</p>
+          </div>
+          <a
+            href="/admin/invites.html"
+            class="btn"
+            id="inviteBtn"
+            style="padding: 10px 18px; font-weight: 600; font-size: 0.92rem"
+            >Invite user</a
+          >
+        </div>
+
+        <div id="deletionBanner" style="display: none"></div>
+
+        <div
+          style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap"
+        >
+          <input
+            type="search"
+            class="field"
+            id="searchInput"
+            placeholder="Search by name, email or member ID…"
+            style="flex: 1; min-width: 260px; width: auto; font-size: 0.95rem"
+          />
+          <select
+            class="field"
+            id="roleFilter"
+            style="width: auto; font-weight: 600; padding: 10px 14px"
+          >
+            <option value="">All roles</option>
+            <option value="user">Members</option>
+            <option value="admin">Admins</option>
+            <option value="supervisor">Supervisors</option>
+            <option value="accountant">Accountants</option>
+          </select>
+          <select
+            class="field"
+            id="statusFilter"
+            style="width: auto; font-weight: 600; padding: 10px 14px"
+          >
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+
+        <div
+          style="
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 8px;
+          "
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 14px 16px 10px;
+            "
+          >
+            <span style="font-weight: 700; font-size: 1.02rem"
+              >Member directory</span
+            >
+            <span
+              style="color: var(--muted); font-size: 0.85rem"
+              id="countLabel"
+            ></span>
+          </div>
+          <div
+            style="display: flex; flex-direction: column"
+            id="userRows"
+          ></div>
+          <div
+            id="emptyState"
+            style="
+              display: none;
+              padding: 40px 24px;
+              text-align: center;
+              color: var(--muted);
+            "
+          >
+            <strong
+              style="display: block; margin-bottom: 6px; color: var(--ink)"
+              >No members found</strong
+            >
+            <span style="font-size: 0.9rem"
+              >Try a different search term or filter.</span
+            >
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 14px 16px;
+              border-top: 1px solid var(--row-line);
+            "
+          >
+            <span
+              style="color: var(--faint); font-size: 0.85rem"
+              id="pageLabel"
+            ></span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" class="pg-btn" id="prevBtn">
+                Previous
+              </button>
+              <button type="button" class="pg-btn" id="nextBtn">Next</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Edit / view user modal -->
+    <div class="modal-backdrop" id="modalBackdrop">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+          "
+        >
+          <h2
+            style="margin: 0; font-size: 1.2rem; font-weight: 700"
+            id="modalTitle"
+          >
+            Edit user
+          </h2>
+          <button type="button" class="btn ghost small" id="modalClose">
+            Close
+          </button>
+        </div>
+        <p
+          style="margin: 0 0 20px; color: var(--muted); font-size: 0.88rem"
+          id="modalSub"
+        ></p>
+        <div class="form-error" id="modalError"></div>
+        <form
+          id="editForm"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px"
+        >
+          <div>
+            <label class="field">First name</label>
+            <input class="field" id="fFirst" required />
+          </div>
+          <div>
+            <label class="field">Last name</label>
+            <input class="field" id="fLast" required />
+          </div>
+          <div style="grid-column: span 2">
+            <label class="field">Email</label>
+            <input class="field" id="fEmail" readonly />
+          </div>
+          <div>
+            <label class="field">Phone</label>
+            <input class="field" id="fPhone" />
+          </div>
+          <div>
+            <label class="field">Member number</label>
+            <input class="field" id="fMemberNo" />
+          </div>
+          <div>
+            <label class="field">Department</label>
+            <input class="field" id="fDept" />
+          </div>
+          <div>
+            <label class="field">Role</label>
+            <select class="field" id="fRole">
+              <option value="user">Member</option>
+              <option value="accountant">Accountant</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
+          <div style="grid-column: span 2">
+            <label class="field">Status</label>
+            <select class="field" id="fStatus">
+              <option value="active">Active</option>
+              <option value="pending">Pending (awaiting activation)</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+          <div
+            style="
+              grid-column: span 2;
+              display: flex;
+              gap: 10px;
+              flex-wrap: wrap;
+            "
+          >
+            <button class="btn" type="submit">Save changes</button>
+            <button
+              class="btn secondary"
+              type="button"
+              id="resendBtn"
+              style="display: none"
+            >
+              Resend activation email
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Approve / decline account deletion -->
+    <div class="modal-backdrop confirm-backdrop" id="deletionModal">
+      <div class="modal confirm-modal">
+        <h3 style="margin: 0 0 8px; font-size: 1.05rem; font-weight: 700" id="deletionModalTitle"></h3>
+        <p style="margin: 0 0 22px; color: var(--muted); font-size: 0.9rem; line-height: 1.5" id="deletionModalBody"></p>
+        <div style="display: flex; justify-content: flex-end; gap: 10px">
+          <button type="button" class="btn ghost" id="deletionModalCancel" style="padding: 9px 16px; font-size: 0.88rem">Cancel</button>
+          <button type="button" class="btn danger" id="deletionModalConfirm" style="padding: 9px 16px; font-size: 0.88rem"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop confirm-backdrop" id="resetPwModal">
+      <div class="modal confirm-modal">
+        <h3 style="margin: 0 0 8px; font-size: 1.05rem; font-weight: 700">Reset password to the default?</h3>
+        <p style="margin: 0 0 22px; color: var(--muted); font-size: 0.9rem; line-height: 1.5" id="resetPwModalBody"></p>
+        <div style="display: flex; justify-content: flex-end; gap: 10px">
+          <button type="button" class="btn ghost" id="resetPwModalCancel" style="padding: 9px 16px; font-size: 0.88rem">Cancel</button>
+          <button type="button" class="btn danger" id="resetPwModalConfirm" style="padding: 9px 16px; font-size: 0.88rem">Reset password</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "supervisor", "accountant", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+        const canEdit = WIMS.can("manage_users");
+        const canInvite = WIMS.can("invite_users");
+        const canManagePermissions = WIMS.can("manage_permissions");
+        // Only the superadmin, and only while browsing this organization via
+        // the developer portal's "Open as superadmin" access — never a
+        // regular admin, no matter what permissions they've been granted.
+        const isSuperadmin = user.role === "superadmin";
+        document.getElementById("inviteBtn").style.display = canInvite
+          ? ""
+          : "none";
+
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+        document.getElementById("sideRole").textContent =
+          {
+            admin: "Administrator",
+            supervisor: "Supervisor",
+            accountant: "Accountant",
+            superadmin: "Superadmin",
+          }[user.role] || user.role;
+
+        // --- Pending deletion requests ---
+        async function loadDeletionBanner() {
+          const banner = document.getElementById("deletionBanner");
+          if (!canEdit) return;
+          const { items } = await API.get(
+            "/api/users?hasDeletionRequest=true&limit=100",
+          );
+          if (!items.length) {
+            banner.style.display = "none";
+            return;
+          }
+          banner.style.display = "block";
+          banner.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:var(--red-bg, #fae7e5); border:1px solid #f3c7c2; border-radius:14px; padding:14px 18px; margin-bottom:16px;">
+        <div>
+          <span style="display:block; font-weight:700; color:var(--red-ink); font-size:0.92rem;">${items.length} account deletion request${items.length > 1 ? "s" : ""} awaiting your review</span>
+          <span style="color:var(--red-ink); font-size:0.85rem; opacity:0.85;">${items.slice(0, 3).map((u) => fmt.esc(fmt.name(u))).join(", ")}${items.length > 3 ? ` and ${items.length - 3} more` : ""}</span>
+        </div>
+      </div>`;
+        }
+
+        const AVATAR_COLORS = ["#1d6fae", "#0f2c3f", "#79b843", "#b97f24"];
+        const ROLE_LABELS = {
+          user: "member",
+          admin: "admin",
+          supervisor: "supervisor",
+          accountant: "accountant",
+        };
+
+        const state = {
+          q: "",
+          role: "",
+          status: "",
+          page: 1,
+          pages: 1,
+          total: 0,
+        };
+        let currentItems = [];
+
+        const searchInput = document.getElementById("searchInput");
+        const roleFilter = document.getElementById("roleFilter");
+        const statusFilter = document.getElementById("statusFilter");
+
+        async function load() {
+          const params = new URLSearchParams({ page: state.page, limit: 15 });
+          if (state.q) params.set("q", state.q);
+          if (state.role) params.set("role", state.role);
+          if (state.status) params.set("status", state.status);
+          const data = await API.get("/api/users?" + params);
+          state.pages = Math.max(data.pages, 1);
+          state.total = data.total;
+          currentItems = data.items;
+          render();
+        }
+
+        function render() {
+          const rowsEl = document.getElementById("userRows");
+          const emptyEl = document.getElementById("emptyState");
+          emptyEl.style.display = currentItems.length ? "none" : "block";
+
+          rowsEl.innerHTML = currentItems
+            .map((u, i) => {
+              const roleKey = ROLE_LABELS[u.role] || "member";
+              const statusChip =
+                u.status !== "active"
+                  ? `<span class="chip ${u.status}">${u.status}</span>`
+                  : "";
+              // Admin deletion requests escalate to the superadmin (routes/
+              // users.js excludes role:'admin' targets from approve/reject)
+              // — this org's admin can only view/manage that here, not act.
+              const deletionChip =
+                u.deletionRequestedAt
+                  ? `<span class="chip deletion">deletion requested</span>`
+                  : "";
+              const deletionActions =
+                u.deletionRequestedAt && canEdit && u.role !== "admin"
+                  ? `<button type="button" class="row-btn" style="color:var(--red-ink); border-color:#f3c7c2;" data-approve-del="${u._id}">Approve deletion</button>
+                     <button type="button" class="row-btn" data-reject-del="${u._id}">Decline</button>`
+                  : "";
+              return `
+      <div class="dir-row">
+        <div style="display:flex; align-items:center; gap:14px; min-width:0; flex:1;">
+          <span class="dir-avatar" style="background:${AVATAR_COLORS[i % AVATAR_COLORS.length]};">${fmt.initials(u)}</span>
+          <div style="min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="font-weight:700; font-size:0.95rem;">${fmt.esc(fmt.name(u))}</span>
+              <span class="chip ${roleKey}">${roleKey}</span>
+              ${statusChip}
+              ${deletionChip}
+            </div>
+            <div style="color:var(--faint); font-size:0.85rem; margin-top:3px;">${fmt.esc(u.email)}${u.memberNumber ? " · " + fmt.esc(u.memberNumber) : ""}</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
+          ${deletionActions}
+          <button type="button" class="row-btn" data-view="${u._id}">View profile</button>
+          ${canEdit ? `<button type="button" class="row-btn" data-edit="${u._id}">Edit</button>` : ""}
+          ${isSuperadmin ? `<button type="button" class="row-btn" style="color:var(--red-ink); border-color:#f3c7c2;" data-reset-pw="${u._id}">Reset password</button>` : ""}
+          ${canManagePermissions && u.role !== "user" ? `<a class="row-btn" href="/admin/permissions.html?user=${u._id}">Permissions</a>` : ""}
+        </div>
+      </div>`;
+            })
+            .join("");
+
+          document.getElementById("countLabel").textContent =
+            `${currentItems.length} of ${state.total} member${state.total === 1 ? "" : "s"}`;
+          document.getElementById("pageLabel").textContent =
+            `Page ${state.page} of ${state.pages}`;
+          document.getElementById("prevBtn").disabled = state.page <= 1;
+          document.getElementById("nextBtn").disabled =
+            state.page >= state.pages;
+
+          rowsEl
+            .querySelectorAll("[data-edit]")
+            .forEach((btn) =>
+              btn.addEventListener("click", () =>
+                openModal(btn.dataset.edit, true),
+              ),
+            );
+          rowsEl
+            .querySelectorAll("[data-view]")
+            .forEach((btn) =>
+              btn.addEventListener("click", () =>
+                openModal(btn.dataset.view, false),
+              ),
+            );
+          rowsEl.querySelectorAll("[data-approve-del]").forEach((btn) =>
+            btn.addEventListener("click", () =>
+              openDeletionModal(btn.dataset.approveDel, "approve"),
+            ),
+          );
+          rowsEl.querySelectorAll("[data-reject-del]").forEach((btn) =>
+            btn.addEventListener("click", () =>
+              openDeletionModal(btn.dataset.rejectDel, "reject"),
+            ),
+          );
+          rowsEl.querySelectorAll("[data-reset-pw]").forEach((btn) =>
+            btn.addEventListener("click", () =>
+              openResetPwModal(btn.dataset.resetPw),
+            ),
+          );
+        }
+
+        // --- Filters ---
+        let debounce;
+        searchInput.addEventListener("input", () => {
+          clearTimeout(debounce);
+          debounce = setTimeout(() => {
+            state.q = searchInput.value.trim();
+            state.page = 1;
+            load();
+          }, 300);
+        });
+        roleFilter.addEventListener("change", () => {
+          state.role = roleFilter.value;
+          state.page = 1;
+          load();
+        });
+        statusFilter.addEventListener("change", () => {
+          state.status = statusFilter.value;
+          state.page = 1;
+          load();
+        });
+        document.getElementById("prevBtn").addEventListener("click", () => {
+          if (state.page > 1) {
+            state.page--;
+            load();
+          }
+        });
+        document.getElementById("nextBtn").addEventListener("click", () => {
+          if (state.page < state.pages) {
+            state.page++;
+            load();
+          }
+        });
+
+        // --- Modal ---
+        const backdrop = document.getElementById("modalBackdrop");
+        const modalError = document.getElementById("modalError");
+        const resendBtn = document.getElementById("resendBtn");
+        let editingId = null;
+
+        async function openModal(id, editable) {
+          modalError.classList.remove("show");
+          const { user: u } = await API.get("/api/users/" + id);
+          editingId = id;
+          document.getElementById("modalTitle").textContent = editable
+            ? "Edit user"
+            : "User profile";
+          document.getElementById("modalSub").textContent =
+            `Created ${fmt.date(u.createdAt)}${u.lastLoginAt ? " · last sign-in " + fmt.date(u.lastLoginAt) : " · never signed in"}`;
+          document.getElementById("fFirst").value = u.firstName || "";
+          document.getElementById("fLast").value = u.lastName || "";
+          document.getElementById("fEmail").value = u.email;
+          document.getElementById("fPhone").value = u.phone || "";
+          document.getElementById("fMemberNo").value = u.memberNumber || "";
+          document.getElementById("fDept").value = u.department || "";
+          document.getElementById("fRole").value = u.role;
+          document.getElementById("fStatus").value = u.status;
+
+          const isSelf = String(u._id) === String(user._id);
+          const isActualAdmin = ["admin", "superadmin"].includes(user.role);
+          document
+            .querySelectorAll(
+              "#editForm input:not([readonly]), #editForm select",
+            )
+            .forEach((el) => {
+              el.disabled = !editable || !canEdit;
+            });
+          // Role changes are always administrator-only, independent of a
+          // granted manage_users permission — see routes/users.js.
+          document.getElementById("fRole").disabled =
+            !editable || !isActualAdmin;
+          if (isSelf) {
+            document.getElementById("fRole").disabled = true;
+            document.getElementById("fStatus").disabled = true;
+          }
+          document.querySelector("#editForm .btn[type=submit]").style.display =
+            editable && canEdit ? "" : "none";
+          resendBtn.style.display =
+            editable && canEdit && u.status === "pending" ? "" : "none";
+          backdrop.classList.add("open");
+        }
+
+        document
+          .getElementById("modalClose")
+          .addEventListener("click", () => backdrop.classList.remove("open"));
+        backdrop.addEventListener("click", (e) => {
+          if (e.target === backdrop) backdrop.classList.remove("open");
+        });
+
+        document
+          .getElementById("editForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            modalError.classList.remove("show");
+            try {
+              const body = {
+                firstName: document.getElementById("fFirst").value.trim(),
+                lastName: document.getElementById("fLast").value.trim(),
+                phone: document.getElementById("fPhone").value.trim(),
+                memberNumber: document.getElementById("fMemberNo").value.trim(),
+                department: document.getElementById("fDept").value.trim(),
+              };
+              const roleEl = document.getElementById("fRole");
+              const statusEl = document.getElementById("fStatus");
+              if (!roleEl.disabled) body.role = roleEl.value;
+              if (!statusEl.disabled) body.status = statusEl.value;
+              await API.patch("/api/users/" + editingId, body);
+              toast("User updated");
+              backdrop.classList.remove("open");
+              load();
+            } catch (err) {
+              modalError.textContent = err.message;
+              modalError.classList.add("show");
+            }
+          });
+
+        resendBtn.addEventListener("click", async () => {
+          try {
+            const data = await API.post(
+              `/api/users/${editingId}/resend-activation`,
+            );
+            toast(data.message);
+          } catch (err) {
+            toast(err.message, true);
+          }
+        });
+
+        // --- Approve / decline account deletion ---
+        const deletionModal = document.getElementById("deletionModal");
+        const deletionModalTitle = document.getElementById("deletionModalTitle");
+        const deletionModalBody = document.getElementById("deletionModalBody");
+        const deletionModalConfirm = document.getElementById("deletionModalConfirm");
+        let pendingDeletion = null; // { id, action }
+
+        function openDeletionModal(id, action) {
+          const target = currentItems.find((u) => u._id === id);
+          if (!target) return;
+          pendingDeletion = { id, action };
+          if (action === "approve") {
+            deletionModalTitle.textContent = "Approve account deletion?";
+            deletionModalBody.textContent = `${fmt.name(target)} will be permanently locked out of WIMScare. Their contributions, claims and ledger history stay on record for reporting — this cannot be undone.`;
+            deletionModalConfirm.textContent = "Approve deletion";
+          } else {
+            deletionModalTitle.textContent = "Decline this request?";
+            deletionModalBody.textContent = `${fmt.name(target)}'s account stays active and untouched — they can request deletion again later if they still want to.`;
+            deletionModalConfirm.textContent = "Decline request";
+          }
+          deletionModal.classList.add("open");
+        }
+        document.getElementById("deletionModalCancel").onclick = () =>
+          deletionModal.classList.remove("open");
+        deletionModal.onclick = (e) => {
+          if (e.target === deletionModal) deletionModal.classList.remove("open");
+        };
+        deletionModalConfirm.onclick = async () => {
+          if (!pendingDeletion) return;
+          const { id, action } = pendingDeletion;
+          try {
+            const data = await API.post(
+              `/api/users/${id}/${action === "approve" ? "approve-deletion" : "reject-deletion"}`,
+            );
+            deletionModal.classList.remove("open");
+            toast(data.message);
+            await load();
+            await loadDeletionBanner();
+          } catch (err) {
+            toast(err.message, true);
+          }
+        };
+
+        // --- Reset password to the default (superadmin, backdoor access only) ---
+        const resetPwModal = document.getElementById("resetPwModal");
+        const resetPwModalBody = document.getElementById("resetPwModalBody");
+        const resetPwModalConfirm = document.getElementById("resetPwModalConfirm");
+        let pendingResetPwId = null;
+
+        function openResetPwModal(id) {
+          const target = currentItems.find((u) => u._id === id);
+          if (!target) return;
+          pendingResetPwId = id;
+          resetPwModalBody.innerHTML = `${fmt.esc(fmt.name(target))}'s password will be changed to <strong>"defaultuser"</strong>. They'll be required to set a new password the next time they sign in.${target.twoFactorEnabled ? " Their SMS two-factor requirement will also be turned off, in case they've lost access to that phone too." : ""}`;
+          resetPwModal.classList.add("open");
+        }
+        document.getElementById("resetPwModalCancel").onclick = () =>
+          resetPwModal.classList.remove("open");
+        resetPwModal.onclick = (e) => {
+          if (e.target === resetPwModal) resetPwModal.classList.remove("open");
+        };
+        resetPwModalConfirm.onclick = async () => {
+          if (!pendingResetPwId) return;
+          resetPwModalConfirm.disabled = true;
+          try {
+            const data = await API.post(`/api/users/${pendingResetPwId}/reset-password`);
+            resetPwModal.classList.remove("open");
+            toast(data.message);
+          } catch (err) {
+            toast(err.message, true);
+          } finally {
+            resetPwModalConfirm.disabled = false;
+          }
+        };
+
+        await load();
+        await loadDeletionBanner();
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contribution Reversal Requests — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .req-card {
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        padding: 16px 18px;
+      }
+      .req-card + .req-card {
+        margin-top: 12px;
+      }
+      .rec-note {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--bg);
+        font-size: 0.85rem;
+      }
+      .hist-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 13px 0;
+        border-bottom: 1px solid var(--row-line);
+      }
+      .hist-row:last-child {
+        border-bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <span class="brand-name">WIMScare</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <nav>
+          <a href="/member/dashboard.html">Home</a>
+          <a href="/admin/dashboard.html">Admin Dashboard</a>
+          <a href="/admin/users.html">Users</a>
+          <a href="/admin/accounts.html" class="active">Accounts</a>
+          <a href="/admin/contributions.html">Contributions</a>
+          <a href="/admin/claims.html">Claims Management</a>
+          <a href="/admin/reports.html">Reports</a>
+          <a href="/admin/profile.html">Profile</a>
+        </nav>
+        <div class="userbox">
+          <span class="avatar" id="sideAvatar"></span>
+          <div style="min-width: 0">
+            <span class="name" id="sideName"></span>
+            <span class="role">Administrator</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div style="padding-bottom: 24px">
+          <a
+            href="/admin/contributions.html"
+            style="
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              font-weight: 600;
+              font-size: 0.9rem;
+              margin-bottom: 12px;
+            "
+            >← Back to contributions</a
+          >
+          <h1 style="margin: 0 0 6px; font-size: 1.9rem; font-weight: 700">
+            Contribution Reversal Requests
+          </h1>
+          <p style="margin: 0; color: var(--muted)">
+            Review and action reversal requests raised against recorded
+            contributions
+          </p>
+        </div>
+
+        <div class="banner" id="pendingBanner">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span class="title" id="pendingTitle"></span>
+            <span class="sub"
+              >Approved reversals remove the contribution from the member's
+              record and post a ledger adjustment</span
+            >
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px">
+          <h2 style="margin-bottom: 12px">Pending requests</h2>
+          <div id="pendingList"></div>
+          <div
+            id="emptyState"
+            style="
+              display: none;
+              padding: 40px 24px;
+              text-align: center;
+              color: var(--muted);
+            "
+          >
+            <strong
+              style="display: block; margin-bottom: 6px; color: var(--ink)"
+              >All clear</strong
+            >
+            <span style="font-size: 0.9rem">No pending reversal requests.</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 style="margin-bottom: 12px">Recent decisions</h2>
+          <div id="historyList"></div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+      (async function () {
+        const { API, fmt, pill, toast, requireSession } = WIMS;
+        const session = await requireSession({
+          roles: ["admin", "superadmin"],
+        });
+        if (!session) return;
+        const { user } = session;
+        document.getElementById("sideAvatar").textContent = fmt.initials(user);
+        document.getElementById("sideName").textContent = fmt.name(user);
+
+        const RECOMMENDATION_LABEL = {
+          recommend: "Accountant recommends reversal",
+          flag: "Accountant flagged as invalid",
+        };
+
+        async function load() {
+          const { items } = await API.get("/api/reversals");
+          const pending = items.filter((r) => r.status === "pending");
+          const decided = items
+            .filter((r) => r.status !== "pending")
+            .slice(0, 10);
+
+          document.getElementById("pendingBanner").style.display =
+            pending.length ? "flex" : "none";
+          document.getElementById("pendingTitle").textContent =
+            `${pending.length} request${pending.length === 1 ? "" : "s"} awaiting your decision`;
+
+          document.getElementById("emptyState").style.display = pending.length
+            ? "none"
+            : "block";
+          document.getElementById("pendingList").innerHTML = pending
+            .map(
+              (r) => `
+      <div class="req-card">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <span style="display:block; font-weight:700; font-size:0.95rem;">${fmt.esc(fmt.name(r.contributionId?.memberId))} — ${fmt.gh(r.contributionId?.amount)}</span>
+            <span style="display:block; font-size:0.85rem; color:var(--muted); margin-top:3px;">${fmt.esc(r.reason)}</span>
+            <span style="display:block; font-size:0.8rem; color:var(--faint); margin-top:3px;">Requested ${fmt.date(r.createdAt)} by ${fmt.esc(fmt.name(r.requestedBy))}</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <button type="button" class="btn small" data-approve="${r._id}">Approve</button>
+            <button type="button" class="btn small secondary" style="color:var(--red-ink);" data-reject="${r._id}">Reject</button>
+          </div>
+        </div>
+        ${r.recommendation ? `<div class="rec-note"><strong>${RECOMMENDATION_LABEL[r.recommendation]}</strong>${r.recommendationNote ? " — " + fmt.esc(r.recommendationNote) : ""} <span style="color:var(--faint);">(${fmt.esc(fmt.name(r.recommendedBy))})</span></div>` : ""}
+      </div>`,
+            )
+            .join("");
+
+          document.getElementById("historyList").innerHTML = decided.length
+            ? decided
+                .map(
+                  (r) => `
+        <div class="hist-row">
+          <div>
+            <span style="display:block; font-size:0.92rem; font-weight:600;">${fmt.esc(fmt.name(r.contributionId?.memberId))} — ${fmt.gh(r.contributionId?.amount)}</span>
+            <span style="display:block; font-size:0.82rem; color:var(--faint); margin-top:2px;">${fmt.esc(r.reason)} · decided ${fmt.date(r.decidedAt)} by ${fmt.esc(fmt.name(r.decidedBy))}</span>
+          </div>
+          <span class="pill ${r.status === "approved" ? "green" : "red"}">${r.status === "approved" ? "REVERSED" : "REJECTED"}</span>
+        </div>`,
+                )
+                .join("")
+            : '<div class="empty">No decisions yet.</div>';
+
+          document
+            .querySelectorAll("[data-approve]")
+            .forEach((btn) =>
+              btn.addEventListener("click", () =>
+                decide(btn.dataset.approve, "approved"),
+              ),
+            );
+          document.querySelectorAll("[data-reject]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+              const note =
+                prompt("Reason for rejecting this reversal (optional):") ||
+                undefined;
+              decide(btn.dataset.reject, "rejected", note);
+            }),
+          );
+        }
+
+        async function decide(id, decision, note) {
+          try {
+            await API.post(`/api/reversals/${id}/decide`, { decision, note });
+            toast(
+              decision === "approved"
+                ? "Reversal approved"
+                : "Reversal rejected",
+            );
+            load();
+          } catch (err) {
+            toast(err.message, true);
+          }
+        }
+
+        await load();
+      })();
+    </script>
+  </body>
+</html>

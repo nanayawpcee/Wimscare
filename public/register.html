@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create account — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <style>
+      .invite-loading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 0.92rem;
+        padding: 8px 0 4px;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid var(--line);
+        border-top-color: var(--primary);
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .invite-dead {
+        display: none;
+        text-align: center;
+        padding: 12px 0 4px;
+      }
+      .invite-dead .icon {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 10px;
+      }
+      .invite-dead h2 {
+        margin: 0 0 8px;
+        font-size: 1.1rem;
+      }
+      .invite-dead p {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+      .role-badge-wrap {
+        margin-bottom: 4px;
+      }
+      #emailWrap .verified {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: var(--green-ink);
+        font-weight: 600;
+      }
+      .submit-btn[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-wrap">
+      <div class="auth-card" style="max-width: 500px">
+        <div class="logo">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <div>
+            <strong style="display: block; font-size: 1.05rem">WIMScare</strong>
+            <span
+              style="color: var(--faint); font-size: 0.8rem; font-weight: 600"
+              >Welfare Information Management</span
+            >
+          </div>
+        </div>
+
+        <!-- Shown briefly while an invitation link is being verified -->
+        <div class="invite-loading" id="inviteLoading" style="display: none">
+          <span class="spinner"></span> Checking your invitation…
+        </div>
+
+        <!-- Shown instead of the form when the invite is invalid/expired -->
+        <div class="invite-dead" id="inviteDead">
+          <span class="icon" aria-hidden="true">✋</span>
+          <h2>This invitation isn't valid</h2>
+          <p id="inviteDeadMsg">
+            It may have already been used or has expired. Ask your welfare
+            administrator to send a new one.
+          </p>
+          <a class="btn" href="/welcome.html">Back to WIMScare</a>
+        </div>
+
+        <div id="formWrap">
+          <div class="role-badge-wrap" id="roleBadgeWrap" style="display: none">
+            <span class="pill blue" id="roleBadge"></span>
+          </div>
+          <h1 id="title">Create your organization</h1>
+          <p class="lead" id="lead">
+            Set up a new welfare group and become its first administrator.
+          </p>
+          <div class="form-error" id="error"></div>
+          <form id="registerForm" novalidate>
+            <div id="orgNameWrap">
+              <label class="field" for="organizationName"
+                >Organization name</label
+              >
+              <input
+                class="field"
+                type="text"
+                id="organizationName"
+                placeholder="e.g. Unity Welfare Association"
+              />
+              <span class="field-error" id="err-organizationName"></span>
+            </div>
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+            >
+              <div>
+                <label class="field" for="firstName">First name</label>
+                <input
+                  class="field"
+                  type="text"
+                  id="firstName"
+                  autocomplete="given-name"
+                />
+                <span class="field-error" id="err-firstName"></span>
+              </div>
+              <div>
+                <label class="field" for="lastName">Last name</label>
+                <input
+                  class="field"
+                  type="text"
+                  id="lastName"
+                  autocomplete="family-name"
+                />
+                <span class="field-error" id="err-lastName"></span>
+              </div>
+            </div>
+            <div id="emailWrap">
+              <label class="field" for="email">Email address</label>
+              <input
+                class="field"
+                type="email"
+                id="email"
+                autocomplete="email"
+                placeholder="you@example.com"
+              />
+              <span class="field-error" id="err-email"></span>
+            </div>
+            <div>
+              <label class="field" for="phone">Phone (optional)</label>
+              <input
+                class="field"
+                type="tel"
+                id="phone"
+                autocomplete="tel"
+                placeholder="+233 24 000 0000"
+              />
+              <span class="field-error" id="err-phone"></span>
+            </div>
+            <div>
+              <label class="field" for="password">Password</label>
+              <input
+                class="field"
+                type="password"
+                id="password"
+                autocomplete="new-password"
+                placeholder="At least 8 characters"
+              />
+              <span class="field-error" id="err-password"></span>
+            </div>
+            <div>
+              <label class="field" for="confirm">Confirm password</label>
+              <input
+                class="field"
+                type="password"
+                id="confirm"
+                autocomplete="new-password"
+                placeholder="Re-enter your password"
+              />
+              <span class="field-error" id="err-confirm"></span>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 8px; margin: 4px 0 18px;">
+              <input type="checkbox" id="acceptTerms" style="margin-top: 3px; flex-shrink: 0;" />
+              <label for="acceptTerms" style="font-size: 0.88rem; color: var(--muted); line-height: 1.4;">
+                I agree to the
+                <a href="/terms.html" target="_blank" rel="noopener">Terms & Data Policy</a>,
+                including how my data is kept.
+              </label>
+            </div>
+            <button class="btn submit-btn" type="submit" id="submitBtn" disabled>
+              Create account
+            </button>
+          </form>
+          <p style="margin: 18px 0 0; font-size: 0.9rem; color: var(--muted)">
+            Already have an account? <a href="/login.html">Sign in</a>
+          </p>
+        </div>
+
+        <!-- Optional inline step: verify the phone just entered above.
+             Skippable — the same flow is always available later from
+             Preferences, so this is a convenience, not a gate. -->
+        <div id="verifyWrap" style="display: none">
+          <h1>Verify your phone</h1>
+          <p class="lead" id="verifyLead"></p>
+          <div class="form-error" id="verifyError"></div>
+          <label class="field" for="verifyCode">6-digit code</label>
+          <input
+            class="field"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            id="verifyCode"
+            placeholder="000000"
+            maxlength="6"
+            style="letter-spacing: 0.3em; text-align: center; font-size: 1.2rem"
+          />
+          <button
+            class="btn submit-btn"
+            type="button"
+            id="verifyBtn"
+            style="margin-top: 14px"
+          >
+            Verify phone
+          </button>
+          <p style="margin: 14px 0 0; font-size: 0.88rem; text-align: center">
+            <a href="#" id="resendCodeLink">Resend code</a>
+            &nbsp;·&nbsp;
+            <a href="#" id="skipVerifyLink">Skip for now</a>
+          </p>
+        </div>
+      </div>
+    </div>
+    <script src="/js/app.js"></script>
+    <script>
+      (function () {
+        const { API, fmt, wirePasswordToggle, bindField } = WIMS;
+        const params = new URLSearchParams(location.search);
+        const inviteToken = params.get("invite");
+        const orgId = params.get("org");
+        const errorBox = document.getElementById("error");
+        const formWrap = document.getElementById("formWrap");
+        const inviteLoading = document.getElementById("inviteLoading");
+        const inviteDead = document.getElementById("inviteDead");
+        const submitBtn = document.getElementById("submitBtn");
+        const orgNameWrap = document.getElementById("orgNameWrap");
+        const emailInput = document.getElementById("email");
+        let isInviteFlow = false;
+        // Declared here (before any code path can call wireValidation) so
+        // the function's closure over `fields` never hits the temporal
+        // dead zone — wireValidation can run from either branch below.
+        let fields = {};
+
+        function showError(msg) {
+          errorBox.textContent = msg;
+          errorBox.classList.add("show");
+        }
+
+        function deadInvite(msg) {
+          formWrap.style.display = "none";
+          inviteLoading.style.display = "none";
+          document.getElementById("inviteDeadMsg").textContent =
+            msg ||
+            "It may have already been used or has expired. Ask your welfare administrator to send a new one.";
+          inviteDead.style.display = "block";
+        }
+
+        // ---- Invitation flow: verify the token, lock the email, hide the
+        // organization-name field, show who invited them and as what role.
+        if (inviteToken && orgId) {
+          isInviteFlow = true;
+          inviteLoading.style.display = "flex";
+          formWrap.style.display = "none";
+          API.get(
+            `/api/invitations/lookup?token=${encodeURIComponent(inviteToken)}&org=${encodeURIComponent(orgId)}`,
+          )
+            .then((data) => {
+              inviteLoading.style.display = "none";
+              formWrap.style.display = "block";
+              document.getElementById("title").textContent =
+                `Join ${data.organizationName}`;
+              const roleLabel =
+                {
+                  user: "Member",
+                  admin: "Administrator",
+                  supervisor: "Supervisor",
+                  accountant: "Accountant",
+                }[data.role] || data.role;
+              document.getElementById("lead").textContent =
+                `Complete your details below to create your account.`;
+              const badgeWrap = document.getElementById("roleBadgeWrap");
+              document.getElementById("roleBadge").textContent =
+                `Invited as ${roleLabel}`;
+              badgeWrap.style.display = "block";
+              orgNameWrap.style.display = "none";
+              emailInput.value = data.email;
+              emailInput.readOnly = true;
+              const verified = document.createElement("span");
+              verified.className = "verified";
+              verified.textContent = "✓ Verified from your invitation";
+              document.getElementById("emailWrap").appendChild(verified);
+              wireValidation();
+            })
+            .catch((err) => {
+              deadInvite(err.message);
+            });
+        } else {
+          wireValidation();
+        }
+
+        // ---- Live, pre-submit validation ----
+        // Wired once (after either the invite check resolves, or
+        // immediately for the self-serve "create an organization" flow).
+        function wireValidation() {
+          const required = (label) => (v) =>
+            v.trim() ? "" : `${label} is required`;
+          const nonEmpty = (v) => v.trim().length > 0;
+
+          fields.firstName = bindField(
+            "firstName",
+            required("First name"),
+            "err-firstName",
+          );
+          fields.lastName = bindField(
+            "lastName",
+            required("Last name"),
+            "err-lastName",
+          );
+
+          if (!isInviteFlow) {
+            fields.organizationName = bindField(
+              "organizationName",
+              required("Organization name"),
+              "err-organizationName",
+            );
+            fields.email = bindField(
+              "email",
+              (v) => {
+                if (!v.trim()) return "Email is required";
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
+                  ? ""
+                  : "Enter a valid email address";
+              },
+              "err-email",
+            );
+          }
+
+          fields.phone = bindField(
+            "phone",
+            (v) =>
+              !v.trim() || /^[0-9+()\-\s]{7,20}$/.test(v.trim())
+                ? ""
+                : "Enter a valid phone number",
+            "err-phone",
+          );
+
+          fields.password = bindField(
+            "password",
+            (v) => (v.length >= 8 ? "" : "At least 8 characters required"),
+            "err-password",
+          );
+          fields.confirm = bindField(
+            "confirm",
+            (v) => (v === document.getElementById("password").value ? "" : "Passwords do not match"),
+            "err-confirm",
+          );
+          // Re-check "confirm" live as the password itself changes.
+          document
+            .getElementById("password")
+            .addEventListener("input", () => fields.confirm.isValid());
+
+          wirePasswordToggle("password");
+          wirePasswordToggle("confirm");
+
+          const acceptTerms = document.getElementById("acceptTerms");
+          function updateSubmitState() {
+            const allValid = Object.values(fields).every((f) => f.isValid());
+            submitBtn.disabled = !allValid || !acceptTerms.checked;
+          }
+          Object.keys(fields).forEach((key) => {
+            const el = document.getElementById(key);
+            el.addEventListener("input", updateSubmitState);
+            el.addEventListener("blur", updateSubmitState);
+          });
+          acceptTerms.addEventListener("change", updateSubmitState);
+          updateSubmitState();
+        }
+
+        document
+          .getElementById("registerForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            errorBox.classList.remove("show");
+
+            // Defensive re-check (covers Enter-key submits etc.) — reveals
+            // every outstanding error instead of silently doing nothing.
+            const allValid = Object.values(fields)
+              .map((f) => f.forceShow())
+              .every(Boolean);
+            if (!allValid) {
+              showError("Please fix the highlighted fields before continuing.");
+              return;
+            }
+
+            submitBtn.disabled = true;
+            try {
+              const body = {
+                firstName: document.getElementById("firstName").value.trim(),
+                lastName: document.getElementById("lastName").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                phone: document.getElementById("phone").value.trim(),
+                password: document.getElementById("password").value,
+                acceptedTerms: document.getElementById("acceptTerms").checked,
+              };
+              if (isInviteFlow) {
+                body.inviteToken = inviteToken;
+                body.orgId = orgId;
+              } else {
+                body.organizationName = document
+                  .getElementById("organizationName")
+                  .value.trim();
+              }
+              const data = await API.post("/api/auth/register", body);
+              const dest =
+                data.user.role === "user"
+                  ? "/member/dashboard.html"
+                  : "/admin/dashboard.html";
+              if (body.phone) {
+                await startPhoneVerification(body.phone, dest);
+              } else {
+                window.location.href = dest;
+              }
+            } catch (err) {
+              showError(err.message);
+              submitBtn.disabled = false;
+            }
+          });
+
+        // ---- Optional inline phone verification (skippable) ----
+        // Now signed in (register just set the session cookie), so this
+        // reuses the same authenticated Preferences endpoints.
+        const verifyWrap = document.getElementById("verifyWrap");
+        const verifyLead = document.getElementById("verifyLead");
+        const verifyError = document.getElementById("verifyError");
+        const verifyCode = document.getElementById("verifyCode");
+        const verifyBtn = document.getElementById("verifyBtn");
+
+        function showVerifyError(msg) {
+          verifyError.textContent = msg;
+          verifyError.classList.add("show");
+        }
+
+        async function startPhoneVerification(phone, dest) {
+          formWrap.style.display = "none";
+          verifyWrap.style.display = "block";
+          verifyLead.textContent = `We sent a 6-digit code to ${phone}. Verify now, or skip and do it later from Preferences.`;
+          try {
+            await API.post("/api/profile/phone/send-otp", {});
+          } catch (err) {
+            showVerifyError(err.message);
+          }
+          verifyCode.focus();
+
+          verifyBtn.onclick = async () => {
+            verifyError.classList.remove("show");
+            const code = verifyCode.value.trim();
+            if (!code) return showVerifyError("Enter the code sent to your phone");
+            verifyBtn.disabled = true;
+            try {
+              await API.post("/api/profile/phone/verify-otp", { code });
+              window.location.href = dest;
+            } catch (err) {
+              showVerifyError(err.message);
+              verifyBtn.disabled = false;
+              verifyCode.value = "";
+              verifyCode.focus();
+            }
+          };
+          document.getElementById("resendCodeLink").onclick = async (e) => {
+            e.preventDefault();
+            verifyError.classList.remove("show");
+            try {
+              await API.post("/api/profile/phone/send-otp", {});
+              verifyLead.textContent = `New code sent to ${phone}.`;
+            } catch (err) {
+              showVerifyError(err.message);
+            }
+          };
+          document.getElementById("skipVerifyLink").onclick = (e) => {
+            e.preventDefault();
+            window.location.href = dest;
+          };
+        }
+      })();
+    </script>
+  </body>
+</html>

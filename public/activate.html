@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Activate account — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="logo">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <strong style="font-size: 1.05rem">WIMScare</strong>
+        </div>
+        <h1>Activate your account</h1>
+        <p class="lead">Choose a password to finish setting up your account.</p>
+        <div class="form-error" id="error"></div>
+        <form id="activateForm">
+          <div id="orgInfo" style="display: none">
+            <label class="field" for="orgName">Organization</label>
+            <input class="field" type="text" id="orgName" readonly />
+          </div>
+          <div id="orgEmailInfo" style="display: none">
+            <label class="field" for="orgEmail">Organization email</label>
+            <input class="field" type="email" id="orgEmail" readonly />
+            <span class="field-hint"
+              >Set by WIMScare when your license was issued — separate from
+              your own login email below.</span
+            >
+          </div>
+          <div>
+            <label class="field" for="email">Email address</label>
+            <input class="field" type="email" id="email" readonly />
+          </div>
+          <div>
+            <label class="field" for="password">New password</label>
+            <input
+              class="field"
+              type="password"
+              id="password"
+              autocomplete="new-password"
+              placeholder="At least 8 characters"
+            />
+            <span class="field-error" id="err-password"></span>
+          </div>
+          <div>
+            <label class="field" for="confirm">Confirm password</label>
+            <input class="field" type="password" id="confirm" autocomplete="new-password" />
+            <span class="field-error" id="err-confirm"></span>
+          </div>
+          <div style="display: flex; align-items: flex-start; gap: 8px; margin: 4px 0 18px;">
+            <input type="checkbox" id="acceptTerms" style="margin-top: 3px; flex-shrink: 0;" />
+            <label for="acceptTerms" style="font-size: 0.88rem; color: var(--muted); line-height: 1.4;">
+              I agree to the
+              <a href="/terms.html" target="_blank" rel="noopener">Terms & Data Policy</a>,
+              including how my data is kept.
+            </label>
+          </div>
+          <button class="btn" type="submit" id="submitBtn" disabled>
+            Activate account
+          </button>
+        </form>
+      </div>
+    </div>
+    <script src="/js/app.js"></script>
+    <script>
+      (function () {
+        const { API, wirePasswordToggle, bindField } = WIMS;
+        const params = new URLSearchParams(location.search);
+        document.getElementById("email").value = params.get("email") || "";
+        const errorBox = document.getElementById("error");
+        const submitBtn = document.getElementById("submitBtn");
+
+        // Show which organization this account belongs to, and its
+        // (superadmin-assigned, read-only) professional email if it has one.
+        const orgId = params.get("org");
+        if (orgId) {
+          API.get(`/api/auth/activation-info?org=${encodeURIComponent(orgId)}`)
+            .then((data) => {
+              if (data.organizationName) {
+                document.getElementById("orgName").value = data.organizationName;
+                document.getElementById("orgInfo").style.display = "block";
+              }
+              if (data.organizationEmail) {
+                document.getElementById("orgEmail").value = data.organizationEmail;
+                document.getElementById("orgEmailInfo").style.display = "block";
+              }
+            })
+            .catch(() => {});
+        }
+
+        wirePasswordToggle("password");
+        wirePasswordToggle("confirm");
+
+        const fields = {
+          password: bindField(
+            "password",
+            (v) => (v.length >= 8 ? "" : "At least 8 characters required"),
+            "err-password",
+          ),
+          confirm: bindField(
+            "confirm",
+            (v) =>
+              v === document.getElementById("password").value
+                ? ""
+                : "Passwords do not match",
+            "err-confirm",
+          ),
+        };
+        document
+          .getElementById("password")
+          .addEventListener("input", () => fields.confirm.isValid());
+        const acceptTerms = document.getElementById("acceptTerms");
+        function updateSubmitState() {
+          submitBtn.disabled =
+            !Object.values(fields).every((f) => f.isValid()) || !acceptTerms.checked;
+        }
+        Object.keys(fields).forEach((key) => {
+          const el = document.getElementById(key);
+          el.addEventListener("input", updateSubmitState);
+          el.addEventListener("blur", updateSubmitState);
+        });
+        acceptTerms.addEventListener("change", updateSubmitState);
+        updateSubmitState();
+
+        document
+          .getElementById("activateForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            errorBox.classList.remove("show");
+            const allValid = Object.values(fields)
+              .map((f) => f.forceShow())
+              .every(Boolean);
+            if (!allValid) {
+              errorBox.textContent = "Please fix the highlighted fields before continuing.";
+              errorBox.classList.add("show");
+              return;
+            }
+            submitBtn.disabled = true;
+            try {
+              const data = await API.post("/api/auth/activate", {
+                email: params.get("email"),
+                token: params.get("token"),
+                organizationId: params.get("org") || undefined,
+                password: document.getElementById("password").value,
+                acceptedTerms: acceptTerms.checked,
+              });
+              window.location.href =
+                data.user.role === "user"
+                  ? "/member/dashboard.html"
+                  : "/admin/dashboard.html";
+            } catch (err) {
+              errorBox.textContent = err.message;
+              errorBox.classList.add("show");
+              submitBtn.disabled = false;
+            }
+          });
+      })();
+    </script>
+  </body>
+</html>

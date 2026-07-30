@@ -1,0 +1,1462 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sign in — WIMScare</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #0f2c3f;
+        --green: #004526;
+        --green-hover: #004d00;
+        --blue: #1d6fae;
+        --blue-hover: #185e93;
+        --bg: #f4f7f8;
+        --ink: #12242e;
+        --muted: #5a6b75;
+        --muted-2: #8a98a1;
+        --border: #d5dee3;
+        --border-light: #e2e9ec;
+        --tab-bg: #e9eff2;
+
+        /* Per-role theme — toggled by the .theme-admin / .theme-member class
+           on <body>. Admin keeps the navy/blue identity; Member switches to
+           the #006400 green used across the member portal.
+           --panel-rgb is the same colour in raw channels so it can be mixed
+           at partial opacity over the brand photo. */
+        --panel: var(--green);
+        --panel-rgb: 0, 100, 0;
+        --accent: var(--green);
+        --accent-hover: var(--green-hover);
+        --accent-shadow: rgba(0, 100, 0, 0.25);
+        --accent-ring: rgba(0, 100, 0, 0.18);
+        --panel-muted: rgba(255, 255, 255, 0.88);
+        --panel-faint: rgba(255, 255, 255, 0.6);
+      }
+      body.theme-admin {
+        --panel: var(--navy);
+        --panel-rgb: 15, 44, 63;
+        --accent: var(--blue);
+        --accent-hover: var(--blue-hover);
+        --accent-shadow: rgba(29, 111, 174, 0.25);
+        --accent-ring: rgba(29, 111, 174, 0.18);
+        --panel-muted: #cfe4f1;
+        --panel-faint: rgba(255, 255, 255, 0.6);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        font-family:
+          "Instrument Sans",
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--accent);
+      }
+      a:hover {
+        color: var(--accent-hover);
+      }
+
+      .login-split {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+      }
+
+      /* ---- Left: brand panel (themed) ----
+         Three stacked layers: the mountain photo, a translucent wash of each
+         theme colour, then the content. Both washes are always present and
+         cross-fade on opacity when the tab changes — gradients can't be
+         transitioned directly, so fading two layers is what makes the
+         navy <-> green switch smooth rather than snapping. */
+      .login-brand {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        background-color: var(--panel);
+        color: #fff;
+        padding: 56px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: background-color 0.45s ease;
+      }
+      .brand-bg,
+      .brand-wash {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .brand-bg {
+        z-index: 0;
+        background-image: url("/assets/login-bg.jpg");
+        background-size: cover;
+        /* favour the upper third so the peaks stay in frame when the panel
+           crops vertically, rather than centring on the valley */
+        background-position: 50% 22%;
+        background-repeat: repeat;
+        /* slight overscan so the drift never exposes an edge */
+        transform: scale(1.06);
+        animation: kenburns 32s ease-in-out infinite alternate;
+      }
+      @keyframes kenburns {
+        from {
+          transform: scale(1.06) translate3d(0, 0, 0);
+        }
+        to {
+          transform: scale(1.58) translate3d(0, -1.5%, 0);
+        }
+      }
+      .brand-wash {
+        z-index: 1;
+        transition: opacity 0.45s ease;
+      }
+      .wash-member {
+        opacity: 1;
+        background: linear-gradient(
+          rgba(0, 82, 0, 0.88),
+          rgba(0, 87, 0, 0.76) 48%,
+          rgba(0, 100, 0, 0.92)
+        );
+      }
+      .wash-admin {
+        opacity: 0;
+        background: linear-gradient(
+          rgba(15, 44, 63, 0.88),
+          rgba(15, 44, 63, 0.76) 48%,
+          rgba(15, 44, 63, 0.92)
+        );
+      }
+      body.theme-admin .wash-member {
+        opacity: 0;
+      }
+      body.theme-admin .wash-admin {
+        opacity: 1;
+      }
+      /* lift the actual content above the photo + wash layers */
+      .login-brand > .brand-mark,
+      .login-brand > .brand-copy,
+      .login-brand > .brand-foot {
+        position: relative;
+        z-index: 2;
+      }
+      .login-brand .brand-copy h2,
+      .login-brand .brand-copy p {
+        /* keeps copy crisp over the brighter snow areas of the photo */
+        text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+      }
+
+      /* ---- Entrances: a short, staggered settle on first paint ---- */
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .login-brand > .brand-mark,
+      .login-brand > .brand-copy,
+      .login-brand > .brand-foot,
+      .login-card-inner > * {
+        animation: rise 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+      }
+      .login-brand > .brand-mark {
+        animation-delay: 0.05s;
+      }
+      .login-brand > .brand-copy {
+        animation-delay: 0.14s;
+      }
+      .login-brand > .brand-foot {
+        animation-delay: 0.22s;
+      }
+      .login-card-inner > *:nth-child(1) {
+        animation-delay: 0.1s;
+      }
+      .login-card-inner > *:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .login-card-inner > *:nth-child(3) {
+        animation-delay: 0.2s;
+      }
+      .login-card-inner > *:nth-child(n + 4) {
+        animation-delay: 0.26s;
+      }
+      .brand-mark {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: #fff;
+      }
+      .brand-mark img {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        object-fit: cover;
+        background: #fff;
+      }
+      .brand-mark span {
+        font-weight: 700;
+        font-size: 1.1rem;
+      }
+      .brand-copy h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0 0 16px;
+      }
+      .brand-copy p {
+        color: var(--panel-muted);
+        line-height: 1.6;
+        margin: 0;
+        max-width: 26rem;
+      }
+      .brand-foot {
+        margin: 0;
+        color: var(--panel-faint);
+        font-size: 0.85rem;
+      }
+
+      /* ---- Right: form panel ---- */
+      .login-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 32px;
+      }
+      .login-card-inner {
+        width: 100%;
+        max-width: 400px;
+      }
+      .login-card-inner h1 {
+        font-size: 1.7rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 6px;
+      }
+      .muted {
+        color: var(--muted);
+        margin: 0 0 24px;
+        font-size: 0.98rem;
+      }
+
+      .role-tabs {
+        display: flex;
+        background: var(--tab-bg);
+        border-radius: 10px;
+        padding: 4px;
+        margin-bottom: 24px;
+        gap: 4px;
+      }
+      .role-tab {
+        flex: 1;
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 0;
+        font-weight: 600;
+        font-size: 0.92rem;
+        cursor: pointer;
+        font-family: inherit;
+        text-align: center;
+        color: var(--muted);
+        background: transparent;
+        transition: all 0.15s ease;
+      }
+      .role-tab.active {
+        background: #fff;
+        color: var(--ink);
+        box-shadow: 0 1px 3px rgba(15, 44, 63, 0.12);
+      }
+      .role-tab:not(.active):hover {
+        color: var(--ink);
+      }
+
+      .form-error {
+        display: none;
+        background: #fdecea;
+        border: 1px solid #f5c6bf;
+        color: #b4372a;
+        padding: 12px;
+        border-radius: 10px;
+        margin: 0 0 16px;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+      .form-error.show {
+        display: block;
+      }
+      #activationBanner {
+        display: none;
+        background: #eaf6ef;
+        border: 1px solid #79b843;
+        color: var(--ink);
+        padding: 12px;
+        border-radius: 10px;
+        margin: 0 0 16px;
+        font-size: 0.9rem;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .field label {
+        font-weight: 600;
+        font-size: 0.88rem;
+        color: var(--ink);
+      }
+      .field input,
+      .field select {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--ink);
+        font-size: 0.98rem;
+        font-family: inherit;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .field input:focus,
+      .field select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-ring);
+      }
+      .field-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .forgot-link {
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+      }
+      .forgot-link:hover {
+        text-decoration: underline;
+      }
+
+      .password-wrap {
+        position: relative;
+      }
+      .password-wrap input {
+        padding-right: 58px;
+      }
+      .pw-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: 0;
+        color: var(--accent);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 6px;
+        font-family: inherit;
+      }
+
+      /* ---- Institution picker (multi-tenant emails) ----
+         Hidden until the email lookup finds the address in more than one
+         organization; then it slides in between email and password. */
+      #institutionField {
+        display: none;
+        /* keep the suggestions dropdown above the password field */
+        position: relative;
+        z-index: 60;
+      }
+      #institutionField.show {
+        display: flex;
+        animation: rise 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+      }
+      .inst-hint {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin: 0;
+      }
+      .inst-wrap {
+        position: relative;
+      }
+      .inst-wrap input.selected {
+        border-color: #79b843;
+        background: #f6fbf2;
+      }
+      .inst-check {
+        display: none;
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #4e7a22;
+        font-weight: 700;
+        font-size: 0.9rem;
+        pointer-events: none;
+      }
+      .inst-wrap input.selected ~ .inst-check {
+        display: block;
+      }
+      .inst-dd {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: 0 12px 32px rgba(15, 44, 63, 0.14);
+        z-index: 50;
+        max-height: 220px;
+        overflow-y: auto;
+        display: none;
+      }
+      .inst-dd.open {
+        display: block;
+      }
+      .inst-dd button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        background: none;
+        padding: 11px 14px;
+        font-family: inherit;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-light);
+      }
+      .inst-dd button:last-child {
+        border-bottom: 0;
+      }
+      .inst-dd button:hover,
+      .inst-dd button.hl {
+        background: var(--tab-bg);
+      }
+      .inst-dd .nm {
+        display: block;
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: var(--ink);
+      }
+      .inst-dd .cd {
+        display: block;
+        font-size: 0.78rem;
+        color: var(--muted-2);
+        margin-top: 1px;
+      }
+      .inst-dd .none {
+        padding: 11px 14px;
+        font-size: 0.88rem;
+        color: var(--muted-2);
+      }
+
+      .submit-btn {
+        width: 100%;
+        text-align: center;
+        padding: 13px 0;
+        border-radius: 10px;
+        border: 0;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1rem;
+        font-family: inherit;
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 8px 24px var(--accent-shadow);
+        transition:
+          background 0.15s ease,
+          opacity 0.15s ease,
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+        margin-top: 4px;
+      }
+      .submit-btn:hover:not(:disabled) {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 12px 28px var(--accent-shadow);
+      }
+      .submit-btn:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 6px 18px var(--accent-shadow);
+      }
+      .submit-btn:disabled {
+        opacity: 0.7;
+        cursor: progress;
+      }
+
+      .back-link {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .back-link a {
+        font-weight: 500;
+        text-decoration: none;
+      }
+      .back-link a:hover {
+        text-decoration: underline;
+      }
+
+      /* ---- Liquid-glass background (mobile only) ----
+         Two full-viewport gradient layers (member green / admin navy) that
+         cross-fade on the role tabs — same trick as the desktop brand wash —
+         plus three fixed glow orbs shared by both themes. */
+      .glass-bg {
+        display: none;
+      }
+
+      @media (max-width: 900px) {
+        :root {
+          --glass-accent: rgba(0, 122, 58, 0.85);
+          --glass-accent-hover: rgba(0, 104, 50, 0.95);
+        }
+        body.theme-admin {
+          --glass-accent: rgba(29, 111, 174, 0.85);
+          --glass-accent-hover: rgba(24, 94, 147, 0.95);
+        }
+
+        .glass-bg {
+          display: block;
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          overflow: hidden;
+          pointer-events: none;
+        }
+        .gbg {
+          position: absolute;
+          inset: 0;
+          transition: opacity 0.45s ease;
+        }
+        .gbg-member {
+          opacity: 1;
+          background: linear-gradient(
+            160deg,
+            #05170d 0%,
+            #07301c 45%,
+            #0a4526 100%
+          );
+        }
+        .gbg-admin {
+          opacity: 0;
+          background: linear-gradient(
+            160deg,
+            #0a1f2e 0%,
+            #0f2c3f 45%,
+            #14405c 100%
+          );
+        }
+        body.theme-admin .gbg-member {
+          opacity: 0;
+        }
+        body.theme-admin .gbg-admin {
+          opacity: 1;
+        }
+        .orb {
+          position: absolute;
+          border-radius: 50%;
+          will-change: transform;
+          animation: none;
+        }
+
+        .orb-1 {
+          top: -80px;
+          right: -90px;
+          width: 280px;
+          height: 280px;
+          animation: orbDrift1 19s ease-in-out infinite alternate;
+          background: radial-gradient(
+            circle,
+            rgba(29, 111, 174, 0.55),
+            transparent 70%
+          );
+        }
+        .orb-2 {
+          top: 340px;
+          left: -110px;
+          width: 320px;
+          height: 320px;
+          background: radial-gradient(
+            circle,
+            rgba(121, 184, 67, 0.22),
+            transparent 70%
+          );
+          animation: orbDrift2 26s ease-in-out infinite alternate;
+        }
+        .orb-3 {
+          bottom: -100px;
+          right: -70px;
+          width: 300px;
+          height: 300px;
+          background: radial-gradient(
+            circle,
+            rgba(232, 181, 74, 0.18),
+            transparent 70%
+          );
+          animation: orbDrift3 23s ease-in-out infinite alternate;
+        }
+        @keyframes orbDrift1 {
+          from {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          to {
+            transform: translate3d(-34px, 42px, 0) scale(1.12);
+          }
+        }
+        @keyframes orbDrift2 {
+          from {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          to {
+            transform: translate3d(46px, -36px, 0) scale(0.92);
+          }
+        }
+        @keyframes orbDrift3 {
+          from {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          to {
+            transform: translate3d(-40px, -30px, 0) scale(1.1);
+          }
+        }
+
+        .login-split {
+          grid-template-columns: 1fr;
+          position: relative;
+          z-index: 1;
+        }
+
+        /* Brand header: drop the photo panel, sit directly on the gradient */
+        .login-brand {
+          background: transparent;
+          padding: 44px 24px 4px;
+          gap: 22px;
+          justify-content: flex-start;
+        }
+        .brand-bg,
+        .brand-wash {
+          display: none;
+        }
+        .login-brand .brand-copy h2 {
+          font-size: 1.5rem;
+          margin-bottom: 8px;
+          text-shadow: none;
+        }
+        .login-brand .brand-copy p {
+          color: #9fc2da;
+          font-size: 0.9rem;
+          text-shadow: none;
+        }
+        .brand-foot {
+          display: none;
+        }
+
+        /* Form becomes a frosted glass card */
+        .login-panel {
+          padding: 20px 20px 40px;
+          flex-direction: column;
+        }
+        .login-panel::after {
+          content: "© 2026 REKONSTECH Trading and Consultancy Services";
+          color: #5e86a0;
+          font-size: 0.78rem;
+          margin-top: 24px;
+          text-align: center;
+        }
+        .login-card-inner {
+          background: rgba(255, 255, 255, 0.09);
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          border-radius: 22px;
+          padding: 22px 20px;
+          backdrop-filter: blur(22px) saturate(1.4);
+          -webkit-backdrop-filter: blur(22px) saturate(1.4);
+          box-shadow:
+            0 16px 44px rgba(4, 14, 22, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+        .login-card-inner h1 {
+          color: #fff;
+          font-size: 1.35rem;
+        }
+        .muted {
+          color: #9fc2da;
+          font-size: 0.9rem;
+          margin-bottom: 18px;
+        }
+
+        /* Glass segmented tabs */
+        .role-tabs {
+          background: rgba(6, 20, 30, 0.35);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          margin-bottom: 20px;
+        }
+        .role-tab {
+          color: #9fc2da;
+          border-radius: 9px;
+        }
+        .role-tab.active {
+          background: rgba(255, 255, 255, 0.22);
+          color: #fff;
+          box-shadow:
+            0 1px 3px rgba(4, 14, 22, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+        .role-tab:not(.active):hover {
+          color: #fff;
+        }
+
+        /* Glass fields */
+        .field label {
+          color: #fff;
+        }
+        .field input,
+        .field select {
+          border-color: rgba(255, 255, 255, 0.25);
+          background: rgba(255, 255, 255, 0.1);
+          color: #fff;
+        }
+        .field input::placeholder {
+          color: rgba(255, 255, 255, 0.45);
+        }
+        .field input:focus,
+        .field select:focus {
+          border-color: rgba(255, 255, 255, 0.55);
+          background: rgba(255, 255, 255, 0.16);
+          box-shadow: none;
+        }
+        .forgot-link,
+        .pw-toggle {
+          color: #9fc2da;
+        }
+        .forgot-link:hover {
+          color: #fff;
+        }
+
+        /* Institution picker, glass edition */
+        .inst-hint {
+          color: #9fc2da;
+        }
+        .inst-wrap input.selected {
+          border-color: rgba(121, 184, 67, 0.65);
+          background: rgba(121, 184, 67, 0.16);
+        }
+        .inst-check {
+          color: #a5e28b;
+        }
+        .inst-dd {
+          background: rgba(8, 24, 35, 0.94);
+          border-color: rgba(255, 255, 255, 0.18);
+          backdrop-filter: blur(18px) saturate(1.3);
+          -webkit-backdrop-filter: blur(18px) saturate(1.3);
+          box-shadow: 0 16px 40px rgba(4, 14, 22, 0.5);
+        }
+        .inst-dd button {
+          border-bottom-color: rgba(255, 255, 255, 0.08);
+        }
+        .inst-dd button:hover,
+        .inst-dd button.hl {
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .inst-dd .nm {
+          color: #fff;
+        }
+        .inst-dd .cd,
+        .inst-dd .none {
+          color: #9fc2da;
+        }
+
+        /* Banners */
+        .form-error {
+          background: rgba(180, 55, 42, 0.32);
+          border-color: rgba(255, 160, 148, 0.4);
+          color: #ffd9d2;
+          backdrop-filter: blur(8px);
+        }
+        #activationBanner {
+          background: rgba(29, 111, 174, 0.25);
+          border-color: rgba(159, 194, 218, 0.4);
+          color: #fff;
+          backdrop-filter: blur(8px);
+        }
+
+        /* Glass submit button, themed per role */
+        .submit-btn {
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          border-radius: 14px;
+          padding: 15px 0;
+          background: var(--glass-accent);
+          backdrop-filter: blur(8px);
+          box-shadow: 0 8px 24px var(--accent-shadow);
+          transition:
+            background 0.3s ease,
+            opacity 0.15s ease,
+            transform 0.15s ease,
+            box-shadow 0.15s ease;
+        }
+        .submit-btn:hover:not(:disabled),
+        .submit-btn:active:not(:disabled) {
+          background: var(--glass-accent-hover);
+        }
+        .back-link {
+          color: #9fc2da;
+          font-size: 0.85rem;
+        }
+        .back-link a {
+          color: #fff;
+          text-decoration: underline;
+        }
+      }
+
+      /* Honour a system preference for reduced motion: drop the drift and the
+         entrance moves, keep the colour cross-fade (a plain opacity change,
+         no movement). */
+
+      @media (prefers-reduced-motion: reduce) {
+        .brand-bg {
+          animation: none;
+          transform: scale(1.06);
+        }
+        .login-brand > .brand-mark,
+        .login-brand > .brand-copy,
+        .login-brand > .brand-foot,
+        .login-card-inner > * {
+          animation: none;
+        }
+        .submit-btn:hover:not(:disabled),
+        .submit-btn:active:not(:disabled) {
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body class="theme-member">
+    <!-- Liquid-glass backdrop — mobile only, cross-fades with the role theme -->
+    <div class="glass-bg" aria-hidden="true">
+      <div class="gbg gbg-member"></div>
+      <div class="gbg gbg-admin"></div>
+      <span class="orb orb-1"></span>
+      <span class="orb orb-2"></span>
+      <span class="orb orb-3"></span>
+    </div>
+    <div class="login-split">
+      <!-- Left: brand panel -->
+      <aside class="login-brand">
+        <div class="brand-bg" aria-hidden="true"></div>
+        <div class="brand-wash wash-member" aria-hidden="true"></div>
+        <div class="brand-wash wash-admin" aria-hidden="true"></div>
+        <a class="brand-mark" href="/welcome.html">
+          <img src="/assets/logo.png" alt="WIMScare" />
+          <span>WIMScare</span>
+        </a>
+        <div class="brand-copy">
+          <h2 id="brandHeadline">One community, looking after each other.</h2>
+          <p id="brandCopy">
+            Sign in to track your contributions, apply for welfare support and
+            manage your profile.
+          </p>
+        </div>
+        <p class="brand-foot">
+          &copy; 2026 REKONSTECH Trading and Consultancy Services
+        </p>
+      </aside>
+
+      <!-- Right: sign-in form -->
+      <main class="login-panel" role="main" aria-labelledby="loginTitle">
+        <div class="login-card-inner">
+          <h1 id="loginTitle">Welcome back</h1>
+          <p class="muted" id="loginSubtitle">
+            Sign in to your WIMScare account.
+          </p>
+
+          <div class="role-tabs" role="tablist" aria-label="Sign in as">
+            <button
+              type="button"
+              class="role-tab active"
+              id="roleTabMember"
+              role="tab"
+              aria-selected="true"
+            >
+              Member
+            </button>
+            <button
+              type="button"
+              class="role-tab"
+              id="roleTabAdmin"
+              role="tab"
+              aria-selected="false"
+            >
+              Administrator
+            </button>
+          </div>
+
+          <div id="activationBanner"></div>
+          <div class="form-error" id="error"></div>
+
+          <form id="loginForm" autocomplete="on" novalidate>
+            <div class="field">
+              <label for="email">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autocomplete="username"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div class="field" id="institutionField">
+              <label for="instInput">Institution</label>
+              <p class="inst-hint">
+                This email belongs to more than one institution — choose yours
+                first; each institution has its own password.
+              </p>
+              <div class="inst-wrap">
+                <input
+                  id="instInput"
+                  type="text"
+                  autocomplete="off"
+                  placeholder="Start typing the institution name or ID…"
+                />
+                <span class="inst-check" aria-hidden="true">&#10003;</span>
+                <div
+                  class="inst-dd"
+                  id="instDd"
+                  role="listbox"
+                  aria-label="Matching institutions"
+                ></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field-row">
+                <label for="password">Password</label>
+                <a href="/forgot-password.html" class="forgot-link"
+                  >Forgot password?</a
+                >
+              </div>
+              <div class="password-wrap">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  autocomplete="current-password"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="submit-btn">
+              Sign in
+            </button>
+
+            <p class="back-link">
+              New here? Membership is by invitation —
+              <a href="/welcome.html">contact your welfare administrator.</a>
+            </p>
+          </form>
+
+          <!-- 2FA step: swapped in when POST /login returns twoFactorRequired -->
+          <div id="otpStep" style="display: none">
+            <h1 id="otpTitle">Enter your code</h1>
+            <p class="muted" id="otpLead"></p>
+            <div class="form-error" id="otpError"></div>
+            <div class="field">
+              <label for="otpInput">6-digit code</label>
+              <input
+                id="otpInput"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="000000"
+                style="letter-spacing: 0.3em; text-align: center; font-size: 1.2rem"
+              />
+            </div>
+            <button type="button" class="submit-btn" id="otpSubmitBtn">
+              Verify & sign in
+            </button>
+            <p class="back-link">
+              <a href="#" id="otpResendLink">Resend code</a>
+              &nbsp;·&nbsp;
+              <a href="#" id="otpBackLink">Use a different account</a>
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        // ---- Role tab theming (visual only). Both tabs post to the same
+        // cookie-based /api/auth/login; the tab just swaps the theme + copy.
+        const body = document.body;
+        const tabMember = document.getElementById("roleTabMember");
+        const tabAdmin = document.getElementById("roleTabAdmin");
+        const subtitle = document.getElementById("loginSubtitle");
+        const headline = document.getElementById("brandHeadline");
+        const brandCopy = document.getElementById("brandCopy");
+        const emailInput = document.getElementById("email");
+
+        function applyRole(role) {
+          const isAdmin = role === "admin";
+          body.classList.toggle("theme-admin", isAdmin);
+          body.classList.toggle("theme-member", !isAdmin);
+          tabMember.classList.toggle("active", !isAdmin);
+          tabMember.setAttribute("aria-selected", String(!isAdmin));
+          tabAdmin.classList.toggle("active", isAdmin);
+          tabAdmin.setAttribute("aria-selected", String(isAdmin));
+          subtitle.textContent = isAdmin
+            ? "Sign in to the admin console."
+            : "Sign in to your WIMScare account.";
+          headline.textContent = isAdmin
+            ? "Full oversight, less paperwork."
+            : "One community, looking after each other.";
+          brandCopy.textContent = isAdmin
+            ? "Manage members, record contributions and process claims from one console."
+            : "Sign in to track your contributions, apply for welfare support and manage your profile.";
+          emailInput.placeholder = isAdmin
+            ? "admin@example.com"
+            : "you@example.com";
+          try {
+            localStorage.setItem("lastLoginRole", role);
+          } catch (e) {}
+        }
+
+        tabMember.addEventListener("click", () => applyRole("member"));
+        tabAdmin.addEventListener("click", () => applyRole("admin"));
+
+        // Initial role: ?role= wins, then remembered choice, else Member.
+        let initial = "member";
+        try {
+          const rp = (
+            new URLSearchParams(location.search).get("role") || ""
+          ).toLowerCase();
+          if (rp === "admin" || rp === "member") initial = rp;
+          else if (localStorage.getItem("lastLoginRole") === "admin")
+            initial = "admin";
+        } catch (e) {}
+        applyRole(initial);
+
+        // Password show/hide
+        const pw = document.getElementById("password");
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "pw-toggle";
+        toggle.textContent = "Show";
+        toggle.addEventListener("click", () => {
+          const showing = pw.type === "text";
+          pw.type = showing ? "password" : "text";
+          toggle.textContent = showing ? "Show" : "Hide";
+          pw.focus();
+        });
+        pw.parentNode.insertBefore(toggle, pw.nextSibling);
+
+        // Prefill email + activation banner after account activation
+        try {
+          const params = new URLSearchParams(location.search);
+          if (params.get("maintenance")) {
+            const b = document.getElementById("activationBanner");
+            b.textContent =
+              "The system is under maintenance — only administrators can sign in right now. Please try again later.";
+            b.style.display = "block";
+          }
+          const preEmail = params.get("email");
+          if (preEmail) {
+            emailInput.value = preEmail;
+            const b = document.getElementById("activationBanner");
+            b.textContent = "Account activated — please sign in.";
+            b.style.display = "block";
+            setTimeout(() => pw.focus(), 120);
+          }
+        } catch (e) {}
+      })();
+
+      // ---- Login engine (cookie auth against the WIMScare backend) ----
+      (function () {
+        const form = document.getElementById("loginForm");
+        const errorBox = document.getElementById("error");
+        const submitBtn = document.getElementById("submitBtn");
+        const emailInput = document.getElementById("email");
+        const instField = document.getElementById("institutionField");
+        const instInput = document.getElementById("instInput");
+        const instDd = document.getElementById("instDd");
+        const otpStep = document.getElementById("otpStep");
+        const otpError = document.getElementById("otpError");
+        const otpLead = document.getElementById("otpLead");
+        const otpInput = document.getElementById("otpInput");
+        const otpSubmitBtn = document.getElementById("otpSubmitBtn");
+        let challengeToken = null;
+
+        function showError(msg) {
+          clearTimeout(errorBox._t);
+          errorBox.textContent = msg;
+          errorBox.classList.add("show");
+        }
+        // For notices that resolve themselves (like the tab auto-switch):
+        // show, then fade away after a few seconds.
+        function showTransientError(msg, ms = 6000) {
+          showError(msg);
+          errorBox._t = setTimeout(() => errorBox.classList.remove("show"), ms);
+        }
+        function esc(s) {
+          return String(s ?? "").replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
+        }
+
+        function destinationFor(user) {
+          const next = new URLSearchParams(location.search).get("next");
+          if (next && next.startsWith("/")) return next;
+          if (user.role === "superadmin") return "/developer/";
+          if (user.role === "user") return "/member/dashboard.html";
+          return "/admin/dashboard.html";
+        }
+
+        // Runs once a session cookie is actually set — either straight from
+        // password login or after a 2FA code is verified. Catches the
+        // wrong-tab case (member signing in on the Administrator tab, etc.)
+        // before finally redirecting.
+        async function finishLogin(user) {
+          const role = user.role;
+          const adminTab = document.body.classList.contains("theme-admin");
+          const backToPasswordStep = () => {
+            otpStep.style.display = "none";
+            form.style.display = "block";
+          };
+          if (role === "user" && adminTab) {
+            await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+            backToPasswordStep();
+            document.getElementById("roleTabMember").click();
+            showTransientError(
+              "This is a member account — we've switched you to the Member sign-in. Please sign in again.",
+            );
+            document.getElementById("password").focus();
+            return;
+          }
+          if (role !== "user" && role !== "superadmin" && !adminTab) {
+            await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+            backToPasswordStep();
+            document.getElementById("roleTabAdmin").click();
+            showTransientError(
+              "This is a staff account — we've switched you to the Administrator sign-in. Please sign in again.",
+            );
+            document.getElementById("password").focus();
+            return;
+          }
+          window.location.href = destinationFor(user);
+        }
+
+        // ---- Institution picker ----
+        // As soon as a plausible email is typed we quietly ask the backend
+        // whether it lives in several organizations. Only then does the
+        // Institution field appear — a typeahead over that account's own
+        // organizations (name or ID), chosen BEFORE the password because
+        // each institution may have a different one.
+        let orgs = []; // organizations for the current email
+        let selectedOrg = null;
+        let highlighted = -1;
+        let lookupTimer = null;
+        let lookedUpEmail = "";
+
+        function resetInstitution() {
+          orgs = [];
+          selectedOrg = null;
+          highlighted = -1;
+          instInput.value = "";
+          instInput.classList.remove("selected");
+          instDd.classList.remove("open");
+          instField.classList.remove("show");
+        }
+
+        async function lookupEmail() {
+          const email = emailInput.value.trim().toLowerCase();
+          if (email === lookedUpEmail) return;
+          lookedUpEmail = email;
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+            resetInstitution();
+            return;
+          }
+          try {
+            const res = await fetch("/api/auth/organizations", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+            if (data.multiple) {
+              orgs = data.organizations;
+              selectedOrg = null;
+              instInput.value = "";
+              instInput.classList.remove("selected");
+              instField.classList.add("show");
+              renderDropdown("");
+            } else {
+              resetInstitution();
+            }
+          } catch (e) {
+            /* lookup is best-effort; login still works without it */
+          }
+        }
+
+        emailInput.addEventListener("input", () => {
+          clearTimeout(lookupTimer);
+          lookupTimer = setTimeout(lookupEmail, 450);
+        });
+        emailInput.addEventListener("blur", () => {
+          clearTimeout(lookupTimer);
+          lookupEmail();
+        });
+
+        function matches(q) {
+          const s = q.trim().toLowerCase();
+          if (!s) return orgs;
+          return orgs.filter(
+            (o) =>
+              o.name.toLowerCase().includes(s) ||
+              String(o.code || "")
+                .toLowerCase()
+                .includes(s),
+          );
+        }
+
+        function renderDropdown(q) {
+          const list = matches(q);
+          highlighted = list.length ? 0 : -1;
+          instDd.innerHTML = list.length
+            ? list
+                .map(
+                  (o, i) => `
+                  <button type="button" role="option" data-i="${i}" class="${i === highlighted ? "hl" : ""}">
+                    <span class="nm">${esc(o.name)}</span>
+                    <span class="cd">${esc(o.code || "")}${o.role ? " · " + esc(o.role) : ""}</span>
+                  </button>`,
+                )
+                .join("")
+            : `<div class="none">No institution matches “${esc(q)}”.</div>`;
+          instDd.dataset.list = JSON.stringify(list.map((o) => o.id));
+          instDd.classList.add("open");
+          instDd.querySelectorAll("[data-i]").forEach((btn) =>
+            btn.addEventListener("mousedown", (e) => {
+              e.preventDefault(); // don't blur the input first
+              choose(list[Number(btn.dataset.i)]);
+            }),
+          );
+        }
+
+        function choose(org) {
+          if (!org) return;
+          selectedOrg = org;
+          instInput.value = org.name;
+          instInput.classList.add("selected");
+          instDd.classList.remove("open");
+          errorBox.classList.remove("show");
+          document.getElementById("password").focus();
+        }
+
+        instInput.addEventListener("input", () => {
+          selectedOrg = null;
+          instInput.classList.remove("selected");
+          renderDropdown(instInput.value);
+        });
+        instInput.addEventListener("focus", () => {
+          if (orgs.length && !selectedOrg) renderDropdown(instInput.value);
+        });
+        instInput.addEventListener("blur", () => {
+          setTimeout(() => instDd.classList.remove("open"), 150);
+        });
+        instInput.addEventListener("keydown", (e) => {
+          const opts = instDd.querySelectorAll("[data-i]");
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            if (!instDd.classList.contains("open"))
+              return renderDropdown(instInput.value);
+            if (!opts.length) return;
+            highlighted =
+              (highlighted + (e.key === "ArrowDown" ? 1 : -1) + opts.length) %
+              opts.length;
+            opts.forEach((b, i) => b.classList.toggle("hl", i === highlighted));
+            opts[highlighted].scrollIntoView({ block: "nearest" });
+          } else if (e.key === "Enter") {
+            if (instDd.classList.contains("open") && opts.length) {
+              e.preventDefault();
+              const list = matches(instInput.value);
+              choose(list[Math.max(0, highlighted)]);
+            }
+          } else if (e.key === "Escape") {
+            instDd.classList.remove("open");
+          }
+        });
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          errorBox.classList.remove("show");
+
+          // Multi-org email: an institution must be picked before the
+          // password is even tried.
+          if (orgs.length && !selectedOrg) {
+            showError("Please choose your institution before signing in.");
+            instInput.focus();
+            return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Signing in…";
+          try {
+            const body = {
+              email: emailInput.value.trim(),
+              password: document.getElementById("password").value,
+            };
+            if (selectedOrg) body.organizationId = selectedOrg.id;
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify(body),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              showError(data.error || "Sign in failed");
+              return;
+            }
+            if (data.needsOrganization) {
+              // Server-side fallback (same password in several orgs and no
+              // pick yet): feed the same typeahead and ask.
+              orgs = data.organizations.filter((o) => o.id);
+              selectedOrg = null;
+              instInput.value = "";
+              instInput.classList.remove("selected");
+              instField.classList.add("show");
+              renderDropdown("");
+              showError("Choose your institution, then sign in again.");
+              instInput.focus();
+              return;
+            }
+
+            if (data.twoFactorRequired) {
+              challengeToken = data.challengeToken;
+              otpError.classList.remove("show");
+              otpLead.textContent = `Enter the 6-digit code we sent to ${data.maskedPhone}.`;
+              otpInput.value = "";
+              form.style.display = "none";
+              otpStep.style.display = "block";
+              otpInput.focus();
+              return;
+            }
+
+            await finishLogin(data.user);
+          } catch (err) {
+            showError("Network error — please try again.");
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Sign in";
+          }
+        });
+
+        // ---- 2FA step ----
+        function showOtpError(msg) {
+          otpError.textContent = msg;
+          otpError.classList.add("show");
+        }
+        async function submitOtp() {
+          otpError.classList.remove("show");
+          const code = otpInput.value.trim();
+          if (!code) return showOtpError("Enter the code sent to your phone");
+          otpSubmitBtn.disabled = true;
+          otpSubmitBtn.textContent = "Verifying…";
+          try {
+            const res = await fetch("/api/auth/login-otp/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ challengeToken, code }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              showOtpError(data.error || "Verification failed");
+              otpInput.value = "";
+              otpInput.focus();
+              return;
+            }
+            await finishLogin(data.user);
+          } catch (err) {
+            showOtpError("Network error — please try again.");
+          } finally {
+            otpSubmitBtn.disabled = false;
+            otpSubmitBtn.textContent = "Verify & sign in";
+          }
+        }
+        otpSubmitBtn.addEventListener("click", submitOtp);
+        otpInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submitOtp();
+          }
+        });
+        document.getElementById("otpResendLink").addEventListener("click", async (e) => {
+          e.preventDefault();
+          otpError.classList.remove("show");
+          try {
+            const res = await fetch("/api/auth/login-otp/resend", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ challengeToken }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) return showOtpError(data.error || "Could not resend code");
+            otpLead.textContent = `New code sent to ${data.maskedPhone}.`;
+          } catch (err) {
+            showOtpError("Network error — please try again.");
+          }
+        });
+        document.getElementById("otpBackLink").addEventListener("click", (e) => {
+          e.preventDefault();
+          challengeToken = null;
+          otpStep.style.display = "none";
+          form.style.display = "block";
+          document.getElementById("password").value = "";
+          document.getElementById("password").focus();
+        });
+      })();
+    </script>
+  </body>
+</html>
