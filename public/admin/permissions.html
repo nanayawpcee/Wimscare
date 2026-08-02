@@ -408,6 +408,7 @@
         async function loadTarget() {
           const errBox = document.getElementById("formError");
           errBox.classList.remove("show");
+          WIMS.skeletonBlocks(document.getElementById("permGroups"), 4, 96);
           try {
             const data = await API.get(`/api/users/${targetId}/permissions`);
             state = {
@@ -467,7 +468,6 @@
 
         await loadUserList();
         await loadTarget();
-        WIMS.revealPage();
       })();
     </script>
   </body>

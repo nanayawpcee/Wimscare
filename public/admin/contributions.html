@@ -636,6 +636,7 @@
 
         // --- Stats + banner ---
         async function loadStats() {
+          WIMS.skeletonCards(document.getElementById("statCards"), 3);
           const s = await API.get("/api/contributions/stats");
           document.getElementById("statCards").innerHTML = [
             {
@@ -680,6 +681,7 @@
 
         // --- Table ---
         async function loadList() {
+          WIMS.skeletonRows(document.getElementById("contribRows"), 7);
           const data = await API.get("/api/contributions?" + listParams());
           state.pages = Math.max(data.pages, 1);
           state.total = data.total;
@@ -1124,7 +1126,6 @@
         }
 
         await Promise.all([load(), loadModes(), loadFunds()]);
-        WIMS.revealPage();
       })();
     </script>
   </body>

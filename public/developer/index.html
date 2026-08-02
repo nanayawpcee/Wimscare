@@ -279,16 +279,41 @@
           $("pageTitle").textContent = sec.title;
           $("pageDesc").textContent = sec.desc();
           $("headAction").innerHTML = sec.key === "licenses" ? `<button type="button" class="btn" id="openCreate">Create license</button>` : "";
+          // A generic fallback shown only for sections whose renderer has no
+          // fetch-independent chrome of its own to render first (overview,
+          // orgs, credentials, audit) — shaped per-section so it at least
+          // roughly previews what's coming. licenses/updates/backups render
+          // their real chrome synchronously before their first await, so
+          // this never actually paints for them.
+          const SKELETONS = {
+            orgs: `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px;">
+                     <div class="sa-skel" style="height:190px;"></div>
+                     <div class="sa-skel" style="height:190px;"></div>
+                     <div class="sa-skel" style="height:190px;"></div>
+                   </div>`,
+            credentials: `<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px;">
+                            <div class="sa-skel" style="height:260px;"></div>
+                            <div class="sa-skel" style="height:260px;"></div>
+                          </div>`,
+            audit: `<div class="card"><div style="display:grid; gap:10px;">
+                      <div class="sa-skel" style="height:48px;"></div>
+                      <div class="sa-skel" style="height:48px;"></div>
+                      <div class="sa-skel" style="height:48px;"></div>
+                      <div class="sa-skel" style="height:48px;"></div>
+                      <div class="sa-skel" style="height:48px;"></div>
+                    </div></div>`,
+          };
           content.innerHTML = `
             <div class="sa-loading">
               <div class="sa-loading-bar"></div>
-              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:16px;">
-                <div class="sa-skel" style="height:86px;"></div>
-                <div class="sa-skel" style="height:86px;"></div>
-                <div class="sa-skel" style="height:86px;"></div>
-                <div class="sa-skel" style="height:86px;"></div>
-              </div>
-              <div class="sa-skel" style="height:240px;"></div>
+              ${SKELETONS[sec.key] || `
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:16px;">
+                  <div class="sa-skel" style="height:86px;"></div>
+                  <div class="sa-skel" style="height:86px;"></div>
+                  <div class="sa-skel" style="height:86px;"></div>
+                  <div class="sa-skel" style="height:86px;"></div>
+                </div>
+                <div class="sa-skel" style="height:240px;"></div>`}
             </div>`;
           return renderers[sec.key]().catch((err) => {
             content.innerHTML = `<div class="card" style="color:#b4372a;">${fmt.esc(err.message)}</div>`;
@@ -529,8 +554,9 @@
         // ---------- Licenses ----------
         let licenseCache = [];
         renderers.licenses = async () => {
-          const { items } = await API.get("/api/developer/licenses");
-          licenseCache = items;
+          // Chrome (search/filters/table shell) doesn't depend on the fetch
+          // below, so it renders immediately; only the rows shimmer while
+          // the license list loads.
           content.innerHTML = `
             <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
               <input type="text" class="f" id="licSearch" placeholder="Search key, organization or contact…" style="flex:1; min-width:220px; width:auto; padding:11px 14px;" />
@@ -548,7 +574,9 @@
                 <thead><tr>
                   <th>Organization</th><th>License key</th><th>Type</th><th>Users / Members</th><th>Expires</th><th>Status</th><th class="num"></th>
                 </tr></thead>
-                <tbody id="licRows"></tbody>
+                <tbody id="licRows">
+                  ${Array.from({ length: 4 }, () => `<tr>${Array.from({ length: 7 }, () => `<td><div class="sa-skel" style="height:14px; border-radius:6px;"></div></td>`).join("")}</tr>`).join("")}
+                </tbody>
               </table>
             </div>`;
           const draw = () => {
@@ -593,8 +621,10 @@
             });
           };
           ["licSearch", "licStatus", "licPlan"].forEach((id) => $(id).addEventListener("input", draw));
-          draw();
           $("openCreate")?.addEventListener("click", openCreateModal);
+          const { items } = await API.get("/api/developer/licenses");
+          licenseCache = items;
+          draw();
         };
 
         function openDrawer(id) {
@@ -951,14 +981,20 @@
 
         // ---------- Backups ----------
         renderers.backups = async () => {
-          const { items } = await API.get("/api/developer/backups");
           const size = (b) => (b.sizeBytes ? (b.sizeBytes / 1048576).toFixed(1) + " MB" : "—");
+          // The table header doesn't depend on the fetch below, so it
+          // renders immediately; only the rows shimmer while backups load.
           content.innerHTML = `
             <div class="card" style="padding:8px 24px 16px;">
               <table class="sa">
                 <thead><tr><th>Organization</th><th>Backup</th><th>Trigger</th><th>Size</th><th>Status</th><th class="num"></th></tr></thead>
-                <tbody>
-                  ${items.length ? items.map((b) => `
+                <tbody id="backupRows">
+                  ${Array.from({ length: 4 }, () => `<tr>${Array.from({ length: 6 }, () => `<td><div class="sa-skel" style="height:14px; border-radius:6px;"></div></td>`).join("")}</tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`;
+          const { items } = await API.get("/api/developer/backups");
+          $("backupRows").innerHTML = items.length ? items.map((b) => `
                     <tr>
                       <td><span class="strong">${fmt.esc(b.organizationId ? b.organizationId.name : "System")}</span></td>
                       <td>
@@ -974,10 +1010,7 @@
                           ${b.status === "completed" && b.organizationId ? `<button type="button" class="btn danger sm" data-restore="${b._id}" data-org="${fmt.esc(b.organizationId.name)}">Restore</button>` : ""}
                         </div>
                       </td>
-                    </tr>`).join("") : `<tr><td colspan="6" style="color:#8a98a1; padding:24px 0;">No backups yet.</td></tr>`}
-                </tbody>
-              </table>
-            </div>`;
+                    </tr>`).join("") : `<tr><td colspan="6" style="color:#8a98a1; padding:24px 0;">No backups yet.</td></tr>`;
           content.querySelectorAll("[data-restore]").forEach((b) =>
             b.addEventListener("click", async () => {
               const typed = prompt(`Restoring replaces ALL current data for ${b.dataset.org}. Type RESTORE to confirm:`);
@@ -1053,7 +1086,8 @@
 
         // ---------- System updates ----------
         renderers.updates = async () => {
-          const { items } = await API.get("/api/developer/updates");
+          // The publish form doesn't depend on the fetch below, so it
+          // renders immediately; only the published-updates list shimmers.
           content.innerHTML = `
             <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:16px; align-items:start;">
               <div class="card">
@@ -1076,15 +1110,10 @@
               <div class="card">
                 <h2>Published updates</h2>
                 <p class="sub">Latest first</p>
-                <div style="display:grid;">
-                  ${items.length ? items.map((u) => `
-                    <div style="padding:13px 0; border-bottom:1px solid #f0f4f6;">
-                      <div style="display:flex; justify-content:space-between; gap:12px;">
-                        <span style="font-size:0.92rem; font-weight:600;">v${fmt.esc(u.version)} — ${fmt.esc(u.title)}</span>
-                        <span style="font-size:0.8rem; color:#8a98a1; white-space:nowrap;">${fmt.date(u.publishedAt || u.createdAt)}</span>
-                      </div>
-                      ${u.body ? `<span style="display:block; font-size:0.83rem; color:#5a6b75; margin-top:3px; white-space:pre-wrap;">${fmt.esc(u.body)}</span>` : ""}
-                    </div>`).join("") : `<span style="color:#8a98a1; font-size:0.88rem;">Nothing published yet.</span>`}
+                <div style="display:grid; gap:10px;" id="updList">
+                  <div class="sa-skel" style="height:52px;"></div>
+                  <div class="sa-skel" style="height:52px;"></div>
+                  <div class="sa-skel" style="height:52px;"></div>
                 </div>
               </div>
             </div>`;
@@ -1103,6 +1132,15 @@
               toast(err.message, true);
             }
           });
+          const { items } = await API.get("/api/developer/updates");
+          $("updList").innerHTML = items.length ? items.map((u) => `
+            <div style="padding:13px 0; border-bottom:1px solid #f0f4f6;">
+              <div style="display:flex; justify-content:space-between; gap:12px;">
+                <span style="font-size:0.92rem; font-weight:600;">v${fmt.esc(u.version)} — ${fmt.esc(u.title)}</span>
+                <span style="font-size:0.8rem; color:#8a98a1; white-space:nowrap;">${fmt.date(u.publishedAt || u.createdAt)}</span>
+              </div>
+              ${u.body ? `<span style="display:block; font-size:0.83rem; color:#5a6b75; margin-top:3px; white-space:pre-wrap;">${fmt.esc(u.body)}</span>` : ""}
+            </div>`).join("") : `<span style="color:#8a98a1; font-size:0.88rem;">Nothing published yet.</span>`;
         };
 
         show(location.hash.replace("#", "") || "overview");

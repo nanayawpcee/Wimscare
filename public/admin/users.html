@@ -492,6 +492,7 @@
           if (state.q) params.set("q", state.q);
           if (state.role) params.set("role", state.role);
           if (state.status) params.set("status", state.status);
+          WIMS.skeletonBlocks(document.getElementById("userRows"), 5, 68);
           const data = await API.get("/api/users?" + params);
           state.pages = Math.max(data.pages, 1);
           state.total = data.total;
@@ -825,7 +826,6 @@
 
         await load();
         await loadDeletionBanner();
-        WIMS.revealPage();
       })();
     </script>
   </body>

@@ -452,6 +452,7 @@
         async function load() {
           const params = new URLSearchParams({ page: state.page, limit: 15 });
           if (state.status) params.set("status", state.status);
+          WIMS.skeletonRows(document.getElementById("inviteRows"), 7);
           const data = await API.get("/api/invitations?" + params);
           items = data.items;
           state.total = data.total;
@@ -547,7 +548,6 @@
           });
 
         await load();
-        WIMS.revealPage();
       })();
     </script>
   </body>

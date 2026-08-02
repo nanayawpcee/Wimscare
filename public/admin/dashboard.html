@@ -385,6 +385,8 @@
         async function load() {
           const year = yearSel.value;
           const month = monthSel.value;
+          WIMS.skeletonCards(document.getElementById("statCards"), 4);
+          WIMS.skeletonRows(document.getElementById("recentRows"), 5);
           const data = await API.get(
             `/api/dashboard/admin?year=${year}&month=${month}`,
           );
@@ -479,7 +481,6 @@
         yearSel.addEventListener("change", load);
         monthSel.addEventListener("change", load);
         await load();
-        WIMS.revealPage();
       })();
     </script>
   </body>
