@@ -1021,6 +1021,7 @@
         }
 
         async function loadSummary() {
+          WIMS.skeletonCards(document.getElementById("summaryCards"), 4);
           const s = await API.get("/api/accounts/summary");
           const monthName = new Date(
             new Date().getFullYear(),
@@ -1059,6 +1060,7 @@
         }
 
         async function loadList() {
+          WIMS.skeletonRows(document.getElementById("entryRows"), 7);
           const data = await API.get("/api/accounts?" + query());
           state.pages = Math.max(data.pages, 1);
           document.getElementById("emptyState").style.display = data.items
@@ -1329,6 +1331,8 @@
             ? ""
             : "none";
 
+          WIMS.skeletonCards(document.getElementById("fundSummary"), 3);
+          WIMS.skeletonBlocks(document.getElementById("fundCards"), 3, 90);
           const { items, summary } = await API.get("/api/fund-accounts");
           fundsCache = items;
           document.getElementById("moveFundsBtn").style.display =
@@ -1564,6 +1568,7 @@
           flag: "Accountant flagged as invalid",
         };
         async function loadReversals() {
+          WIMS.skeletonBlocks(document.getElementById("reversalPending"), 2, 80);
           const { items } = await API.get("/api/reversals");
           const pending = items.filter((r) => r.status === "pending");
           const decided = items
@@ -1647,7 +1652,6 @@
 
         await renderTabs();
         await loadOverview();
-        WIMS.revealPage();
       })();
     </script>
   </body>

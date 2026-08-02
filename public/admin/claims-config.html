@@ -355,6 +355,7 @@
         };
 
         async function loadTypes() {
+          WIMS.skeletonBlocks(document.getElementById("typeCards"), 3, 140);
           const { items } = await API.get("/api/claim-types");
           document.getElementById("typeCards").innerHTML = items.length
             ? items
@@ -424,7 +425,6 @@
         }
 
         await Promise.all([loadSettings(), loadTypes()]);
-        WIMS.revealPage();
       })();
     </script>
   </body>

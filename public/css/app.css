@@ -252,41 +252,10 @@ h3 {
   padding: 20px 22px;
 }
 
-/* Page-load skeleton: a sweeping progress bar (not a spinner, for a
-   continuous sense of progress) plus generic skeleton blocks so the page
-   isn't blank while its first fetch is in flight. Injected/removed by
-   WIMS.revealPage() in app.js — shape is intentionally generic since admin
-   pages have very different final layouts. */
-.pg-loading {
-  padding-top: 3px;
-}
-.pg-loading-bar {
-  position: relative;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--line);
-  overflow: hidden;
-  margin-bottom: 26px;
-}
-.pg-loading-bar::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 40%;
-  border-radius: 999px;
-  background: var(--primary);
-  animation: pg-sweep 1.1s ease-in-out infinite;
-}
-@keyframes pg-sweep {
-  0% {
-    left: -40%;
-  }
-  100% {
-    left: 100%;
-  }
-}
+/* Shimmer placeholder for the specific bits of a page that come from the
+   server (a stat card, a table cell) — see WIMS.skeletonCards/skeletonRows
+   in app.js. Scoped to just those elements; the rest of the page's HTML is
+   untouched while data loads. */
 .pg-skel {
   border-radius: var(--radius);
   background: linear-gradient(90deg, #eef1f3 25%, #e4e9ec 37%, #eef1f3 63%);
@@ -302,14 +271,8 @@ h3 {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pg-loading-bar::after,
   .pg-skel {
     animation: none;
-  }
-  .pg-loading-bar::after {
-    left: 0;
-    width: 100%;
-    opacity: 0.5;
   }
 }
 

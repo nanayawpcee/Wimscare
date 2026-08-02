@@ -406,7 +406,7 @@
 
         async function renderPanel() {
           host.innerHTML =
-            '<div class="card"><div class="empty">Loading…</div></div>';
+            '<div class="card"><div class="pg-skel" style="height:22px; width:40%; margin-bottom:20px;"></div><div class="pg-skel" style="height:200px;"></div></div>';
           if (activeSection === "profile") return renderProfile();
           if (activeSection === "contributions") return renderContributions();
           if (activeSection === "facility") return renderFacility();
@@ -1347,7 +1347,6 @@
 
         renderNav();
         await renderPanel();
-        WIMS.revealPage();
       })();
     </script>
   </body>

@@ -414,6 +414,7 @@
 
         // --- Metrics ---
         async function loadMetrics() {
+          WIMS.skeletonBlocks(document.getElementById("metricCards"), 6, 70);
           const m = await API.get("/api/claims/metrics");
           const defs = [
             { key: "all", label: "Total claims", value: m.total },
@@ -468,6 +469,7 @@
         }
 
         async function loadList() {
+          WIMS.skeletonRows(document.getElementById("claimRows"), 6);
           // "approved" card covers approved + paid; fetch both and merge.
           let items, total, pages;
           if (state.filter === "approved") {
@@ -718,7 +720,6 @@
         document.getElementById("tableTitle").textContent =
           TITLES[state.filter];
         await Promise.all([loadMetrics(), loadList(), loadTypes()]);
-        WIMS.revealPage();
       })();
     </script>
   </body>

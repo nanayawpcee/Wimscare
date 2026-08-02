@@ -147,6 +147,8 @@
         };
 
         async function load() {
+          WIMS.skeletonBlocks(document.getElementById("pendingList"), 2, 80);
+          WIMS.skeletonBlocks(document.getElementById("historyList"), 3, 60);
           const { items } = await API.get("/api/reversals");
           const pending = items.filter((r) => r.status === "pending");
           const decided = items
@@ -228,7 +230,6 @@
         }
 
         await load();
-        WIMS.revealPage();
       })();
     </script>
   </body>

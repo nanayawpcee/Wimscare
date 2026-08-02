@@ -275,6 +275,10 @@
             from: document.getElementById("fromDate").value,
             to: document.getElementById("toDate").value,
           });
+          WIMS.skeletonCards(document.getElementById("summaryCards"), 4);
+          document.getElementById("resultTable").style.display = "";
+          document.getElementById("emptyState").style.display = "none";
+          WIMS.skeletonRows(document.getElementById("resultBody"), 5);
           try {
             const data = await API.get("/api/reports/tab?" + params);
             document.getElementById("resultTitle").textContent = data.title;
@@ -345,7 +349,6 @@
         });
 
         await run();
-        WIMS.revealPage();
       })();
     </script>
   </body>
