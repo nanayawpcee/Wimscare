@@ -306,12 +306,23 @@
             "
           >
             <strong
+              id="emptyStateTitle"
               style="display: block; margin-bottom: 6px; color: var(--ink)"
               >No contributions found</strong
             >
-            <span style="font-size: 0.9rem"
+            <span id="emptyStateSub" style="font-size: 0.9rem"
               >Try adjusting the filters or record one below.</span
             >
+            <div style="margin-top: 16px">
+              <button
+                type="button"
+                class="btn"
+                id="emptyStateAction"
+                style="padding: 10px 20px; font-size: 0.88rem"
+              >
+                Record a contribution
+              </button>
+            </div>
           </div>
           <div
             style="
@@ -676,6 +687,32 @@
             .length
             ? "none"
             : "block";
+          const filtered = !!(state.q || state.from || state.to);
+          document.getElementById("emptyStateTitle").textContent = filtered
+            ? "No contributions match your filters"
+            : "No contributions recorded yet";
+          document.getElementById("emptyStateSub").textContent = filtered
+            ? "Try clearing the search or date range."
+            : "Record the first contribution to get started.";
+          const emptyAction = document.getElementById("emptyStateAction");
+          emptyAction.textContent = filtered
+            ? "Clear filters"
+            : "Record a contribution";
+          emptyAction.onclick = filtered
+            ? () => {
+                document.getElementById("searchInput").value = "";
+                document.getElementById("fromDate").value = "";
+                document.getElementById("toDate").value = "";
+                state.q = "";
+                state.from = "";
+                state.to = "";
+                state.page = 1;
+                loadList();
+              }
+            : () => {
+                document.getElementById("add").scrollIntoView({ behavior: "smooth", block: "start" });
+                document.getElementById("memberSearch")?.focus();
+              };
           document.getElementById("contribRows").innerHTML = data.items
             .map(
               (c) => `

@@ -469,7 +469,11 @@
         </tr>`,
                 )
                 .join("")
-            : '<tr><td colspan="5" class="empty">No contributions recorded yet.</td></tr>';
+            : `<tr><td colspan="5" style="padding:32px 0; text-align:center; color:var(--muted);">
+                <strong style="display:block; margin-bottom:6px; color:var(--ink);">No contributions recorded yet</strong>
+                <span style="font-size:0.9rem;">Record the first contribution to get started.</span>
+                <div style="margin-top:14px;"><a href="/admin/contributions.html#add" class="btn" style="padding:9px 20px; font-size:0.85rem; display:inline-flex;">Record a contribution</a></div>
+              </td></tr>`;
         }
 
         yearSel.addEventListener("change", load);

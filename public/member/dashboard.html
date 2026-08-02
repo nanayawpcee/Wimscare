@@ -672,7 +672,13 @@
       </a>`,
               )
               .join("")
-          : '<div class="empty">No claims yet — use “Submit a claim” to apply for support.</div>';
+          : `<div class="empty" style="text-align:center; padding:28px 20px;">
+        <strong style="display:block; margin-bottom:6px; color:var(--ink);">No claims yet</strong>
+        <span style="font-size:0.9rem; color:var(--muted);">Apply for support when you need it.</span>
+        <div style="margin-top:14px;">
+          <a href="/member/claims.html" class="btn" style="padding:10px 20px; font-size:0.88rem; display:inline-flex;">Submit a claim</a>
+        </div>
+      </div>`;
 
         // Profile panel
         const profileData = await API.get("/api/profile");

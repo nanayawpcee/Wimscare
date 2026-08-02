@@ -476,9 +476,24 @@
           <div
             id="trackEmpty"
             class="empty"
-            style="display: none; background: #fff; border-radius: 18px; border: 1px solid var(--line)"
+            style="display: none; background: #fff; border-radius: 18px; border: 1px solid var(--line); padding: 32px 24px; text-align: center;"
           >
-            No claims yet — switch to “New claim” to apply for support.
+            <strong style="display: block; margin-bottom: 6px; color: var(--ink)"
+              >No claims yet</strong
+            >
+            <span style="font-size: 0.9rem; color: var(--muted)"
+              >Apply for support when you need it.</span
+            >
+            <div style="margin-top: 16px">
+              <button
+                type="button"
+                class="btn"
+                id="trackEmptyAction"
+                style="padding: 10px 20px; font-size: 0.88rem"
+              >
+                Start a new claim
+              </button>
+            </div>
           </div>
         </div>
       </main>
@@ -527,6 +542,9 @@
         }
         tabApply.addEventListener("click", () => showTab("apply"));
         tabTrack.addEventListener("click", () => showTab("track"));
+        document
+          .getElementById("trackEmptyAction")
+          .addEventListener("click", () => showTab("apply"));
         if (new URLSearchParams(location.search).get("tab") === "track")
           showTab("track");
 

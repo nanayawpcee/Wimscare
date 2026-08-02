@@ -255,12 +255,23 @@
             "
           >
             <strong
+              id="emptyStateTitle"
               style="display: block; margin-bottom: 6px; color: var(--ink)"
               >No members found</strong
             >
-            <span style="font-size: 0.9rem"
+            <span id="emptyStateSub" style="font-size: 0.9rem"
               >Try a different search term or filter.</span
             >
+            <div id="emptyStateActionWrap" style="margin-top: 16px">
+              <button
+                type="button"
+                class="btn"
+                id="emptyStateAction"
+                style="padding: 10px 20px; font-size: 0.88rem"
+              >
+                Invite a member
+              </button>
+            </div>
           </div>
           <div
             style="
@@ -492,6 +503,41 @@
           const rowsEl = document.getElementById("userRows");
           const emptyEl = document.getElementById("emptyState");
           emptyEl.style.display = currentItems.length ? "none" : "block";
+          if (!currentItems.length) {
+            const filtered = !!(state.q || state.role || state.status);
+            const title = document.getElementById("emptyStateTitle");
+            const sub = document.getElementById("emptyStateSub");
+            const actionWrap = document.getElementById("emptyStateActionWrap");
+            const action = document.getElementById("emptyStateAction");
+            if (filtered) {
+              title.textContent = "No members match your filters";
+              sub.textContent = "Try a different search term or filter.";
+              actionWrap.style.display = "block";
+              action.textContent = "Clear filters";
+              action.onclick = () => {
+                state.q = "";
+                state.role = "";
+                state.status = "";
+                state.page = 1;
+                searchInput.value = "";
+                roleFilter.value = "";
+                statusFilter.value = "";
+                load();
+              };
+            } else if (canInvite) {
+              title.textContent = "No members yet";
+              sub.textContent = "Invite your first member to get started.";
+              actionWrap.style.display = "block";
+              action.textContent = "Invite a member";
+              action.onclick = () => {
+                window.location.href = "/admin/invites.html";
+              };
+            } else {
+              title.textContent = "No members yet";
+              sub.textContent = "Members will appear here once they're invited.";
+              actionWrap.style.display = "none";
+            }
+          }
 
           rowsEl.innerHTML = currentItems
             .map((u, i) => {

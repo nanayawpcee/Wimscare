@@ -241,12 +241,23 @@
             "
           >
             <strong
+              id="emptyStateTitle"
               style="display: block; margin-bottom: 6px; color: var(--ink)"
               >No claims found</strong
             >
-            <span style="font-size: 0.9rem"
+            <span id="emptyStateSub" style="font-size: 0.9rem"
               >No claims match the selected status or search.</span
             >
+            <div id="emptyStateActionWrap" style="margin-top: 16px">
+              <button
+                type="button"
+                class="btn"
+                id="emptyStateAction"
+                style="padding: 10px 20px; font-size: 0.88rem"
+              >
+                Clear filters
+              </button>
+            </div>
           </div>
           <div
             style="
@@ -492,6 +503,41 @@
           document.getElementById("emptyState").style.display = rows.length
             ? "none"
             : "block";
+          if (!rows.length) {
+            const filtered = state.filter !== "all" || !!state.q;
+            const canCreate = ["admin", "supervisor", "superadmin"].includes(user.role);
+            const title = document.getElementById("emptyStateTitle");
+            const sub = document.getElementById("emptyStateSub");
+            const actionWrap = document.getElementById("emptyStateActionWrap");
+            const action = document.getElementById("emptyStateAction");
+            if (filtered) {
+              title.textContent = "No claims match your filters";
+              sub.textContent = "Try a different status or clear the search.";
+              actionWrap.style.display = "block";
+              action.textContent = "Clear filters";
+              action.onclick = () => {
+                state.filter = "all";
+                state.q = "";
+                document.getElementById("searchInput").value = "";
+                document.querySelectorAll("[data-filter]").forEach((btn) =>
+                  btn.classList.toggle("active", btn.dataset.filter === "all"),
+                );
+                document.getElementById("tableTitle").textContent = TITLES.all;
+                state.page = 1;
+                loadList();
+              };
+            } else if (canCreate) {
+              title.textContent = "No claims yet";
+              sub.textContent = "Start a new application on a member's behalf.";
+              actionWrap.style.display = "block";
+              action.textContent = "New claim";
+              action.onclick = () => document.getElementById("newClaimBtn").click();
+            } else {
+              title.textContent = "No claims yet";
+              sub.textContent = "Claims will appear here once members submit applications.";
+              actionWrap.style.display = "none";
+            }
+          }
           document.getElementById("claimRows").innerHTML = rows
             .map(
               (c) => `

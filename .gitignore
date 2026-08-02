@@ -3,4 +3,5 @@ node_modules/
 uploads/
 backups/
 .DS_Store
-.claude/settings.local.json
+.claude/
+

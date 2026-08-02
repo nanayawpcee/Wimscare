@@ -270,12 +270,23 @@
             "
           >
             <strong
+              id="emptyStateTitle"
               style="display: block; margin-bottom: 6px; color: var(--ink)"
               >No invitations yet</strong
             >
-            <span style="font-size: 0.9rem"
+            <span id="emptyStateSub" style="font-size: 0.9rem"
               >Send your first invitation using the form above.</span
             >
+            <div style="margin-top: 16px">
+              <button
+                type="button"
+                class="btn"
+                id="emptyStateAction"
+                style="padding: 10px 20px; font-size: 0.88rem"
+              >
+                Send an invitation
+              </button>
+            </div>
           </div>
           <div
             style="
@@ -349,6 +360,31 @@
           document.getElementById("emptyState").style.display = rows.length
             ? "none"
             : "block";
+          if (!rows.length) {
+            const filtered = !!state.status;
+            const title = document.getElementById("emptyStateTitle");
+            const sub = document.getElementById("emptyStateSub");
+            const action = document.getElementById("emptyStateAction");
+            if (filtered) {
+              title.textContent = "No invitations match this filter";
+              sub.textContent = "Try a different status.";
+              action.textContent = "Clear filter";
+              action.onclick = () => {
+                document.getElementById("statusFilter").value = "all";
+                state.status = "";
+                state.page = 1;
+                load();
+              };
+            } else {
+              title.textContent = "No invitations yet";
+              sub.textContent = "Send your first invitation using the form above.";
+              action.textContent = "Send an invitation";
+              action.onclick = () => {
+                document.getElementById("inviteForm").scrollIntoView({ behavior: "smooth", block: "start" });
+                document.getElementById("inviteEmail")?.focus();
+              };
+            }
+          }
           document.getElementById("countLabel").textContent =
             `${rows.length} of ${state.total} invitation${state.total === 1 ? "" : "s"}`;
           document.getElementById("pageLabel").textContent =

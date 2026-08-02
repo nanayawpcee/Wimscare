@@ -180,7 +180,20 @@
               color: var(--muted);
             "
           >
-            No data in this period.
+            <strong style="display: block; margin-bottom: 6px; color: var(--ink)"
+              >No data in this period</strong
+            >
+            <span style="font-size: 0.9rem">Try widening the date range.</span>
+            <div style="margin-top: 16px">
+              <button
+                type="button"
+                class="btn"
+                id="emptyStateAction"
+                style="padding: 10px 20px; font-size: 0.88rem"
+              >
+                View all time
+              </button>
+            </div>
           </div>
         </div>
       </main>
@@ -284,6 +297,11 @@
               .length
               ? "none"
               : "block";
+            document.getElementById("emptyStateAction").onclick = () => {
+              document.getElementById("fromDate").value = "2000-01-01";
+              document.getElementById("toDate").value = today;
+              run();
+            };
             document.getElementById("resultTable").style.display = data.rows
               .length
               ? ""

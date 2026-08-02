@@ -322,12 +322,23 @@
               "
             >
               <strong
+                id="emptyStateTitle"
                 style="display: block; margin-bottom: 6px; color: var(--ink)"
                 >No entries found</strong
               >
-              <span style="font-size: 0.9rem"
+              <span id="emptyStateSub" style="font-size: 0.9rem"
                 >Try adjusting the filters or search.</span
               >
+              <div id="emptyStateActionWrap" style="margin-top: 16px">
+                <button
+                  type="button"
+                  class="btn"
+                  id="emptyStateAction"
+                  style="padding: 10px 20px; font-size: 0.88rem"
+                >
+                  Clear filters
+                </button>
+              </div>
             </div>
             <div
               style="
@@ -1054,6 +1065,39 @@
             .length
             ? "none"
             : "block";
+          if (!data.items.length) {
+            const filtered = !!(state.q || state.status || state.category);
+            const title = document.getElementById("emptyStateTitle");
+            const sub = document.getElementById("emptyStateSub");
+            const actionWrap = document.getElementById("emptyStateActionWrap");
+            const action = document.getElementById("emptyStateAction");
+            if (filtered) {
+              title.textContent = "No entries match your filters";
+              sub.textContent = "Try adjusting the filters or search.";
+              actionWrap.style.display = "block";
+              action.textContent = "Clear filters";
+              action.onclick = () => {
+                state.q = "";
+                state.status = "";
+                state.category = "";
+                document.getElementById("searchInput").value = "";
+                document.getElementById("statusFilter").value = "";
+                document.getElementById("categoryFilter").value = "";
+                state.page = 1;
+                loadList();
+              };
+            } else if (canManage) {
+              title.textContent = "No entries yet";
+              sub.textContent = "Record the first account entry to get started.";
+              actionWrap.style.display = "block";
+              action.textContent = "New account entry";
+              action.onclick = () => document.getElementById("newEntryBtn").click();
+            } else {
+              title.textContent = "No entries yet";
+              sub.textContent = "Account entries will appear here once recorded.";
+              actionWrap.style.display = "none";
+            }
+          }
           document.getElementById("entryRows").innerHTML = data.items
             .map(
               (e) => `
