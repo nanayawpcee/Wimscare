@@ -718,6 +718,7 @@
         document.getElementById("tableTitle").textContent =
           TITLES[state.filter];
         await Promise.all([loadMetrics(), loadList(), loadTypes()]);
+        WIMS.revealPage();
       })();
     </script>
   </body>

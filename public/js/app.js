@@ -65,9 +65,47 @@
     toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 3500);
   }
 
+  // Loading skeleton for admin pages: a sweeping progress bar + generic
+  // skeleton blocks shown over <main class="main"> while the page's first
+  // fetch is in flight. requireSession() triggers it immediately (before its
+  // own /api/auth/me call) so it's visible from first paint; the page itself
+  // must call WIMS.revealPage() once its own initial data has rendered,
+  // since requireSession has no visibility into each page's own load calls.
+  function showPageSkeleton() {
+    if (!location.pathname.startsWith('/admin/')) return;
+    const main = document.querySelector('main.main');
+    if (!main || main.dataset.skelApplied) return;
+    main.dataset.skelApplied = '1';
+    const wrap = document.createElement('div');
+    wrap.id = 'wimsPageContent';
+    wrap.style.display = 'none';
+    while (main.firstChild) wrap.appendChild(main.firstChild);
+    main.appendChild(wrap);
+    const skel = document.createElement('div');
+    skel.id = 'wimsPageSkeleton';
+    skel.className = 'pg-loading';
+    skel.innerHTML = `
+      <div class="pg-loading-bar"></div>
+      <div class="stat-grid">
+        <div class="pg-skel" style="height:86px;"></div>
+        <div class="pg-skel" style="height:86px;"></div>
+        <div class="pg-skel" style="height:86px;"></div>
+        <div class="pg-skel" style="height:86px;"></div>
+      </div>
+      <div class="pg-skel" style="height:240px;"></div>`;
+    main.insertBefore(skel, wrap);
+  }
+  function revealPage() {
+    const skel = document.getElementById('wimsPageSkeleton');
+    const wrap = document.getElementById('wimsPageContent');
+    if (skel) skel.remove();
+    if (wrap) wrap.style.display = '';
+  }
+
   // Session guard for authenticated pages. Redirects to login if signed out.
   let currentSession = null;
   async function requireSession({ roles } = {}) {
+    showPageSkeleton();
     try {
       const { user, organization, plan, termsAccepted, mustChangePassword } = await API.get('/api/auth/me');
       // A superadmin who has opened an organization from the developer
@@ -470,5 +508,5 @@
     };
   }
 
-  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField };
+  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField, revealPage };
 })();
