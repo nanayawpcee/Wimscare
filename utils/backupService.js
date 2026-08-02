@@ -65,7 +65,7 @@ async function createOrgBackup(organizationId, { trigger = 'manual', createdBy =
 
   const fileName = `org-${org.code || organizationId}-${new Date().toISOString().replace(/[:.]/g, '-')}.json.gz`;
   const gzipped = zlib.gzipSync(JSON.stringify(payload));
-  const filePath = await storage.save(null, 'backups', gzipped, { fileName, contentType: 'application/gzip' });
+  const filePath = await storage.save(organizationId, 'backups', gzipped, { fileName, contentType: 'application/gzip' });
 
   return Backup.create({
     organizationId,

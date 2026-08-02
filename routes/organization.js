@@ -94,7 +94,7 @@ router.get('/logo', async (req, res, next) => {
   try {
     const org = await Organization.findById(req.orgId).select('facility.logoPath');
     if (!org || !org.facility || !org.facility.logoPath) return res.status(404).json({ error: 'No logo uploaded' });
-    storage.serveInline(org.facility.logoPath, res);
+    await storage.serveInline(org.facility.logoPath, res);
   } catch (err) {
     next(err);
   }
