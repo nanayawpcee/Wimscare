@@ -399,6 +399,12 @@
           if (!WIMS.cache.peek(key)) {
             WIMS.skeletonCards(document.getElementById("statCards"), STAT_LABELS);
             WIMS.skeletonRows(document.getElementById("recentRows"), 5);
+            // Chart renders its axis and month labels straight away; only the
+            // bars shimmer until the figures arrive.
+            WIMS.skeletonChart(
+              document.getElementById("chartBars"),
+              MONTHS.map((m) => m.slice(0, 3)),
+            );
           }
           const data = await WIMS.cache.load(key, () =>
             API.get(`/api/dashboard/admin?year=${year}&month=${month}`),

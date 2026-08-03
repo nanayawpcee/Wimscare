@@ -270,8 +270,18 @@ h3 {
     background-position: 0 0;
   }
 }
+/* Chart bars while their figures load: the axis, month labels and bar
+   shapes are all real — only the bar fill shimmers, in a faded blue so it
+   reads as a chart rather than as generic grey furniture. */
+.pg-skel-bar {
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(90deg, #dceaf6 25%, #c2dcf0 37%, #dceaf6 63%);
+  background-size: 400% 100%;
+  animation: pg-shimmer 1.6s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .pg-skel {
+  .pg-skel,
+  .pg-skel-bar {
     animation: none;
   }
 }

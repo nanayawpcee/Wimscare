@@ -101,6 +101,23 @@
     if (!container) return;
     container.innerHTML = Array.from({ length: count }, () => `<div class="pg-skel" style="height:${height}px; margin-bottom:10px;"></div>`).join('');
   }
+  // A bar chart that's already laid out — real axis labels, real bar
+  // geometry — with only the bar fills shimmering. Heights are a fixed
+  // pattern rather than random so the chart doesn't visibly reshuffle if it
+  // repaints while still loading.
+  const SKEL_BAR_HEIGHTS = [42, 58, 35, 70, 48, 62, 30, 55, 66, 40, 52, 45];
+  function skeletonChart(container, labels) {
+    if (!container) return;
+    container.innerHTML = labels
+      .map(
+        (label, i) => `
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;">
+        <div class="pg-skel-bar" style="width:100%; max-width:38px; height:${SKEL_BAR_HEIGHTS[i % SKEL_BAR_HEIGHTS.length]}%;"></div>
+        <span style="font-size:0.7rem; font-weight:600; color:var(--faint);">${fmt.esc(label)}</span>
+      </div>`,
+      )
+      .join('');
+  }
 
   // ---- Session data cache -------------------------------------------------
   // Fetches a dataset once per tab, then serves it from sessionStorage across
@@ -659,5 +676,5 @@
     };
   }
 
-  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, cache };
+  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache };
 })();

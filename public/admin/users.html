@@ -448,8 +448,8 @@
         async function loadDeletionBanner() {
           const banner = document.getElementById("deletionBanner");
           if (!canEdit) return;
-          const { items } = await API.get(
-            "/api/users?hasDeletionRequest=true&limit=100",
+          const { items } = await WIMS.cache.load(DELETION_KEY, () =>
+            API.get("/api/users?hasDeletionRequest=true&limit=100"),
           );
           if (!items.length) {
             banner.style.display = "none";
@@ -487,13 +487,52 @@
         const roleFilter = document.getElementById("roleFilter");
         const statusFilter = document.getElementById("statusFilter");
 
+        // Only the default view is cached; filtered/searched/paged queries go
+        // straight to the server, since a stale search result is more
+        // confusing than a marginally slower one.
+        const LIST_KEY = "users.list";
+        const DELETION_KEY = "users.deletionRequests";
+        const isDefaultView = () =>
+          state.page === 1 && !state.q && !state.role && !state.status;
+
+        // Any write to a user drops both cached views so the next read
+        // reflects what was actually persisted.
+        ["post", "patch", "del"].forEach((method) => {
+          const original = API[method].bind(API);
+          API[method] = async (path, ...rest) => {
+            const result = await original(path, ...rest);
+            if (/^\/api\/users/.test(path)) {
+              WIMS.cache.invalidate(LIST_KEY);
+              WIMS.cache.invalidate(DELETION_KEY);
+            }
+            return result;
+          };
+        });
+
         async function load() {
           const params = new URLSearchParams({ page: state.page, limit: 15 });
           if (state.q) params.set("q", state.q);
           if (state.role) params.set("role", state.role);
           if (state.status) params.set("status", state.status);
-          WIMS.skeletonBlocks(document.getElementById("userRows"), 5, 68);
-          const data = await API.get("/api/users?" + params);
+          const cacheable = isDefaultView();
+          if (!cacheable || !WIMS.cache.peek(LIST_KEY)) {
+            WIMS.skeletonBlocks(document.getElementById("userRows"), 5, 68);
+          }
+          const data = cacheable
+            ? await WIMS.cache.load(LIST_KEY, () =>
+                API.get("/api/users?" + params),
+              )
+            : await API.get("/api/users?" + params);
+          if (cacheable && !load._subscribed) {
+            load._subscribed = true;
+            WIMS.cache.subscribe(LIST_KEY, (fresh) => {
+              if (!isDefaultView()) return;
+              state.pages = Math.max(fresh.pages, 1);
+              state.total = fresh.total;
+              currentItems = fresh.items;
+              render();
+            });
+          }
           state.pages = Math.max(data.pages, 1);
           state.total = data.total;
           currentItems = data.items;
