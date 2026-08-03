@@ -337,10 +337,30 @@
           paid: 3,
         };
 
+        // This page is a live workflow — every write below (upload, remove a
+        // document, submit) drops the cached claim so the next read is the
+        // real server state, and the 3-minute background refresh picks up a
+        // reviewer's decision made elsewhere.
+        const CLAIM_KEY = `member.claim.${claimId}`;
+        ["post", "upload", "patch", "del"].forEach((method) => {
+          const original = API[method].bind(API);
+          API[method] = async (path, ...rest) => {
+            const result = await original(path, ...rest);
+            if (/^\/api\/claims/.test(path)) {
+              WIMS.cache.invalidate(CLAIM_KEY);
+              WIMS.cache.invalidate("member.claims");
+              WIMS.cache.invalidate("member.claimsAttention");
+            }
+            return result;
+          };
+        });
+
         async function load() {
           let claim;
           try {
-            claim = (await API.get("/api/claims/" + claimId)).claim;
+            claim = (await WIMS.cache.load(CLAIM_KEY, () =>
+              API.get("/api/claims/" + claimId),
+            )).claim;
           } catch (err) {
             toast(err.message, true);
             window.location.href = "/member/claims.html?tab=track";

@@ -337,7 +337,9 @@
         // the dismissed status no longer matches the current one.
         (async () => {
           try {
-            const att = await API.get("/api/claims/attention");
+            const att = await WIMS.cache.load("member.claimsAttention", () =>
+              API.get("/api/claims/attention"),
+            );
             if (att.scope !== "member" || !att.items.length) return;
             const host = document.getElementById("claimBanners");
             host.style.marginBottom = "20px";
@@ -365,6 +367,7 @@
                 btn.disabled = true;
                 try {
                   await API.post(`/api/claims/${row.dataset.claimId}/dismiss-banner`);
+                  WIMS.cache.invalidate("member.claimsAttention");
                   row.remove();
                   if (!host.children.length) host.style.marginBottom = "0";
                 } catch (e) {
@@ -409,9 +412,15 @@
         if (initial) showPanel(initial);
 
         // --- Data ---
+        // Fetched once per tab and refreshed in the background every 3
+        // minutes, so moving between member pages doesn't re-hit the server.
         const [data, orgResp] = await Promise.all([
-          API.get("/api/dashboard/member"),
-          API.get("/api/organization"),
+          WIMS.cache.load("member.dashboard", () =>
+            API.get("/api/dashboard/member"),
+          ),
+          WIMS.cache.load("member.organization", () =>
+            API.get("/api/organization"),
+          ),
         ]);
         const organization = orgResp.organization;
 
@@ -603,7 +612,15 @@
             limit: 15,
             ...contribPeriodParams(),
           });
-          const cData = await API.get("/api/contributions?" + params);
+          // Only the default view is cached; a filtered or paged query is
+          // fetched fresh, since caching every combination would balloon and
+          // a stale filtered result is more confusing than a slower one.
+          const isDefault = contribState.page === 1 && contribState.period === "all";
+          const cData = isDefault
+            ? await WIMS.cache.load("member.contributions", () =>
+                API.get("/api/contributions?" + params),
+              )
+            : await API.get("/api/contributions?" + params);
           contribState.total = cData.total;
           contribState.pages = Math.max(cData.pages, 1);
 
@@ -681,7 +698,9 @@
       </div>`;
 
         // Profile panel
-        const profileData = await API.get("/api/profile");
+        const profileData = await WIMS.cache.load("member.profile", () =>
+          API.get("/api/profile"),
+        );
         const p = profileData.profile || {};
         const field = (label, value) => `
     <div>

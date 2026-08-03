@@ -635,9 +635,28 @@
         }
 
         // --- Stats + banner ---
+        const STAT_LABELS = [
+          "Total contributions",
+          "Contribution count",
+          "Average monthly",
+        ];
+        const STATS_KEY = "contributions.stats";
+
         async function loadStats() {
-          WIMS.skeletonCards(document.getElementById("statCards"), 3);
-          const s = await API.get("/api/contributions/stats");
+          if (!WIMS.cache.peek(STATS_KEY)) {
+            WIMS.skeletonCards(document.getElementById("statCards"), STAT_LABELS);
+          }
+          const s = await WIMS.cache.load(STATS_KEY, () =>
+            API.get("/api/contributions/stats"),
+          );
+          if (!loadStats._subscribed) {
+            loadStats._subscribed = true;
+            WIMS.cache.subscribe(STATS_KEY, renderStats);
+          }
+          renderStats(s);
+        }
+
+        function renderStats(s) {
           document.getElementById("statCards").innerHTML = [
             {
               label: "Total contributions",
@@ -680,9 +699,33 @@
         }
 
         // --- Table ---
+        // Only the default view (page 1, no filters) is cached — filtered and
+        // paged queries are effectively unbounded, and a stale search result
+        // is more confusing than a slightly slower one.
+        const LIST_KEY = "contributions.list";
+        const isDefaultView = () =>
+          state.page === 1 && !state.q && !state.from && !state.to;
+
         async function loadList() {
-          WIMS.skeletonRows(document.getElementById("contribRows"), 7);
-          const data = await API.get("/api/contributions?" + listParams());
+          const cacheable = isDefaultView();
+          if (!cacheable || !WIMS.cache.peek(LIST_KEY)) {
+            WIMS.skeletonRows(document.getElementById("contribRows"), 7);
+          }
+          const data = cacheable
+            ? await WIMS.cache.load(LIST_KEY, () =>
+                API.get("/api/contributions?" + listParams()),
+              )
+            : await API.get("/api/contributions?" + listParams());
+          if (cacheable && !loadList._subscribed) {
+            loadList._subscribed = true;
+            WIMS.cache.subscribe(LIST_KEY, (fresh) => {
+              if (isDefaultView()) renderList(fresh);
+            });
+          }
+          renderList(data);
+        }
+
+        function renderList(data) {
           state.pages = Math.max(data.pages, 1);
           state.total = data.total;
           document.getElementById("emptyState").style.display = data.items
@@ -743,6 +786,14 @@
         }
 
         const load = () => Promise.all([loadStats(), loadList()]);
+        // After a mutation whose effect on the totals isn't simply derivable
+        // here (an edit, a reversal, a bulk import), drop the cached copies
+        // and re-read from the server rather than guessing.
+        const reload = () => {
+          WIMS.cache.invalidate(STATS_KEY);
+          WIMS.cache.invalidate(LIST_KEY);
+          return load();
+        };
 
         let debounce;
         document
@@ -835,9 +886,11 @@
         const memberSearch = document.getElementById("memberSearch");
         const suggest = document.getElementById("memberSuggest");
         let selectedMemberId = null;
+        let selectedMemberName = "";
         let suggestDebounce;
         memberSearch.addEventListener("input", () => {
           selectedMemberId = null;
+          selectedMemberName = "";
           clearTimeout(suggestDebounce);
           const q = memberSearch.value.trim();
           if (q.length < 2) {
@@ -863,6 +916,7 @@
             suggest.querySelectorAll("button[data-id]").forEach((b) =>
               b.addEventListener("click", () => {
                 selectedMemberId = b.dataset.id;
+                selectedMemberName = b.dataset.label;
                 memberSearch.value = b.dataset.label;
                 suggest.classList.remove("open");
               }),
@@ -894,7 +948,7 @@
               const fundSel = document.getElementById("payFund");
               const fundVisible =
                 fundSel.closest("div").style.display !== "none";
-              await API.post("/api/contributions", {
+              const { contribution } = await API.post("/api/contributions", {
                 memberId: selectedMemberId,
                 amount: document.getElementById("payAmount").value,
                 paymentModeId: mode ? mode._id : undefined,
@@ -908,8 +962,9 @@
                   document.getElementById("payDate").value || undefined,
               });
               toast("Contribution recorded — receipt emailed to the member");
+              const memberName = selectedMemberName;
               clearForm();
-              load();
+              applyNewContribution(contribution, memberName);
             } catch (err) {
               formError.textContent = err.message;
               formError.classList.add("show");
@@ -921,7 +976,45 @@
             .toISOString()
             .slice(0, 10);
           selectedMemberId = null;
+          selectedMemberName = "";
           updateRefVisibility();
+        }
+
+        // Fold a just-recorded contribution into the cached stats and list
+        // instead of re-fetching both. The amounts come from the server's own
+        // response, and the 3-minute background refresh reconciles these
+        // locally-derived totals against the server's authoritative figures.
+        function applyNewContribution(contribution, memberName) {
+          const amount = Number(contribution.amount) || 0;
+          const posted = contribution.status === "paid";
+          const now = new Date();
+          const sameMonth =
+            new Date(contribution.contributionDate).getMonth() ===
+              now.getMonth() &&
+            new Date(contribution.contributionDate).getFullYear() ===
+              now.getFullYear();
+
+          WIMS.cache.patch(STATS_KEY, (s) => {
+            if (!posted) return s;
+            return {
+              ...s,
+              total: (s.total || 0) + amount,
+              count: (s.count || 0) + 1,
+              monthTotal: (s.monthTotal || 0) + (sameMonth ? amount : 0),
+            };
+          });
+
+          WIMS.cache.patch(LIST_KEY, (data) => {
+            const row = {
+              ...contribution,
+              memberId: { firstName: memberName || "—", lastName: "" },
+            };
+            return {
+              ...data,
+              items: [row, ...data.items].slice(0, 15),
+              total: (data.total || 0) + 1,
+            };
+          });
         }
         document
           .getElementById("clearBtn")
@@ -971,7 +1064,7 @@
               await API.patch("/api/contributions/" + editingId, body);
               toast("Contribution updated");
               editModal.classList.remove("open");
-              load();
+              reload();
             } catch (err) {
               const box = document.getElementById("editError");
               box.textContent = err.message;
@@ -991,7 +1084,7 @@
               });
               toast("Reversal request submitted for admin review");
               editModal.classList.remove("open");
-              load();
+              reload();
             } catch (err) {
               const box = document.getElementById("editError");
               box.textContent = err.message;
@@ -1117,7 +1210,7 @@
                 .join("");
             resultsBox.classList.add("show");
             csvFile.value = "";
-            load();
+            reload();
           } catch (err) {
             resultsBox.innerHTML = `<div class="err">${fmt.esc(err.message)}</div>`;
             resultsBox.classList.add("show");

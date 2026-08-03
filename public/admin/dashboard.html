@@ -382,15 +382,42 @@
           );
         }
 
+        const STAT_LABELS = [
+          "Total members",
+          "Contributions",
+          "Total amount",
+          "Active members",
+        ];
+
+        // One cache entry per year/month view. Served from cache on
+        // navigation back to this page and refreshed in the background every
+        // 3 minutes, so another admin's activity shows up on its own.
         async function load() {
           const year = yearSel.value;
           const month = monthSel.value;
-          WIMS.skeletonCards(document.getElementById("statCards"), 4);
-          WIMS.skeletonRows(document.getElementById("recentRows"), 5);
-          const data = await API.get(
-            `/api/dashboard/admin?year=${year}&month=${month}`,
+          const key = `dashboard.admin.${year}.${month}`;
+          if (!WIMS.cache.peek(key)) {
+            WIMS.skeletonCards(document.getElementById("statCards"), STAT_LABELS);
+            WIMS.skeletonRows(document.getElementById("recentRows"), 5);
+          }
+          const data = await WIMS.cache.load(key, () =>
+            API.get(`/api/dashboard/admin?year=${year}&month=${month}`),
           );
+          if (!load._subscribed) {
+            load._subscribed = {};
+          }
+          if (!load._subscribed[key]) {
+            load._subscribed[key] = WIMS.cache.subscribe(key, (fresh) => {
+              // Only repaint if the user is still looking at this period.
+              if (`${yearSel.value}.${monthSel.value}` === `${year}.${month}`) render(fresh);
+            });
+          }
+          render(data);
+        }
 
+        function render(data) {
+          const year = yearSel.value;
+          const month = monthSel.value;
           const periodLabel =
             month === "all" ? `year ${year}` : `${MONTHS[+month - 1]} ${year}`;
           document.getElementById("periodLabel").textContent =
