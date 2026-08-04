@@ -258,9 +258,9 @@ h3 {
    untouched while data loads. */
 .pg-skel {
   border-radius: var(--radius);
-  background: linear-gradient(90deg, #eef1f3 25%, #e4e9ec 37%, #eef1f3 63%);
-  background-size: 400% 100%;
-  animation: pg-shimmer 1.6s ease-in-out infinite;
+  background: linear-gradient(90deg, #e7ecf0 20%, #d2dae1 50%, #e7ecf0 80%);
+  background-size: 300% 100%;
+  animation: pg-shimmer 1.4s ease-in-out infinite;
 }
 @keyframes pg-shimmer {
   0% {
@@ -272,12 +272,23 @@ h3 {
 }
 /* Chart bars while their figures load: the axis, month labels and bar
    shapes are all real — only the bar fill shimmers, in a faded blue so it
-   reads as a chart rather than as generic grey furniture. */
+   reads as a chart rather than as generic grey furniture.
+   The sweep runs VERTICALLY here on purpose: a bar is ~38px wide but up to
+   ~126px tall, so a horizontal sweep crosses the short axis and is almost
+   invisible. Travelling the long axis makes the motion actually readable. */
 .pg-skel-bar {
   border-radius: 6px 6px 0 0;
-  background: linear-gradient(90deg, #dceaf6 25%, #c2dcf0 37%, #dceaf6 63%);
-  background-size: 400% 100%;
-  animation: pg-shimmer 1.6s ease-in-out infinite;
+  background: linear-gradient(180deg, #cfe3f6 20%, #8dbce4 50%, #cfe3f6 80%);
+  background-size: 100% 300%;
+  animation: pg-shimmer-y 1.4s ease-in-out infinite;
+}
+@keyframes pg-shimmer-y {
+  0% {
+    background-position: 0 100%;
+  }
+  100% {
+    background-position: 0 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .pg-skel,
