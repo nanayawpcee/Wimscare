@@ -1133,6 +1133,21 @@
               location.pathname + (qs ? "?" + qs : ""),
             );
           }
+          // Signed out for inactivity — same transient treatment.
+          if (params.get("idle")) {
+            const b = document.getElementById("activationBanner");
+            b.textContent =
+              "You were signed out after 5 minutes of inactivity — please sign in again.";
+            b.style.display = "block";
+            dismissAfter(b, 6000);
+            params.delete("idle");
+            const qs = params.toString();
+            history.replaceState(
+              null,
+              "",
+              location.pathname + (qs ? "?" + qs : ""),
+            );
+          }
           const preEmail = params.get("email");
           if (preEmail) {
             emailInput.value = preEmail;
@@ -1236,6 +1251,9 @@
             const tabs = JSON.parse(localStorage.getItem("wims.openTabs") || "{}");
             tabs[id] = Date.now();
             localStorage.setItem("wims.openTabs", JSON.stringify(tabs));
+            // Seed the idle clock, so a stale marker from an earlier session
+            // can't expire this one the moment it starts.
+            localStorage.setItem("wims.lastActivity", String(Date.now()));
           } catch {
             /* private mode — falls back to a normal cookie session */
           }

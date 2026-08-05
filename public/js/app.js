@@ -342,10 +342,76 @@
     sessionStorage.removeItem(TAB_KEY);
   }
 
+  // ---- Idle timeout -------------------------------------------------------
+  // Signs the user out after IDLE_MS with no interaction. Last-activity lives
+  // in localStorage so it's shared across tabs: working in one tab keeps the
+  // others alive, and the session only expires when the user has been idle
+  // everywhere. Writes are throttled so ordinary mousemove doesn't hammer
+  // storage.
+  const IDLE_MS = 5 * 60 * 1000;
+  const IDLE_CHECK_MS = 15 * 1000;
+  const ACTIVITY_WRITE_MS = 10 * 1000;
+  const ACTIVITY_KEY = 'wims.lastActivity';
+  let lastActivityWrite = 0;
+
+  function markActivity() {
+    const now = Date.now();
+    if (now - lastActivityWrite < ACTIVITY_WRITE_MS) return;
+    lastActivityWrite = now;
+    try {
+      localStorage.setItem(ACTIVITY_KEY, String(now));
+    } catch {
+      /* private mode — idle expiry degrades to the cookie/JWT lifetime */
+    }
+  }
+  function lastActivityAt() {
+    try {
+      return Number(localStorage.getItem(ACTIVITY_KEY)) || Date.now();
+    } catch {
+      return Date.now();
+    }
+  }
+  async function expireIdleSession() {
+    clearSessionCache();
+    cache.clear();
+    forgetTab();
+    try {
+      localStorage.removeItem(ACTIVITY_KEY);
+    } catch {
+      /* ignore */
+    }
+    try {
+      await API.post('/api/auth/logout');
+    } catch {
+      /* already gone — redirect regardless */
+    }
+    window.location.href = '/login.html?idle=1';
+  }
+  function startIdleWatch() {
+    // Seed it so a freshly-loaded page doesn't look like it's been idle since
+    // whenever the previous session last wrote.
+    lastActivityWrite = 0;
+    markActivity();
+    ['pointerdown', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach((evt) =>
+      window.addEventListener(evt, markActivity, { passive: true }),
+    );
+    const check = () => {
+      if (Date.now() - lastActivityAt() >= IDLE_MS) expireIdleSession();
+    };
+    setInterval(check, IDLE_CHECK_MS);
+    // Coming back to a tab that sat in the background past the limit should
+    // expire immediately rather than waiting for the next tick.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') check();
+    });
+  }
+
   // Called at sign-in: this tab now owns a session.
   function markTabSession() {
     try {
       heartbeatTab();
+      lastActivityWrite = 0;
+      markActivity();
     } catch {
       /* private mode — falls back to a normal cookie session */
     }
@@ -460,8 +526,15 @@
       window.location.href = '/login.html?ended=1';
       return null;
     }
+    // Idle past the limit — expire before rendering anything, so a page left
+    // open (or reopened) after the timeout never shows org data.
+    if (Date.now() - lastActivityAt() >= IDLE_MS) {
+      await expireIdleSession();
+      return null;
+    }
     // This tab is part of the live session from here on.
     startHeartbeat();
+    startIdleWatch();
 
     const cached = readSessionCache();
 
@@ -726,6 +799,11 @@
     // Drop this tab from the registry too, so a tab opened right after
     // signing out can't adopt the session off a lingering heartbeat.
     forgetTab();
+    try {
+      localStorage.removeItem(ACTIVITY_KEY);
+    } catch {
+      /* ignore */
+    }
     window.location.href = '/welcome.html';
   }
 
