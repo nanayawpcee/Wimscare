@@ -309,6 +309,36 @@
         const { user } = session;
         const isAdmin = ["admin", "superadmin"].includes(user.role);
 
+        // Each panel's data is fetched once per tab and then served from the
+        // cache when the user moves between sections. Saving a panel writes
+        // to the server and drops that panel's key, so the next visit re-reads
+        // exactly what was persisted rather than trusting the form state.
+        const ORG_KEY = "profile.organization";
+        const LICENSE_KEY = "profile.license";
+        const BACKUPS_KEY = "profile.backups";
+        const PROFILE_KEY = "profile.me";
+
+        // Invalidation is matched on the request path rather than wired into
+        // each of the ~20 save handlers on this page — that way a write added
+        // later can't quietly leave a panel showing stale data.
+        const INVALIDATES = [
+          [/^\/api\/organization\/license/, LICENSE_KEY],
+          [/^\/api\/organization\/request-(license-renewal|plan-upgrade)/, LICENSE_KEY],
+          [/^\/api\/organization/, ORG_KEY],
+          [/^\/api\/backups/, BACKUPS_KEY],
+          [/^\/api\/profile/, PROFILE_KEY],
+        ];
+        ["post", "patch", "del", "upload"].forEach((method) => {
+          const original = API[method].bind(API);
+          API[method] = async (path, ...rest) => {
+            const result = await original(path, ...rest);
+            INVALIDATES.filter(([re]) => re.test(path)).forEach(([, key]) =>
+              WIMS.cache.invalidate(key),
+            );
+            return result;
+          };
+        });
+
         document.getElementById("sideAvatar").textContent = fmt.initials(user);
         document.getElementById("sideName").textContent = fmt.name(user);
         document.getElementById("sideRole").textContent =
@@ -404,9 +434,26 @@
 
         const host = document.getElementById("panelHost");
 
+        // Which cache key backs each section, so a section whose data is
+        // already in hand renders straight away instead of flashing a
+        // skeleton for one frame.
+        const SECTION_KEYS = {
+          contributions: "profile.myContributions",
+          facility: ORG_KEY,
+          settings: ORG_KEY,
+          license: LICENSE_KEY,
+          updates: "profile.updates",
+          backup: BACKUPS_KEY,
+          preferences: PROFILE_KEY,
+        };
+
         async function renderPanel() {
-          host.innerHTML =
-            '<div class="card"><div class="pg-skel" style="height:22px; width:40%; margin-bottom:20px;"></div><div class="pg-skel" style="height:200px;"></div></div>';
+          const key = SECTION_KEYS[activeSection];
+          const needsFetch = key && !WIMS.cache.peek(key);
+          if (needsFetch) {
+            host.innerHTML =
+              '<div class="card"><div class="pg-skel" style="height:22px; width:40%; margin-bottom:20px;"></div><div class="pg-skel" style="height:200px;"></div></div>';
+          }
           if (activeSection === "profile") return renderProfile();
           if (activeSection === "contributions") return renderContributions();
           if (activeSection === "facility") return renderFacility();
@@ -468,7 +515,9 @@
 
         // --- My contributions (admin is also a member) ---
         async function renderContributions() {
-          const data = await API.get("/api/dashboard/member");
+          const data = await WIMS.cache.load("profile.myContributions", () =>
+            API.get("/api/dashboard/member"),
+          );
           const rows = data.recentContributions || [];
           card(
             "My contributions",
@@ -552,7 +601,9 @@
           },
         ];
         async function renderFacility() {
-          const { organization } = await API.get("/api/organization");
+          const { organization } = await WIMS.cache.load(ORG_KEY, () =>
+            API.get("/api/organization"),
+          );
           const facility = organization.facility || {};
           let facTab = "identity";
 
@@ -755,7 +806,9 @@
 
         // --- License ---
         async function renderLicense() {
-          const { license } = await API.get("/api/organization/license");
+          const { license } = await WIMS.cache.load(LICENSE_KEY, () =>
+            API.get("/api/organization/license"),
+          );
           if (!license) {
             return card(
               "License",
@@ -850,7 +903,9 @@
 
         // --- System settings ---
         async function renderSettings() {
-          const { organization } = await API.get("/api/organization");
+          const { organization } = await WIMS.cache.load(ORG_KEY, () =>
+            API.get("/api/organization"),
+          );
           const s = organization.systemSettings || {};
           const TOGGLES = [
             [
@@ -962,7 +1017,9 @@
 
         // --- System updates ---
         async function renderUpdates() {
-          const { items } = await API.get("/api/developer/updates");
+          const { items } = await WIMS.cache.load("profile.updates", () =>
+            API.get("/api/developer/updates"),
+          );
           card(
             "System updates",
             `${items.length} published update${items.length === 1 ? "" : "s"}`,
@@ -987,7 +1044,7 @@
         async function renderBackup() {
           const canBackup = WIMS.can("manage_backups");
           const { items } = canBackup
-            ? await API.get("/api/backups")
+            ? await WIMS.cache.load(BACKUPS_KEY, () => API.get("/api/backups"))
             : { items: [] };
           card(
             "Backup & restore",
@@ -1051,7 +1108,9 @@
 
         // --- Preferences (shared User.preferences — admins are members too) ---
         async function renderPreferences() {
-          const { user: u } = await API.get("/api/profile");
+          const { user: u } = await WIMS.cache.load(PROFILE_KEY, () =>
+            API.get("/api/profile"),
+          );
           const p = u.preferences || {};
           const TOGGLES = [
             [

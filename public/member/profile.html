@@ -172,7 +172,23 @@
       <span class="pill green">${user.status === "active" ? "Active" : fmt.esc(user.status)}</span>
       ${user.memberNumber ? `<span class="pill gray">${fmt.esc(user.memberNumber)}</span>` : ""}`;
 
-        let profile = (await API.get("/api/profile")).profile || {};
+        // Fetched once per tab; any write below drops the key so the next
+        // visit re-reads what was actually persisted.
+        const PROFILE_KEY = "member.profile";
+        const CLAIMS_KEY = "member.profile.claims";
+        ["post", "patch", "del", "upload"].forEach((method) => {
+          const original = API[method].bind(API);
+          API[method] = async (path, ...rest) => {
+            const result = await original(path, ...rest);
+            if (/^\/api\/profile/.test(path)) WIMS.cache.invalidate(PROFILE_KEY);
+            if (/^\/api\/claims/.test(path)) WIMS.cache.invalidate(CLAIMS_KEY);
+            return result;
+          };
+        });
+
+        let profile =
+          (await WIMS.cache.load(PROFILE_KEY, () => API.get("/api/profile")))
+            .profile || {};
 
         const SECTIONS = [
           { key: "personal", label: "Personal", desc: "Your basic personal information on record." },
@@ -390,9 +406,13 @@
               }),
             );
           } else if (active === "packages") {
-            body.innerHTML = '<div class="empty">Loading…</div>';
+            if (!WIMS.cache.peek(CLAIMS_KEY)) {
+              body.innerHTML = '<div class="empty">Loading…</div>';
+            }
             document.getElementById("panelActions").innerHTML = "";
-            API.get("/api/claims?limit=50").then(({ items }) => {
+            WIMS.cache
+              .load(CLAIMS_KEY, () => API.get("/api/claims?limit=50"))
+              .then(({ items }) => {
               if (active !== "packages") return;
               const enjoyed = items.filter((c) =>
                 ["approved", "paid"].includes(c.status),

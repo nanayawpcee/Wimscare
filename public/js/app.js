@@ -72,9 +72,24 @@
   // container; the container's own render call (.innerHTML = ...) then
   // naturally overwrites the placeholder once data arrives, so there's no
   // separate "reveal" step.
-  function skeletonCards(container, count = 4) {
+  // Stat cards keep their real chrome (border, padding) and their real
+  // labels — only the value and sub-line shimmer, since those are the only
+  // parts that come from the server. Pass the labels the page is going to
+  // render so the card reads correctly before its number arrives.
+  const skelBar = (w, h) => `<span class="pg-skel" style="display:inline-block; vertical-align:middle; width:${w}px; height:${h}px; border-radius:5px;"></span>`;
+  function skeletonCards(container, labels = 4) {
     if (!container) return;
-    container.innerHTML = Array.from({ length: count }, () => '<div class="stat pg-skel" style="height:86px;"></div>').join('');
+    const items = Array.isArray(labels) ? labels : Array.from({ length: labels }, () => null);
+    container.innerHTML = items
+      .map(
+        (label) => `
+      <div class="stat">
+        <div class="label">${label ? fmt.esc(label) : skelBar(84, 11)}</div>
+        <div class="value">${skelBar(112, 22)}</div>
+        <div class="sub">${skelBar(68, 10)}</div>
+      </div>`,
+      )
+      .join('');
   }
   function skeletonRows(tbody, cols, rows = 4) {
     if (!tbody) return;
@@ -85,6 +100,162 @@
   function skeletonBlocks(container, count = 3, height = 64) {
     if (!container) return;
     container.innerHTML = Array.from({ length: count }, () => `<div class="pg-skel" style="height:${height}px; margin-bottom:10px;"></div>`).join('');
+  }
+  // A bar chart that's already laid out — real axis labels, real bar
+  // geometry — with only the bar fills shimmering. Heights are a fixed
+  // pattern rather than random so the chart doesn't visibly reshuffle if it
+  // repaints while still loading.
+  const SKEL_BAR_HEIGHTS = [42, 58, 35, 70, 48, 62, 30, 55, 66, 40, 52, 45];
+  function skeletonChart(container, labels) {
+    if (!container) return;
+    container.innerHTML = labels
+      .map(
+        (label, i) => `
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;">
+        <div class="pg-skel-bar" style="width:100%; max-width:38px; height:${SKEL_BAR_HEIGHTS[i % SKEL_BAR_HEIGHTS.length]}%;"></div>
+        <span style="font-size:0.7rem; font-weight:600; color:var(--faint);">${fmt.esc(label)}</span>
+      </div>`,
+      )
+      .join('');
+  }
+
+  // ---- Session data cache -------------------------------------------------
+  // Fetches a dataset once per tab, then serves it from sessionStorage across
+  // page navigations (this is a multi-page app, so an in-memory cache would
+  // die on every link click). Pages can compute locally and `patch()` the
+  // cached copy after a write instead of re-fetching.
+  //
+  // The server stays the source of truth: every registered key is re-fetched
+  // in the background every REFRESH_MS so another admin's changes land here,
+  // and so any locally-computed figure that drifted is corrected. Anything
+  // safety-critical should still be read fresh at the moment it's acted on —
+  // see cache.load(key, fetcher, { force: true }).
+  const CACHE_PREFIX = 'wims.cache.';
+  const CACHE_REFRESH_MS = 3 * 60 * 1000;
+  const cacheSubs = {};
+  const cacheFetchers = {};
+  const cacheInflight = {};
+
+  function cacheRead(key) {
+    try {
+      const raw = sessionStorage.getItem(CACHE_PREFIX + key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+  function cacheWrite(key, data) {
+    try {
+      sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ at: Date.now(), data }));
+    } catch {
+      // quota exceeded / private mode — cache is an optimization, not a
+      // requirement, so carry on uncached.
+    }
+  }
+  function cacheNotify(key, data) {
+    (cacheSubs[key] || []).forEach((cb) => {
+      try {
+        cb(data);
+      } catch (err) {
+        console.error('[cache] subscriber failed for', key, err);
+      }
+    });
+  }
+
+  const cache = {
+    // Returns cached data immediately when present, otherwise fetches. The
+    // fetcher is remembered so the background timer can refresh this key.
+    async load(key, fetcher, { force = false } = {}) {
+      if (fetcher) cacheFetchers[key] = fetcher;
+      if (!force) {
+        const hit = cacheRead(key);
+        if (hit) return hit.data;
+      }
+      // Collapse concurrent callers for the same key into one request.
+      if (cacheInflight[key]) return cacheInflight[key];
+      const fn = fetcher || cacheFetchers[key];
+      if (!fn) throw new Error(`No fetcher registered for cache key "${key}"`);
+      cacheInflight[key] = (async () => {
+        try {
+          const data = await fn();
+          cacheWrite(key, data);
+          return data;
+        } finally {
+          delete cacheInflight[key];
+        }
+      })();
+      return cacheInflight[key];
+    },
+    peek(key) {
+      const hit = cacheRead(key);
+      return hit ? hit.data : null;
+    },
+    set(key, data) {
+      cacheWrite(key, data);
+      cacheNotify(key, data);
+    },
+    // Apply a local change to cached data after a successful write, so the
+    // UI reflects it without a round-trip. Returns the updated data.
+    patch(key, mutator) {
+      const hit = cacheRead(key);
+      if (!hit) return null;
+      const next = mutator(hit.data);
+      const data = next === undefined ? hit.data : next;
+      cacheWrite(key, data);
+      cacheNotify(key, data);
+      return data;
+    },
+    // Re-render hook: called whenever a key changes (background refresh,
+    // set(), or patch()). Returns an unsubscribe function.
+    subscribe(key, cb) {
+      (cacheSubs[key] = cacheSubs[key] || []).push(cb);
+      return () => {
+        cacheSubs[key] = (cacheSubs[key] || []).filter((f) => f !== cb);
+      };
+    },
+    invalidate(key) {
+      sessionStorage.removeItem(CACHE_PREFIX + key);
+    },
+    clear() {
+      Object.keys(sessionStorage)
+        .filter((k) => k.startsWith(CACHE_PREFIX))
+        .forEach((k) => sessionStorage.removeItem(k));
+    },
+    // Re-fetch every key this page registered and notify subscribers when the
+    // payload actually changed (so we don't repaint on every tick).
+    async refreshAll() {
+      await Promise.all(
+        Object.keys(cacheFetchers).map(async (key) => {
+          try {
+            const before = JSON.stringify(cacheRead(key)?.data);
+            const data = await cacheFetchers[key]();
+            cacheWrite(key, data);
+            if (JSON.stringify(data) !== before) cacheNotify(key, data);
+          } catch {
+            // A failed background refresh keeps the last good copy; the next
+            // tick tries again.
+          }
+        }),
+      );
+    },
+  };
+
+  // Only tick while the tab is actually visible, and refresh immediately on
+  // return so a tab left open for an hour isn't showing hour-old numbers.
+  let cacheTimer = null;
+  function startCacheRefresh() {
+    if (cacheTimer) return;
+    cacheTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') cache.refreshAll();
+    }, CACHE_REFRESH_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      const stalest = Object.keys(cacheFetchers).reduce((oldest, key) => {
+        const hit = cacheRead(key);
+        return hit ? Math.min(oldest, hit.at) : 0;
+      }, Date.now());
+      if (Date.now() - stalest >= CACHE_REFRESH_MS) cache.refreshAll();
+    });
   }
 
   // Session guard for authenticated pages. Redirects to login if signed out.
@@ -101,6 +272,16 @@
         return null;
       }
       currentSession = { user, organization, plan };
+      // The cache is tenant-scoped. If this tab now belongs to a different
+      // user or organization than the data we cached (a re-login without a
+      // sign-out, or a superadmin switching orgs via "open as"), drop it all
+      // before any page can read it.
+      const owner = `${user._id}:${organization ? organization._id : 'none'}`;
+      if (sessionStorage.getItem('wims.cacheOwner') !== owner) {
+        cache.clear();
+        sessionStorage.setItem('wims.cacheOwner', owner);
+      }
+      startCacheRefresh();
       // Pro plan: recolour the console with the organization's brand.
       if (plan && plan.features.customBranding && organization && organization.facility) {
         applyBranding(organization.facility);
@@ -355,6 +536,9 @@
 
   async function signOut() {
     try { await API.post('/api/auth/logout'); } catch { /* ignore */ }
+    // Cached org data is tenant-scoped and must not survive into whoever
+    // signs in on this tab next.
+    cache.clear();
     window.location.href = '/welcome.html';
   }
 
@@ -492,5 +676,5 @@
     };
   }
 
-  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks };
+  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache };
 })();

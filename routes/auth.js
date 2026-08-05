@@ -92,6 +92,10 @@ router.post('/register', async (req, res, next) => {
         status: 'active',
         acceptedTermsAt: new Date(),
         acceptedTermsVersion: TERMS_VERSION,
+        // Accepting an invitation signs the user straight in, so this is a
+        // real sign-in and has to be stamped like one — otherwise the account
+        // reads as "never signed in" until their second visit.
+        lastLoginAt: new Date(),
       });
       await user.setPassword(password);
       await user.save();
@@ -112,6 +116,8 @@ router.post('/register', async (req, res, next) => {
       organizationId: org._id, firstName, lastName, email, phone, role: 'admin', status: 'active',
       acceptedTermsAt: new Date(),
       acceptedTermsVersion: TERMS_VERSION,
+      // Self-serve registration also signs the user in immediately.
+      lastLoginAt: new Date(),
     });
     await user.setPassword(password);
     await user.save();
@@ -308,6 +314,8 @@ router.post('/activate', async (req, res, next) => {
     user.activationExpires = undefined;
     user.acceptedTermsAt = new Date();
     user.acceptedTermsVersion = TERMS_VERSION;
+    // Activation ends with a signed-in session, so it counts as a sign-in.
+    user.lastLoginAt = new Date();
     await user.save();
 
     // First admin activating brings the organization's pending license live.

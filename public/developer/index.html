@@ -75,31 +75,16 @@
       .card h2 { margin: 0 0 4px; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
       .card .sub { margin: 0 0 18px; color: #5a6b75; font-size: 0.85rem; }
 
-      /* Section-switch loading state: a sweeping top bar (not a spinner) so
-         there's a clear, continuous sense of progress, plus a few generic
-         skeleton blocks so the content area isn't just empty while it waits.
-         Skeleton shapes are intentionally generic (not per-section) since
-         Overview/Licenses/Organizations/etc. have very different final
-         layouts — trying to match each would look wrong more often than it
-         looked right. */
-      .sa-loading { padding-top: 3px; }
-      .sa-loading-bar { position: relative; height: 3px; border-radius: 999px; background: #e2e9ec; overflow: hidden; margin-bottom: 26px; }
-      .sa-loading-bar::after {
-        content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 999px;
-        background: #1d6fae; animation: sa-sweep 1.1s ease-in-out infinite;
-      }
-      @keyframes sa-sweep {
-        0% { left: -40%; }
-        100% { left: 100%; }
-      }
-      .sa-skel { border-radius: 14px; background: linear-gradient(90deg, #eef1f3 25%, #e4e9ec 37%, #eef1f3 63%); background-size: 400% 100%; animation: sa-shimmer 1.6s ease-in-out infinite; }
+      /* Section-switch loading state: each panel renders its real cards,
+         headings and labels immediately, and only the values still in flight
+         shimmer — see the per-section SKELETONS map and skelBar() below. */
+      .sa-skel { border-radius: 5px; background: linear-gradient(90deg, #eef1f3 25%, #e4e9ec 37%, #eef1f3 63%); background-size: 400% 100%; animation: sa-shimmer 1.6s ease-in-out infinite; }
       @keyframes sa-shimmer {
         0% { background-position: 100% 0; }
         100% { background-position: 0 0; }
       }
       @media (prefers-reduced-motion: reduce) {
-        .sa-loading-bar::after, .sa-skel { animation: none; }
-        .sa-loading-bar::after { left: 0; width: 100%; opacity: 0.5; }
+        .sa-skel { animation: none; }
       }
 
       .pill { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
@@ -272,6 +257,12 @@
           if (btn) show(btn.dataset.sec);
         });
 
+        // A shimmer bar sized to the value it stands in for. Placeholders are
+        // built from these so a loading panel shows its real cards, headings
+        // and labels, with only the server-supplied values shimmering.
+        const skelBar = (w, h = 13) =>
+          `<span class="sa-skel" style="display:inline-block; vertical-align:middle; width:${w}; height:${h}px; border-radius:5px;"></span>`;
+
         function show(key) {
           const sec = SECTIONS.find((s) => s.key === key) || SECTIONS[0];
           location.hash = sec.key;
@@ -279,42 +270,160 @@
           $("pageTitle").textContent = sec.title;
           $("pageDesc").textContent = sec.desc();
           $("headAction").innerHTML = sec.key === "licenses" ? `<button type="button" class="btn" id="openCreate">Create license</button>` : "";
-          // A generic fallback shown only for sections whose renderer has no
-          // fetch-independent chrome of its own to render first (overview,
-          // orgs, credentials, audit) — shaped per-section so it at least
-          // roughly previews what's coming. licenses/updates/backups render
-          // their real chrome synchronously before their first await, so
-          // this never actually paints for them.
+          // Each section's placeholder mirrors that section's real markup —
+          // cards, headings and every static label render for real, and only
+          // the values that come from the server shimmer.
           const SKELETONS = {
-            orgs: `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px;">
-                     <div class="sa-skel" style="height:190px;"></div>
-                     <div class="sa-skel" style="height:190px;"></div>
-                     <div class="sa-skel" style="height:190px;"></div>
-                   </div>`,
-            credentials: `<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px;">
-                            <div class="sa-skel" style="height:260px;"></div>
-                            <div class="sa-skel" style="height:260px;"></div>
-                          </div>`,
-            audit: `<div class="card"><div style="display:grid; gap:10px;">
-                      <div class="sa-skel" style="height:48px;"></div>
-                      <div class="sa-skel" style="height:48px;"></div>
-                      <div class="sa-skel" style="height:48px;"></div>
-                      <div class="sa-skel" style="height:48px;"></div>
-                      <div class="sa-skel" style="height:48px;"></div>
-                    </div></div>`,
-          };
-          content.innerHTML = `
-            <div class="sa-loading">
-              <div class="sa-loading-bar"></div>
-              ${SKELETONS[sec.key] || `
-                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:16px;">
-                  <div class="sa-skel" style="height:86px;"></div>
-                  <div class="sa-skel" style="height:86px;"></div>
-                  <div class="sa-skel" style="height:86px;"></div>
-                  <div class="sa-skel" style="height:86px;"></div>
+            overview: `
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
+                ${["Total licenses", "Organizations", "Total users", "Expiring soon"]
+                  .map(
+                    (label) => `
+                  <div class="card" style="padding:20px 22px;">
+                    <div style="color:#8a98a1; font-size:0.8rem; font-weight:600; margin-bottom:8px;">${label}</div>
+                    <div style="font-size:1.5rem; font-weight:700;">${skelBar("58px", 22)}</div>
+                    <div style="margin-top:4px;">${skelBar("104px", 10)}</div>
+                  </div>`,
+                  )
+                  .join("")}
+              </div>
+              <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px; margin-bottom:20px;">
+                <div class="card">
+                  <h2>Licenses by status</h2>
+                  <p class="sub">All organizations on this deployment</p>
+                  <div style="display:grid; gap:12px;">
+                    ${["Active", "Trial", "Pending", "Expired", "Suspended"]
+                      .map(
+                        (label) => `
+                      <div style="display:grid; grid-template-columns:90px 1fr 32px; gap:12px; align-items:center;">
+                        <span style="font-size:0.85rem; font-weight:600; color:#5a6b75;">${label}</span>
+                        <div style="height:10px; border-radius:999px; background:#edf1f4; overflow:hidden;">${skelBar("100%", 10)}</div>
+                        <span style="text-align:right;">${skelBar("16px", 12)}</span>
+                      </div>`,
+                      )
+                      .join("")}
+                  </div>
                 </div>
-                <div class="sa-skel" style="height:240px;"></div>`}
-            </div>`;
+                <div class="card">
+                  <h2>System health</h2>
+                  <p class="sub">Live service status</p>
+                  <div style="display:grid; gap:10px;">
+                    ${[0, 1, 2, 3]
+                      .map(
+                        () => `
+                      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid #edf1f4; border-radius:10px;">
+                        ${skelBar("45%", 12)}${skelBar("62px", 20)}
+                      </div>`,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px;">
+                  <h2 style="margin:0;">Recent superadmin activity</h2>
+                </div>
+                <div style="display:grid;">
+                  ${[0, 1, 2, 3]
+                    .map(
+                      () => `
+                    <div style="display:flex; gap:12px; padding:11px 0; border-bottom:1px solid #f0f4f6; align-items:flex-start;">
+                      <span style="width:8px; height:8px; border-radius:999px; background:#e2e9ec; margin-top:6px; flex-shrink:0;"></span>
+                      <div style="min-width:0; flex:1;">
+                        <div>${skelBar("52%", 13)}</div>
+                        <div style="margin-top:4px;">${skelBar("34%", 10)}</div>
+                      </div>
+                    </div>`,
+                    )
+                    .join("")}
+                </div>
+              </div>`,
+            orgs: `
+              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px;">
+                ${[0, 1, 2]
+                  .map(
+                    () => `
+                  <div class="card" style="padding:22px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:6px;">
+                      <div>
+                        <div>${skelBar("150px", 18)}</div>
+                        <div style="margin-top:5px;">${skelBar("104px", 11)}</div>
+                      </div>
+                      ${skelBar("62px", 22)}
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin:16px 0; padding:14px 0; border-top:1px solid #f0f4f6; border-bottom:1px solid #f0f4f6;">
+                      ${["Users", "Members", "Last backup"]
+                        .map(
+                          (label) => `
+                        <div>
+                          <span style="display:block; font-size:0.72rem; color:#8a98a1; font-weight:600;">${label}</span>
+                          <span style="display:block; margin-top:3px;">${skelBar("36px", 15)}</span>
+                        </div>`,
+                        )
+                        .join("")}
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                      ${skelBar("100%", 36)}${skelBar("100%", 36)}
+                    </div>
+                  </div>`,
+                  )
+                  .join("")}
+              </div>`,
+            credentials: `
+              <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; align-items:start;">
+                <div class="card">
+                  <h2>Current credentials</h2>
+                  <p class="sub">Rotates monthly</p>
+                  <div style="display:grid; gap:12px;">
+                    ${["Username", "Password"]
+                      .map(
+                        (label) => `
+                      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:#f4f7f8; border:1px solid #e2e9ec; border-radius:12px;">
+                        <div>
+                          <span style="display:block; font-size:0.72rem; color:#8a98a1; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">${label}</span>
+                          <span style="display:block; margin-top:4px;">${skelBar("184px", 15)}</span>
+                        </div>
+                        ${skelBar("58px", 28)}
+                      </div>`,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+                <div class="card">
+                  <h2>Security policy</h2>
+                  <p class="sub" style="margin-bottom:14px;">Enforced on every superadmin login</p>
+                  <div style="display:grid; gap:2px;">
+                    ${[0, 1, 2, 3]
+                      .map(
+                        () => `
+                      <div class="kv" style="padding:11px 0; border-bottom:1px solid #f0f4f6;">
+                        ${skelBar("42%", 12)}${skelBar("32%", 12)}
+                      </div>`,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+              </div>`,
+            audit: `
+              <div class="card">
+                <div style="display:grid;">
+                  ${[0, 1, 2, 3, 4, 5]
+                    .map(
+                      () => `
+                    <div style="display:flex; gap:14px; padding:13px 0; border-bottom:1px solid #f0f4f6; align-items:flex-start;">
+                      <span style="width:8px; height:8px; border-radius:999px; background:#e2e9ec; margin-top:6px; flex-shrink:0;"></span>
+                      <div style="min-width:0; flex:1;">
+                        <div>${skelBar("46%", 13)}</div>
+                        <div style="margin-top:4px;">${skelBar("30%", 10)}</div>
+                      </div>
+                      ${skelBar("108px", 11)}
+                    </div>`,
+                    )
+                    .join("")}
+                </div>
+              </div>`,
+          };
+          content.innerHTML = SKELETONS[sec.key] || "";
           return renderers[sec.key]().catch((err) => {
             content.innerHTML = `<div class="card" style="color:#b4372a;">${fmt.esc(err.message)}</div>`;
           });
@@ -575,7 +684,13 @@
                   <th>Organization</th><th>License key</th><th>Type</th><th>Users / Members</th><th>Expires</th><th>Status</th><th class="num"></th>
                 </tr></thead>
                 <tbody id="licRows">
-                  ${Array.from({ length: 4 }, () => `<tr>${Array.from({ length: 7 }, () => `<td><div class="sa-skel" style="height:14px; border-radius:6px;"></div></td>`).join("")}</tr>`).join("")}
+                  ${Array.from(
+                    { length: 4 },
+                    () =>
+                      `<tr>${["60%", "78%", "44%", "52%", "62%", "58%", "56px"]
+                        .map((w) => `<td>${skelBar(w)}</td>`)
+                        .join("")}</tr>`,
+                  ).join("")}
                 </tbody>
               </table>
             </div>`;
@@ -989,7 +1104,13 @@
               <table class="sa">
                 <thead><tr><th>Organization</th><th>Backup</th><th>Trigger</th><th>Size</th><th>Status</th><th class="num"></th></tr></thead>
                 <tbody id="backupRows">
-                  ${Array.from({ length: 4 }, () => `<tr>${Array.from({ length: 6 }, () => `<td><div class="sa-skel" style="height:14px; border-radius:6px;"></div></td>`).join("")}</tr>`).join("")}
+                  ${Array.from(
+                    { length: 4 },
+                    () =>
+                      `<tr>${["58%", "72%", "50%", "40%", "56%", "70px"]
+                        .map((w) => `<td>${skelBar(w)}</td>`)
+                        .join("")}</tr>`,
+                  ).join("")}
                 </tbody>
               </table>
             </div>`;
@@ -1111,9 +1232,16 @@
                 <h2>Published updates</h2>
                 <p class="sub">Latest first</p>
                 <div style="display:grid; gap:10px;" id="updList">
-                  <div class="sa-skel" style="height:52px;"></div>
-                  <div class="sa-skel" style="height:52px;"></div>
-                  <div class="sa-skel" style="height:52px;"></div>
+                  ${[0, 1, 2]
+                    .map(
+                      () => `
+                    <div style="padding:13px 0; border-bottom:1px solid #f0f4f6;">
+                      <div style="display:flex; justify-content:space-between; gap:12px;">
+                        ${skelBar("58%")}${skelBar("84px", 11)}
+                      </div>
+                    </div>`,
+                    )
+                    .join("")}
                 </div>
               </div>
             </div>`;
