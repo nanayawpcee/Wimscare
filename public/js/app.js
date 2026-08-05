@@ -270,25 +270,91 @@
   // where a just-revoked account can still see a page is bounded by that one
   // request, and the content shown is data already in their own tab.
   const SESSION_KEY = 'wims.session';
-  // Set once at sign-in and stored in sessionStorage, which the browser
-  // discards when the tab closes. So if the auth cookie is still present but
-  // this marker isn't, the cookie has outlived the tab that owned it and the
-  // session is over. (Opening a link in a new tab from inside the app clones
-  // sessionStorage, so that keeps working; a fresh tab typed from scratch
-  // does not, and lands on the login page.)
+
+  // ---- Tab registry -------------------------------------------------------
+  // The session should end once the user has closed the app, not when any one
+  // tab goes away — the auth cookie is shared browser-wide, so ending it on
+  // behalf of a single tab would sign every other tab out too.
+  //
+  // Each open tab therefore heartbeats into localStorage under its own id
+  // (the id lives in sessionStorage, so it survives navigation within the tab
+  // but not the tab itself). A tab that stops running goes stale and drops
+  // out on its own — there's no deregister-on-unload, which would otherwise
+  // race with ordinary page navigation.
+  //
+  // A newly-opened tab is only treated as "the cookie outlived the app" when
+  // no other tab has heartbeated recently. That's what makes opening the app
+  // from a bookmark in a second tab work while the first is still signed in.
   const TAB_KEY = 'wims.tab';
+  const TABS_KEY = 'wims.openTabs';
+  const HEARTBEAT_MS = 4000;
+  const TAB_STALE_MS = 12000;
   let currentSession = null;
 
+  function readTabs() {
+    try {
+      return JSON.parse(localStorage.getItem(TABS_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  }
+  function writeTabs(tabs) {
+    try {
+      localStorage.setItem(TABS_KEY, JSON.stringify(tabs));
+    } catch {
+      /* private mode — fall through to a plain cookie session */
+    }
+  }
+  function tabId() {
+    let id = sessionStorage.getItem(TAB_KEY);
+    if (!id) {
+      id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      sessionStorage.setItem(TAB_KEY, id);
+    }
+    return id;
+  }
+  // Record this tab as alive and drop any that have stopped heartbeating.
+  function heartbeatTab() {
+    const now = Date.now();
+    const tabs = readTabs();
+    Object.keys(tabs).forEach((id) => {
+      if (now - tabs[id] > TAB_STALE_MS) delete tabs[id];
+    });
+    tabs[tabId()] = now;
+    writeTabs(tabs);
+  }
+  // Is any OTHER tab currently running the app?
+  function otherTabAlive() {
+    const now = Date.now();
+    const me = sessionStorage.getItem(TAB_KEY);
+    return Object.entries(readTabs()).some(
+      ([id, at]) => id !== me && now - at <= TAB_STALE_MS,
+    );
+  }
+  function startHeartbeat() {
+    heartbeatTab();
+    setInterval(heartbeatTab, HEARTBEAT_MS);
+  }
+  function forgetTab() {
+    const tabs = readTabs();
+    delete tabs[sessionStorage.getItem(TAB_KEY)];
+    writeTabs(tabs);
+    sessionStorage.removeItem(TAB_KEY);
+  }
+
+  // Called at sign-in: this tab now owns a session.
   function markTabSession() {
     try {
-      sessionStorage.setItem(TAB_KEY, '1');
+      heartbeatTab();
     } catch {
       /* private mode — falls back to a normal cookie session */
     }
   }
+  // True when this tab already belonged to the signed-in app, or when another
+  // live tab does and this one is simply a new window onto the same session.
   function tabSessionAlive() {
     try {
-      return !!sessionStorage.getItem(TAB_KEY);
+      return !!sessionStorage.getItem(TAB_KEY) || otherTabAlive();
     } catch {
       return true; // can't tell — don't lock anyone out
     }
@@ -378,11 +444,14 @@
   }
 
   async function requireSession({ roles } = {}) {
-    // The cookie survived a tab that didn't — end the session rather than
-    // silently resuming it in a tab the user never signed in from.
+    // The cookie outlived every tab that was running the app — end it rather
+    // than silently resuming a session the user thought they'd closed. Only
+    // reached when NO other tab is alive, so opening a second tab (bookmark,
+    // new window) while signed in adopts the session instead of killing it.
     if (!tabSessionAlive()) {
       clearSessionCache();
       cache.clear();
+      forgetTab();
       try {
         await API.post('/api/auth/logout');
       } catch {
@@ -391,6 +460,8 @@
       window.location.href = '/login.html?ended=1';
       return null;
     }
+    // This tab is part of the live session from here on.
+    startHeartbeat();
 
     const cached = readSessionCache();
 
@@ -652,7 +723,9 @@
     // signs in on this tab next.
     cache.clear();
     clearSessionCache();
-    sessionStorage.removeItem(TAB_KEY);
+    // Drop this tab from the registry too, so a tab opened right after
+    // signing out can't adopt the session off a lingering heartbeat.
+    forgetTab();
     window.location.href = '/welcome.html';
   }
 

@@ -1189,11 +1189,18 @@
             document.getElementById("password").focus();
             return;
           }
-          // Marks this tab as the one that signed in. sessionStorage dies with
-          // the tab, so if the auth cookie is later seen without this marker,
-          // app.js treats the session as over and returns to sign-in.
+          // Register this tab in the session's tab registry (see app.js).
+          // The id lives in sessionStorage so it dies with the tab; the
+          // localStorage heartbeat is what other tabs check to tell whether
+          // the app is still open anywhere. Written here because this page
+          // doesn't load app.js.
           try {
-            sessionStorage.setItem("wims.tab", "1");
+            const id =
+              Math.random().toString(36).slice(2) + Date.now().toString(36);
+            sessionStorage.setItem("wims.tab", id);
+            const tabs = JSON.parse(localStorage.getItem("wims.openTabs") || "{}");
+            tabs[id] = Date.now();
+            localStorage.setItem("wims.openTabs", JSON.stringify(tabs));
           } catch {
             /* private mode — falls back to a normal cookie session */
           }
