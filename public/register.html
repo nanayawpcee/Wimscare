@@ -431,6 +431,8 @@
                   .value.trim();
               }
               const data = await API.post("/api/auth/register", body);
+              // Registering signs the user in, so this tab owns the session.
+              WIMS.markTabSession();
               const dest =
                 data.user.role === "user"
                   ? "/member/dashboard.html"

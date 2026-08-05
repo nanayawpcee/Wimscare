@@ -43,7 +43,10 @@ function setAuthCookie(res, token) {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    // No maxAge: a session cookie, so closing the browser ends the session.
+    // Closing a single *tab* is handled client-side by the per-tab marker in
+    // public/js/app.js — the browser gives no server-side signal for that.
+    // The JWT's own expiry (JWT_EXPIRES_IN) still caps the token's lifetime.
     path: '/',
   });
 }

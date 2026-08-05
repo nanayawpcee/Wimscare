@@ -1091,6 +1091,13 @@
               "The system is under maintenance — only administrators can sign in right now. Please try again later.";
             b.style.display = "block";
           }
+          // Arrived here because the tab that held the session was closed.
+          if (params.get("ended")) {
+            const b = document.getElementById("activationBanner");
+            b.textContent =
+              "Your session ended when the previous tab was closed — please sign in again.";
+            b.style.display = "block";
+          }
           const preEmail = params.get("email");
           if (preEmail) {
             emailInput.value = preEmail;
@@ -1181,6 +1188,14 @@
             );
             document.getElementById("password").focus();
             return;
+          }
+          // Marks this tab as the one that signed in. sessionStorage dies with
+          // the tab, so if the auth cookie is later seen without this marker,
+          // app.js treats the session as over and returns to sign-in.
+          try {
+            sessionStorage.setItem("wims.tab", "1");
+          } catch {
+            /* private mode — falls back to a normal cookie session */
           }
           window.location.href = destinationFor(user);
         }

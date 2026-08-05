@@ -152,6 +152,8 @@
                 password: document.getElementById("password").value,
                 acceptedTerms: acceptTerms.checked,
               });
+              // Activation signs the user in, so this tab owns the session.
+              WIMS.markTabSession();
               window.location.href =
                 data.user.role === "user"
                   ? "/member/dashboard.html"

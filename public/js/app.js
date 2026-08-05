@@ -258,58 +258,170 @@
     });
   }
 
-  // Session guard for authenticated pages. Redirects to login if signed out.
+  // ---- Session guard ------------------------------------------------------
+  // /api/auth/me is a network round-trip on every page load, and every page
+  // waits for it before rendering — so on a warm tab it, not the data cache,
+  // is what you actually wait for. The last known session is therefore kept
+  // in sessionStorage and served immediately, while the server is re-checked
+  // in the background on every load (stale-while-revalidate).
+  //
+  // The revalidation is authoritative: if it fails, or the role/permissions
+  // changed, the page redirects or re-gates as soon as it lands. The window
+  // where a just-revoked account can still see a page is bounded by that one
+  // request, and the content shown is data already in their own tab.
+  const SESSION_KEY = 'wims.session';
+  // Set once at sign-in and stored in sessionStorage, which the browser
+  // discards when the tab closes. So if the auth cookie is still present but
+  // this marker isn't, the cookie has outlived the tab that owned it and the
+  // session is over. (Opening a link in a new tab from inside the app clones
+  // sessionStorage, so that keeps working; a fresh tab typed from scratch
+  // does not, and lands on the login page.)
+  const TAB_KEY = 'wims.tab';
   let currentSession = null;
-  async function requireSession({ roles } = {}) {
+
+  function markTabSession() {
     try {
-      const { user, organization, plan, termsAccepted, mustChangePassword } = await API.get('/api/auth/me');
-      // A superadmin who has opened an organization from the developer
-      // portal may browse that org's admin pages; otherwise superadmins
-      // stay in the portal.
-      const devOrgActive = user.role === 'superadmin' && sessionStorage.getItem('wims.devOrg');
-      if (roles && !roles.includes(user.role) && !devOrgActive) {
-        window.location.href = user.role === 'superadmin' ? '/developer/' : user.role === 'user' ? '/member/dashboard.html' : '/admin/dashboard.html';
-        return null;
+      sessionStorage.setItem(TAB_KEY, '1');
+    } catch {
+      /* private mode — falls back to a normal cookie session */
+    }
+  }
+  function tabSessionAlive() {
+    try {
+      return !!sessionStorage.getItem(TAB_KEY);
+    } catch {
+      return true; // can't tell — don't lock anyone out
+    }
+  }
+
+  function readSessionCache() {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+  function writeSessionCache(me) {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(me));
+    } catch {
+      /* quota / private mode — fall back to always fetching */
+    }
+  }
+  function clearSessionCache() {
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+
+  // Where a user of this role belongs when they've landed somewhere they
+  // aren't allowed to be.
+  function homeFor(role) {
+    return role === 'superadmin' ? '/developer/' : role === 'user' ? '/member/dashboard.html' : '/admin/dashboard.html';
+  }
+
+  // Everything that must happen for a session regardless of whether it came
+  // from cache or the network. Returns null when the caller was redirected.
+  function applySession(me, roles) {
+    const { user, organization, plan } = me;
+    // A superadmin who has opened an organization from the developer
+    // portal may browse that org's admin pages; otherwise superadmins
+    // stay in the portal.
+    const devOrgActive = user.role === 'superadmin' && sessionStorage.getItem('wims.devOrg');
+    if (roles && !roles.includes(user.role) && !devOrgActive) {
+      window.location.href = homeFor(user.role);
+      return null;
+    }
+    currentSession = { user, organization, plan };
+    // The cache is tenant-scoped. If this tab now belongs to a different
+    // user or organization than the data we cached (a re-login without a
+    // sign-out, or a superadmin switching orgs via "open as"), drop it all
+    // before any page can read it.
+    const owner = `${user._id}:${organization ? organization._id : 'none'}`;
+    if (sessionStorage.getItem('wims.cacheOwner') !== owner) {
+      cache.clear();
+      sessionStorage.setItem('wims.cacheOwner', owner);
+    }
+    startCacheRefresh();
+    // Pro plan: recolour the console with the organization's brand.
+    if (plan && plan.features.customBranding && organization && organization.facility) {
+      applyBranding(organization.facility);
+    }
+    // Hide navigation to modules the plan doesn't include (the backend
+    // enforces with 403s regardless).
+    applyPlanGates();
+    setTimeout(applyPlanGates, 0);
+    return currentSession;
+  }
+
+  // The blocking gates. Only run once the server has confirmed the session —
+  // never off a cached copy, since both flags are security-relevant and a
+  // stale "already accepted" must not let someone skip them.
+  async function runSessionGates(me) {
+    // A superadmin reset this account's password to the shared default
+    // (routes/users.js reset-password) — block until they set their own,
+    // before anything else, since a known shared password is the more
+    // urgent thing to resolve.
+    if (me.mustChangePassword) await showPasswordChangeGate();
+    // New registrations/activations accept inline (routes/auth.js); this
+    // is the catch-up path for every account that predates the gate, or
+    // whenever the Terms & Data Policy version is bumped — blocks until
+    // accepted (or they sign out), on every page, regardless of theme.
+    if (!me.termsAccepted) await showTermsGate();
+  }
+
+  function bounceToLogin(err) {
+    clearSessionCache();
+    window.location.href =
+      err && err.status === 503
+        ? '/login.html?maintenance=1'
+        : '/login.html?next=' + encodeURIComponent(location.pathname + location.search);
+  }
+
+  async function requireSession({ roles } = {}) {
+    // The cookie survived a tab that didn't — end the session rather than
+    // silently resuming it in a tab the user never signed in from.
+    if (!tabSessionAlive()) {
+      clearSessionCache();
+      cache.clear();
+      try {
+        await API.post('/api/auth/logout');
+      } catch {
+        /* already gone — redirect regardless */
       }
-      currentSession = { user, organization, plan };
-      // The cache is tenant-scoped. If this tab now belongs to a different
-      // user or organization than the data we cached (a re-login without a
-      // sign-out, or a superadmin switching orgs via "open as"), drop it all
-      // before any page can read it.
-      const owner = `${user._id}:${organization ? organization._id : 'none'}`;
-      if (sessionStorage.getItem('wims.cacheOwner') !== owner) {
-        cache.clear();
-        sessionStorage.setItem('wims.cacheOwner', owner);
-      }
-      startCacheRefresh();
-      // Pro plan: recolour the console with the organization's brand.
-      if (plan && plan.features.customBranding && organization && organization.facility) {
-        applyBranding(organization.facility);
-      }
-      // Hide navigation to modules the plan doesn't include (the backend
-      // enforces with 403s regardless).
-      applyPlanGates();
-      setTimeout(applyPlanGates, 0);
-      // A superadmin reset this account's password to the shared default
-      // (routes/users.js reset-password) — block until they set their own,
-      // before anything else, since a known shared password is the more
-      // urgent thing to resolve.
-      if (mustChangePassword) {
-        await showPasswordChangeGate();
-      }
-      // New registrations/activations accept inline (routes/auth.js); this
-      // is the catch-up path for every account that predates the gate, or
-      // whenever the Terms & Data Policy version is bumped — blocks until
-      // accepted (or they sign out), on every page, regardless of theme.
-      if (!termsAccepted) {
-        await showTermsGate();
-      }
-      return currentSession;
+      window.location.href = '/login.html?ended=1';
+      return null;
+    }
+
+    const cached = readSessionCache();
+
+    if (cached) {
+      // Paint now off the cached session…
+      const applied = applySession(cached, roles);
+      if (!applied) return null; // wrong role for this page — already redirecting
+      // …and re-check against the server without blocking the render.
+      API.get('/api/auth/me')
+        .then(async (me) => {
+          writeSessionCache(me);
+          // Role or org changed under us — re-apply, which redirects if the
+          // user no longer belongs on this page.
+          const stillHere = applySession(me, roles);
+          if (!stillHere) return;
+          await runSessionGates(me);
+        })
+        .catch(bounceToLogin);
+      return applied;
+    }
+
+    // Cold tab: nothing cached, so this one has to wait.
+    try {
+      const me = await API.get('/api/auth/me');
+      writeSessionCache(me);
+      const applied = applySession(me, roles);
+      if (!applied) return null;
+      await runSessionGates(me);
+      return applied;
     } catch (err) {
-      window.location.href =
-        err && err.status === 503
-          ? '/login.html?maintenance=1'
-          : '/login.html?next=' + encodeURIComponent(location.pathname + location.search);
+      bounceToLogin(err);
       return null;
     }
   }
@@ -539,6 +651,8 @@
     // Cached org data is tenant-scoped and must not survive into whoever
     // signs in on this tab next.
     cache.clear();
+    clearSessionCache();
+    sessionStorage.removeItem(TAB_KEY);
     window.location.href = '/welcome.html';
   }
 
@@ -676,5 +790,5 @@
     };
   }
 
-  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache };
+  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache, markTabSession };
 })();
