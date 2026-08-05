@@ -1302,8 +1302,10 @@ textarea.field {
    in landscape) the mobile nav is in use but the tables are still workable
    and scroll horizontally — only phone-width viewports get the notice. */
 @media (max-width: 768px) {
+  /* !important because several of these sections carry an inline
+     `display: grid` for their desktop layout, which would otherwise win. */
   body.needs-desktop .main > *:not(.desktop-only) {
-    display: none;
+    display: none !important;
   }
   body.needs-desktop .desktop-only {
     display: block;

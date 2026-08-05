@@ -382,6 +382,7 @@
         });
         if (!session) return;
         WIMS.adminShell({ user: session.user, active: "claims", title: "Claims", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}] });
+        WIMS.requireDesktop({ title: "Claims Management needs a wider screen", reason: "The claims register and its approval chain need a wide table to review applications safely. Open the console on a desktop or tablet." });
         const { user } = session;
 
         document.getElementById("sideAvatar").textContent = fmt.initials(user);

@@ -613,6 +613,7 @@
         });
         if (!session) return;
         WIMS.adminShell({ user: session.user, active: "contributions", title: "Contributions", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}] });
+        WIMS.requireDesktop({ title: "Contributions needs a wider screen", reason: "Recording contributions, the member typeahead and the bulk CSV import all need side-by-side fields and a wide transaction table. Open the console on a desktop or tablet." });
         const { user } = session;
 
         document.getElementById("sideAvatar").textContent = fmt.initials(user);

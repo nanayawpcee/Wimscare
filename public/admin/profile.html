@@ -160,6 +160,47 @@
         max-width: 420px;
         box-sizing: border-box;
       }
+
+      /* On a phone the 220px side nav + panel layout squeezes the panel off
+         screen. Stack them, and turn the nav into a horizontal chip row —
+         the same pattern the member profile already uses for its sections,
+         so the two consoles behave alike. */
+      @media (max-width: 900px) {
+        .spa-grid {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        .spa-nav {
+          position: static;
+          flex-direction: row;
+          overflow-x: auto;
+          scrollbar-width: none;
+          gap: 8px;
+          padding: 10px;
+          border-radius: 999px;
+        }
+        .spa-nav::-webkit-scrollbar {
+          display: none;
+        }
+        .spa-nav button {
+          flex-shrink: 0;
+          white-space: nowrap;
+          border-radius: 999px;
+          padding: 9px 16px;
+          font-size: 0.85rem;
+        }
+        /* The identity header stacks rather than sitting name-beside-avatar. */
+        .main > div:first-child {
+          flex-direction: column;
+          align-items: flex-start !important;
+          gap: 14px !important;
+          padding: 20px !important;
+        }
+        /* Two-column form rows inside panels go single-column. */
+        .panel-inner div[style*="grid-template-columns"] {
+          grid-template-columns: 1fr !important;
+        }
+      }
     </style>
   </head>
   <body>
