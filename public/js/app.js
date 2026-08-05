@@ -873,6 +873,123 @@
     mount.querySelector('.m-signout').addEventListener('click', signOut);
   }
 
+  // The admin console's mobile shell. Same header/drawer chrome as the
+  // member portal (shared .m-* styles) but with the admin navigation, the
+  // user's real role, and a breadcrumb trail — the admin console nests
+  // deeper than the member portal's flat four sections, so "where am I"
+  // needs answering.
+  //
+  // `crumbs` is [{ label, href }] for ancestors; the current page is passed
+  // as plain text and rendered unlinked.
+  const ADMIN_LINKS = [
+    { key: 'home', label: 'Home', href: '/member/dashboard.html', blank: true },
+    { key: 'dashboard', label: 'Admin Dashboard', href: '/admin/dashboard.html' },
+    { key: 'users', label: 'Users', href: '/admin/users.html' },
+    { key: 'accounts', label: 'Accounts', href: '/admin/accounts.html' },
+    { key: 'contributions', label: 'Contributions', href: '/admin/contributions.html' },
+    { key: 'claims', label: 'Claims Management', href: '/admin/claims.html' },
+    { key: 'reports', label: 'Reports', href: '/admin/reports.html' },
+    { key: 'profile', label: 'Profile', href: '/admin/profile.html' },
+  ];
+  const ROLE_LABEL = {
+    admin: 'Administrator',
+    supervisor: 'Supervisor',
+    accountant: 'Accountant',
+    superadmin: 'Superadmin',
+    user: 'Member',
+  };
+
+  function adminShell(opts) {
+    const mount = document.getElementById('mShell');
+    if (!mount) return;
+    const { user, active, title, crumbs = [] } = opts;
+    let sub = opts.sub || 'Admin Console';
+    if (activeBranding && activeBranding.shortName) sub = activeBranding.shortName;
+    const brandLogo = brandLogoUrl() || '/assets/logo.png';
+
+    const links = ADMIN_LINKS;
+
+    mount.innerHTML = `
+      <header class="m-header">
+        <button type="button" class="m-menu-btn" aria-label="Menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="m-titles">
+          <span class="m-title">${fmt.esc(title)}</span>
+          ${sub ? `<span class="m-sub">${fmt.esc(sub)}</span>` : ''}
+        </div>
+        <a href="/welcome.html">
+          <img class="m-logo" src="${brandLogo}" alt="${fmt.esc(sub)}">
+        </a>
+      </header>
+      <nav class="crumbs" aria-label="Breadcrumb">
+        ${crumbs
+          .map(
+            (c) =>
+              `<a href="${c.href}">${fmt.esc(c.label)}</a><span class="sep" aria-hidden="true">›</span>`,
+          )
+          .join('')}
+        <span class="current" aria-current="page">${fmt.esc(title)}</span>
+      </nav>
+      <div class="m-overlay"></div>
+      <aside class="m-drawer" aria-label="Admin navigation">
+        <div class="m-who">
+          <span class="m-avatar">${fmt.initials(user)}</span>
+          <div style="min-width:0;">
+            <strong style="display:block; font-size:0.95rem;">${fmt.esc(fmt.name(user))}</strong>
+            <span style="font-size:0.78rem; color:rgba(255,255,255,0.65);">${fmt.esc(ROLE_LABEL[user.role] || user.role)}</span>
+          </div>
+        </div>
+        <nav>
+          ${links
+            .map(
+              (l) =>
+                `<a href="${l.href}"${l.blank ? ' target="_blank" rel="noopener"' : ''} class="${l.key === active ? 'active' : ''}">${l.label}</a>`,
+            )
+            .join('')}
+        </nav>
+        <button type="button" class="m-signout">Sign out</button>
+      </aside>`;
+
+    const menuBtn = mount.querySelector('.m-menu-btn');
+    const overlay = mount.querySelector('.m-overlay');
+    const setOpen = (open) => {
+      document.body.classList.toggle('m-drawer-open', open);
+      menuBtn.setAttribute('aria-expanded', String(open));
+    };
+    menuBtn.addEventListener('click', () =>
+      setOpen(!document.body.classList.contains('m-drawer-open')),
+    );
+    overlay.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    });
+    mount.querySelector('.m-signout').addEventListener('click', signOut);
+    // Re-run plan gating now the drawer's links exist. It hides by href, so
+    // the drawer and the desktop sidebar are gated by the same rule rather
+    // than a second copy of the feature list that could drift out of sync.
+    applyPlanGates();
+  }
+
+  // Marks a page as needing a wide viewport. The notice is injected once and
+  // CSS decides when it takes over, so rotating or resizing the device works
+  // without re-running anything.
+  function requireDesktop({ title, reason } = {}) {
+    const main = document.querySelector('main.main');
+    if (!main || document.querySelector('.desktop-only')) return;
+    document.body.classList.add('needs-desktop');
+    const el = document.createElement('div');
+    el.className = 'desktop-only';
+    el.innerHTML = `
+      <div class="do-card">
+        <span class="do-icon" aria-hidden="true">🖥️</span>
+        <h2>${fmt.esc(title || 'Best viewed on a larger screen')}</h2>
+        <p>${fmt.esc(reason || 'This page shows detailed financial tables that need more width than a phone can give. Open the console on a desktop or tablet to use it.')}</p>
+        <a class="btn" href="/admin/dashboard.html" style="display:inline-flex; padding:11px 22px; font-size:0.9rem;">Back to dashboard</a>
+      </div>`;
+    main.appendChild(el);
+  }
+
   // Wraps a password <input> with a persistent Show/Hide toggle. The button
   // is a structural sibling of the input, never tied to :focus/:hover/
   // blur — unlike a browser's own native reveal icon (Safari Keychain,
@@ -941,5 +1058,5 @@
     };
   }
 
-  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache, markTabSession };
+  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, adminShell, requireDesktop, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache, markTabSession };
 })();

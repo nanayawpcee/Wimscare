@@ -163,6 +163,7 @@
     </style>
   </head>
   <body>
+    <div id="mShell"></div>
     <div class="shell">
       <aside class="sidebar">
         <div class="brand">
@@ -917,6 +918,8 @@
           roles: ["admin", "supervisor", "accountant", "superadmin"],
         });
         if (!session) return;
+        WIMS.adminShell({ user: session.user, active: "accounts", title: "Accounts", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}] });
+        WIMS.requireDesktop({ title: "Accounts needs a wider screen", reason: "Fund balances, the double-entry ledger and reversal approvals are dense financial tables. Open the console on a desktop or tablet to work with them safely." });
         const { user } = session;
 
         // Accountant gets its own full workspace, not this page.

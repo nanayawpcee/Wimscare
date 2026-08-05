@@ -163,6 +163,7 @@
     </style>
   </head>
   <body>
+    <div id="mShell"></div>
     <div class="shell">
       <aside class="sidebar">
         <div class="brand">
@@ -306,6 +307,7 @@
           roles: ["admin", "supervisor", "accountant", "superadmin"],
         });
         if (!session) return;
+        WIMS.adminShell({ user: session.user, active: "profile", title: "Profile", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}] });
         const { user } = session;
         const isAdmin = ["admin", "superadmin"].includes(user.role);
 

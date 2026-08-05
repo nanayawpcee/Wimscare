@@ -98,6 +98,7 @@
     </style>
   </head>
   <body>
+    <div id="mShell"></div>
     <div class="shell">
       <aside class="sidebar">
         <div class="brand">
@@ -240,6 +241,7 @@
           roles: ["admin", "superadmin"],
         });
         if (!session) return;
+        WIMS.adminShell({ user: session.user, active: "claims", title: "Claims Config", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}, {"label": "Claims", "href": "/admin/claims.html"}] });
         document.getElementById("sideAvatar").textContent = fmt.initials(
           session.user,
         );

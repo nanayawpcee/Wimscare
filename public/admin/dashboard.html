@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/css/app.css" />
   </head>
   <body>
+    <div id="mShell"></div>
     <div class="shell">
       <aside class="sidebar">
         <a href="/welcome.html">
@@ -244,6 +245,7 @@
           roles: ["admin", "supervisor", "accountant", "superadmin"],
         });
         if (!session) return;
+        WIMS.adminShell({ user: session.user, active: "dashboard", title: "Admin Dashboard", crumbs: [] });
         const { user } = session;
 
         document.getElementById("sideAvatar").textContent = fmt.initials(user);

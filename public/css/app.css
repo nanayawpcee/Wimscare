@@ -1203,3 +1203,134 @@ textarea.field {
     padding: 16px;
   }
 }
+
+/* ================================================================
+   Admin console on mobile — reuses the member shell's header and
+   drawer (.m-*), adding a breadcrumb trail because the admin console
+   nests deeper (Users → Permissions, Claims → Processing) than the
+   member portal's flat four sections.
+   ================================================================ */
+.crumbs {
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.82rem;
+  position: sticky;
+  top: 60px;
+  z-index: 190;
+}
+.crumbs a {
+  color: var(--primary);
+  font-weight: 600;
+}
+.crumbs .sep {
+  color: var(--faint);
+}
+.crumbs .current {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Pages whose content genuinely needs a wide viewport (fund ledgers,
+   the accountant workspace, wide report tables). The notice is always in
+   the DOM; CSS decides when it replaces the page, so rotating the device
+   or resizing works without re-running any JS. */
+.desktop-only {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* The admin console's fixed sidebar is replaced by the drawer. */
+  .shell > .sidebar {
+    display: none;
+  }
+  .shell {
+    display: block;
+  }
+  .main {
+    margin-left: 0;
+    padding: 16px 16px 40px;
+  }
+  .crumbs {
+    display: flex;
+  }
+  .page-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .page-head h1 {
+    font-size: 1.45rem;
+  }
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .card {
+    border-radius: 16px;
+    padding: 18px 16px;
+  }
+  /* Wide tables scroll inside their card rather than pushing the page. */
+  .card table.data {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  /* Admin pages lay their forms out with inline multi-column grids sized for
+     a desktop. At phone width those squeeze fields down to a few characters,
+     so collapse them to a single column. !important is needed because the
+     column template is an inline style. The stat grid keeps its own 2-up
+     rule above. */
+  .main form[style*="grid-template-columns"],
+  .main .card div[style*="grid-template-columns"]:not(.stat-grid) {
+    grid-template-columns: 1fr !important;
+  }
+  /* Filter/action rows read better stacked than squeezed side by side. */
+  .main .card .field[style*="min-width"] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+}
+
+/* The data-dense pages are blocked at a LOWER width than the nav shell
+   switches. Between 769px and 900px (a half-screen laptop window, a tablet
+   in landscape) the mobile nav is in use but the tables are still workable
+   and scroll horizontally — only phone-width viewports get the notice. */
+@media (max-width: 768px) {
+  body.needs-desktop .main > *:not(.desktop-only) {
+    display: none;
+  }
+  body.needs-desktop .desktop-only {
+    display: block;
+  }
+}
+
+.desktop-only .do-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 28px 22px;
+  text-align: center;
+}
+.desktop-only .do-icon {
+  font-size: 2rem;
+  line-height: 1;
+  display: block;
+  margin-bottom: 12px;
+}
+.desktop-only h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.desktop-only p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
