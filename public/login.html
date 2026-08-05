@@ -317,6 +317,19 @@
         border-radius: 10px;
         margin: 0 0 16px;
         font-size: 0.9rem;
+        opacity: 1;
+        transition:
+          opacity 0.4s ease,
+          margin 0.4s ease,
+          padding 0.4s ease;
+      }
+      /* Transient notices (e.g. "your session ended") fade out and collapse
+         instead of sitting on the form for the rest of the visit. */
+      #activationBanner.fading {
+        opacity: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
       }
 
       .field {
@@ -1082,6 +1095,17 @@
         });
         pw.parentNode.insertBefore(toggle, pw.nextSibling);
 
+        // Fade a banner out, then take it out of the layout entirely.
+        function dismissAfter(el, ms) {
+          setTimeout(() => {
+            el.classList.add("fading");
+            setTimeout(() => {
+              el.style.display = "none";
+              el.classList.remove("fading");
+            }, 400); // matches the CSS transition
+          }, ms);
+        }
+
         // Prefill email + activation banner after account activation
         try {
           const params = new URLSearchParams(location.search);
@@ -1092,11 +1116,22 @@
             b.style.display = "block";
           }
           // Arrived here because the tab that held the session was closed.
+          // This one is transient: it explains the redirect, then gets out of
+          // the way. The query param is dropped too, so a refresh (or the
+          // browser restoring the tab) doesn't resurrect a stale notice.
           if (params.get("ended")) {
             const b = document.getElementById("activationBanner");
             b.textContent =
               "Your session ended when the previous tab was closed — please sign in again.";
             b.style.display = "block";
+            dismissAfter(b, 6000);
+            params.delete("ended");
+            const qs = params.toString();
+            history.replaceState(
+              null,
+              "",
+              location.pathname + (qs ? "?" + qs : ""),
+            );
           }
           const preEmail = params.get("email");
           if (preEmail) {
