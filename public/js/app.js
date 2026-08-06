@@ -355,7 +355,7 @@
   // others alive, and the session only expires when the user has been idle
   // everywhere. Writes are throttled so ordinary mousemove doesn't hammer
   // storage.
-  const IDLE_MS = 5 * 60 * 1000;
+  const IDLE_MS = 30 * 60 * 1000;
   const IDLE_CHECK_MS = 15 * 1000;
   const ACTIVITY_WRITE_MS = 10 * 1000;
   const ACTIVITY_KEY = 'wims.lastActivity';

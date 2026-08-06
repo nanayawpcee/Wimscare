@@ -1198,6 +1198,7 @@ textarea.field {
   padding: 0 8px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   margin-bottom: 12px;
+  flex-shrink: 0;
 }
 .m-drawer .m-who .m-avatar {
   width: 42px;
@@ -1211,10 +1212,31 @@ textarea.field {
   font-weight: 700;
   font-size: 0.9rem;
 }
+/* The link list is the only part of the drawer that can outgrow a short
+   screen, so it takes the leftover height and scrolls on its own — the
+   identity block and Sign out stay pinned. min-height:0 is what actually
+   allows a flex item to shrink below its content height and scroll. */
 .m-drawer nav {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+.m-drawer nav::-webkit-scrollbar {
+  width: 4px;
+}
+.m-drawer nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+}
+.m-drawer nav a {
+  flex-shrink: 0;
 }
 .m-drawer nav a {
   display: block;
@@ -1235,7 +1257,8 @@ textarea.field {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 .m-drawer .m-signout {
-  margin-top: auto;
+  margin-top: 12px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;

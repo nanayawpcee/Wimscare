@@ -1137,7 +1137,7 @@
           if (params.get("idle")) {
             const b = document.getElementById("activationBanner");
             b.textContent =
-              "You were signed out after 5 minutes of inactivity — please sign in again.";
+              "You were signed out after 30 minutes of inactivity — please sign in again.";
             b.style.display = "block";
             dismissAfter(b, 6000);
             params.delete("idle");
