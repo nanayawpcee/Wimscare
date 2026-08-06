@@ -431,6 +431,10 @@
         });
         if (!session) return;
         WIMS.adminShell({ user: session.user, active: "claims", title: "Claim Type" });
+        WIMS.requireDesktop({
+          title: "Claim types need a wider screen",
+          reason: "A claim type spans benefit limits, an approval workflow and the documents it requires — settings that decide what members can claim. Open the console on a desktop or tablet to edit them.",
+        });
         document.getElementById("sideAvatar").textContent = fmt.initials(
           session.user,
         );

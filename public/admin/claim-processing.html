@@ -348,6 +348,15 @@
         });
         if (!session) return;
         WIMS.adminShell({ user: session.user, active: "claims", title: "Claim Processing" });
+        // Reachable by direct link (the dashboard's review banner, an email)
+        // even though Claims Management itself is gated. Approving a payout
+        // means reading the supporting documents it rests on, which a phone
+        // can't show properly — so this one is gated outright rather than
+        // keeping the decision buttons.
+        WIMS.requireDesktop({
+          title: "Claim review needs a wider screen",
+          reason: "Reviewing a claim means reading its supporting documents, the approval chain and the payout side by side before you decide. Open the console on a desktop or tablet to review it.",
+        });
         const { user } = session;
         const isAdmin = ["admin", "superadmin"].includes(user.role);
         const isAccountant = user.role === "accountant";

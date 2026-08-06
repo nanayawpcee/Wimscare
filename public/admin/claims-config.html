@@ -242,6 +242,10 @@
         });
         if (!session) return;
         WIMS.adminShell({ user: session.user, active: "claims", title: "Claims Config" });
+        WIMS.requireDesktop({
+          title: "Claims configuration needs a wider screen",
+          reason: "Eligibility rules and the claim types they feed into are settings worth changing deliberately, with the whole picture in view. Open the console on a desktop or tablet to edit them.",
+        });
         document.getElementById("sideAvatar").textContent = fmt.initials(
           session.user,
         );
