@@ -429,7 +429,8 @@
             </h2>
             <p style="margin: 0 0 12px; color: var(--muted); font-size: 0.88rem">
               Upload clear, legible copies — required before your application
-              can be submitted
+              can be submitted. PDF, JPEG, PNG or WebP, under 1 MB each and 5
+              files in total.
             </p>
             <div id="reqDocs" style="display: grid; gap: 8px; margin-bottom: 14px"></div>
             <div class="dropzone">
@@ -694,9 +695,16 @@
           .getElementById("browseBtn")
           .addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", () => {
-          for (const f of fileInput.files) selectedFiles.push(f);
+          // Screen the pick against the server's limits here — a member on a
+          // phone connection shouldn't spend the upload to be told no.
+          const { accepted, error } = WIMS.checkFiles(fileInput.files, {
+            ...WIMS.UPLOAD_LIMITS.claimDocs,
+            existing: selectedFiles.length,
+          });
+          for (const f of accepted) selectedFiles.push(f);
           fileInput.value = ""; // allow re-picking the same file later
           renderFileList();
+          if (error) toast(error, true);
         });
 
         // ---- Create draft → upload → (submit) ----

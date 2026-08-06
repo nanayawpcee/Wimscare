@@ -513,8 +513,11 @@
           document.getElementById("uploadWrap").style.display = uploadable
             ? "block"
             : "none";
+          const limitsHint = "Under 1 MB each, 5 files per upload.";
           document.getElementById("requiredDocsHint").textContent =
-            required.length ? "Required: " + required.join(", ") : "";
+            required.length
+              ? "Required: " + required.join(", ") + " · " + limitsHint
+              : limitsHint;
 
           // --- Activity ---
           const dotColor = (ev) =>
@@ -836,11 +839,17 @@
             const input = document.getElementById("docFile");
             if (!input.files.length)
               return toast("Choose one or more files first", true);
+            // Screen against the server's limits before uploading. Anything
+            // rejected here would have failed the request outright, taking
+            // the acceptable files down with it.
+            const { accepted, error } = WIMS.checkFiles(input.files, WIMS.UPLOAD_LIMITS.claimDocs);
+            if (error) toast(error, true);
+            if (!accepted.length) return;
             const fd = new FormData();
-            for (const f of input.files) fd.append("documents", f);
+            for (const f of accepted) fd.append("documents", f);
             try {
               await API.upload(`/api/claims/${claimId}/documents`, fd);
-              toast(`${input.files.length} document(s) uploaded`);
+              toast(`${accepted.length} document(s) uploaded`);
               input.value = "";
               load();
             } catch (err) {

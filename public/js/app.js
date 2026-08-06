@@ -1068,5 +1068,55 @@
     };
   }
 
-  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, adminShell, requireDesktop, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache, markTabSession };
+  // ---- Upload limits ------------------------------------------------------
+  // Mirrors the multer config in middleware/upload.js. The server is still the
+  // enforcer — this only spares someone a slow upload that was never going to
+  // be accepted. Keep the two in step.
+  const UPLOAD_LIMITS = {
+    claimDocs: { maxFiles: 5, maxBytes: 1024 * 1024 },
+  };
+
+  function humanBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, '')} MB`;
+  }
+
+  // Filters a picked FileList against a limit set, returning the files worth
+  // keeping plus one message naming everything that was dropped. `existing`
+  // is how many files are already staged, so the count cap applies to the
+  // running total rather than to a single pick.
+  // Note the boundary: multer rejects a file whose size EQUALS limits.fileSize,
+  // so the last accepted size is maxBytes - 1. Verified against the running
+  // server — 1048575 bytes uploads, 1048576 comes back "File too large". Using
+  // `>` here would pass a file the server then refuses, which is the exact
+  // round-trip this check exists to avoid.
+  function checkFiles(picked, { maxFiles, maxBytes, existing = 0 } = {}) {
+    const files = Array.from(picked || []);
+    const oversized = files.filter((f) => f.size >= maxBytes);
+    const withinSize = files.filter((f) => f.size < maxBytes);
+    const accepted = withinSize.slice(0, Math.max(0, maxFiles - existing));
+    const overflow = withinSize.length - accepted.length;
+
+    const problems = [];
+    // "under X" rather than "up to X" — the comparison is strict, and at the
+    // boundary "is 1 MB, the limit is 1 MB" reads like a contradiction.
+    if (oversized.length === 1) {
+      problems.push(
+        `${oversized[0].name} is ${humanBytes(oversized[0].size)} — each file must be under ${humanBytes(maxBytes)}.`,
+      );
+    } else if (oversized.length > 1) {
+      problems.push(
+        `${oversized.length} files were skipped — each must be under ${humanBytes(maxBytes)}.`,
+      );
+    }
+    if (overflow) {
+      problems.push(
+        `You can attach ${maxFiles} files in total — ${overflow} more ${overflow === 1 ? 'was' : 'were'} skipped.`,
+      );
+    }
+    return { accepted, error: problems.join(' ') };
+  }
+
+  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, adminShell, requireDesktop, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache, markTabSession, UPLOAD_LIMITS, humanBytes, checkFiles };
 })();
