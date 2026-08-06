@@ -16,18 +16,18 @@ function fileFilterFor(allowed) {
 // utils/storage (Vercel Blob or local disk, depending on environment).
 const memory = multer.memoryStorage();
 
-// Claim supporting documents: PDF or image, up to 8 MB each, max 10 files.
+// Claim supporting documents: PDF or image, up to 1 MB each, max 5 files.
 const claimDocs = multer({
   storage: memory,
   fileFilter: fileFilterFor(ALLOWED_DOCS),
-  limits: { fileSize: 8 * 1024 * 1024, files: 10 },
+  limits: { fileSize: 1 * 1024 * 1024, files: 5 },
 });
 
 // Contribution receipt image/PDF.
 const receipt = multer({
   storage: memory,
   fileFilter: fileFilterFor(ALLOWED_DOCS),
-  limits: { fileSize: 8 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 1 * 1024 * 1024, files: 1 },
 });
 
 // Avatars: resized to a small square webp before storing.
