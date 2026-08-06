@@ -307,6 +307,46 @@ h3 {
   align-items: flex-end;
   gap: 10px;
   height: 180px;
+  position: relative;
+}
+/* Value readout. Follows the pointer on a desktop and appears on tap on a
+   phone — the native title attribute never shows on touch at all, and is
+   too slow to be useful for scanning a chart. */
+.chart-tip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -100%);
+  transition: opacity 0.12s ease;
+  background: var(--navy);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(6, 20, 30, 0.28);
+}
+.chart-tip.on {
+  opacity: 1;
+}
+.chart-tip .tip-month {
+  display: block;
+  font-weight: 600;
+  opacity: 0.7;
+  font-size: 0.72rem;
+}
+/* Highlight the hovered column/point. */
+.chart-col.hot .chart-bar {
+  filter: brightness(1.12);
+}
+.chart-hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  cursor: pointer;
 }
 .chart-labels {
   display: flex;
@@ -1283,30 +1323,7 @@ textarea.field {
    nests deeper (Users → Permissions, Claims → Processing) than the
    member portal's flat four sections.
    ================================================================ */
-.crumbs {
-  display: none;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 18px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  font-size: 0.82rem;
-  position: sticky;
-  top: 60px;
-  z-index: 190;
-}
-.crumbs a {
-  color: var(--primary);
-  font-weight: 600;
-}
-.crumbs .sep {
-  color: var(--faint);
-}
-.crumbs .current {
-  color: var(--muted);
-  font-weight: 600;
-}
+
 
 /* Pages whose content genuinely needs a wide viewport (fund ledgers,
    the accountant workspace, wide report tables). The notice is always in
@@ -1327,9 +1344,6 @@ textarea.field {
   .main {
     margin-left: 0;
     padding: 16px 16px 40px;
-  }
-  .crumbs {
-    display: flex;
   }
   .page-head {
     flex-direction: column;
@@ -1364,15 +1378,23 @@ textarea.field {
      a desktop. At phone width those squeeze fields down to a few characters,
      so collapse them to a single column. !important is needed because the
      column template is an inline style. The stat grid keeps its own 2-up
-     rule above. */
+     rule above.
+     Matches inline grids anywhere under .main — including the quick-action
+     row, which is a direct child of .main rather than nested in a card. */
   .main form[style*="grid-template-columns"],
-  .main .card div[style*="grid-template-columns"]:not(.stat-grid) {
+  .main div[style*="grid-template-columns"]:not(.stat-grid) {
     grid-template-columns: 1fr !important;
   }
   /* Filter/action rows read better stacked than squeezed side by side. */
   .main .card .field[style*="min-width"] {
     min-width: 0 !important;
     width: 100% !important;
+  }
+  /* Card labels are short phrases, not single words — let them wrap instead
+     of running past the card edge. */
+  .main .card span,
+  .main a.card span {
+    overflow-wrap: anywhere;
   }
 
 }
@@ -1383,12 +1405,27 @@ textarea.field {
    and scroll horizontally — only phone-width viewports get the notice. */
 @media (max-width: 768px) {
   /* !important because several of these sections carry an inline
-     `display: grid` for their desktop layout, which would otherwise win. */
-  body.needs-desktop .main > *:not(.desktop-only) {
+     `display: grid` for their desktop layout, which would otherwise win.
+     `.mobile-ok` opts a section back in — a page can be desktop-only for
+     reviewing wide tables while still exposing one task (recording a
+     contribution, say) that works fine on a phone. */
+  body.needs-desktop .main > *:not(.desktop-only):not(.mobile-ok) {
     display: none !important;
   }
   body.needs-desktop .desktop-only {
     display: block;
+  }
+  /* An opted-in section lays out as a normal single column, whatever its
+     desktop grid said. */
+  body.needs-desktop .main > .mobile-ok {
+    display: block !important;
+    grid-template-columns: 1fr !important;
+    margin-bottom: 16px;
+  }
+  /* The notice comes after the opted-in work, framed as "there's more on
+     desktop" rather than "you can't do anything here". */
+  body.needs-desktop.has-mobile-ok .desktop-only .do-card {
+    padding: 20px 18px;
   }
 }
 

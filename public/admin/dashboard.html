@@ -251,7 +251,7 @@
           roles: ["admin", "supervisor", "accountant", "superadmin"],
         });
         if (!session) return;
-        WIMS.adminShell({ user: session.user, active: "dashboard", title: "Admin Dashboard", crumbs: [] });
+        WIMS.adminShell({ user: session.user, active: "dashboard", title: "Admin Dashboard" });
         const { user } = session;
 
         document.getElementById("sideAvatar").textContent = fmt.initials(user);
@@ -447,8 +447,7 @@
           ${pts
             .map(
               ([x, y], i) =>
-                `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.6" fill="var(--primary)"
-                         vector-effect="non-scaling-stroke"><title>${MONTHS[i]}: ${fmt.gh(monthly[i])}</title></circle>`,
+                `<circle data-dot="${i}" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.6" fill="var(--primary)"></circle>`,
             )
             .join("")}
         </svg>`;
@@ -464,6 +463,7 @@
                 c.setAttribute("transform", `translate(${cx} ${cy}) scale(${rx * 4} ${ry * 4}) translate(${-cx} ${-cy})`);
               });
             }
+            attachChartTips(plot, monthly, pts.map(([x]) => x));
             return;
           }
 
@@ -472,11 +472,72 @@
               const pct = Math.max(Math.round((amt / max) * 100), amt > 0 ? 3 : 1);
               const active = monthValue === "all" || +monthValue - 1 === i;
               return `
-        <div style="flex:1; min-width:0; display:flex; align-items:flex-end; justify-content:center; height:100%;" title="${MONTHS[i]}: ${fmt.gh(amt)}">
-          <div style="width:100%; max-width:38px; border-radius:6px 6px 0 0; height:${pct}%; background:${active ? "var(--primary)" : "var(--line)"};"></div>
+        <div class="chart-col" data-col="${i}" style="flex:1; min-width:0; display:flex; align-items:flex-end; justify-content:center; height:100%;">
+          <div class="chart-bar" style="width:100%; max-width:38px; border-radius:6px 6px 0 0; height:${pct}%; background:${active ? "var(--primary)" : "var(--line)"}; transition:filter .12s ease;"></div>
         </div>`;
             })
             .join("");
+          attachChartTips(plot, monthly, null);
+        }
+
+        // One tooltip implementation for both chart types. Bars hit-test by
+        // column; the line lays an invisible strip over each point's x so
+        // there's a comfortable target even where the line is flat.
+        function attachChartTips(plot, monthly, xs) {
+          const tip = document.createElement("div");
+          tip.className = "chart-tip";
+          plot.appendChild(tip);
+
+          const show = (i, xPct) => {
+            tip.innerHTML = `<span class="tip-month">${MONTHS[i]} ${yearSel.value}</span>${fmt.gh(monthly[i])}`;
+            tip.style.left = xPct + "%";
+            // Sit just above the plot's midpoint so the tip never leaves the
+            // card, whatever the bar height.
+            tip.style.top = "38%";
+            tip.classList.add("on");
+            plot.querySelectorAll(".chart-col").forEach((c) =>
+              c.classList.toggle("hot", +c.dataset.col === i),
+            );
+            plot.querySelectorAll("circle[data-dot]").forEach((c) =>
+              c.setAttribute("r", +c.dataset.dot === i ? "2.4" : "1.6"),
+            );
+          };
+          const hide = () => {
+            tip.classList.remove("on");
+            plot.querySelectorAll(".chart-col.hot").forEach((c) => c.classList.remove("hot"));
+            plot.querySelectorAll("circle[data-dot]").forEach((c) => c.setAttribute("r", "1.6"));
+          };
+
+          if (xs) {
+            // Line mode: transparent hit strips centred on each point.
+            const half = xs.length > 1 ? (xs[1] - xs[0]) / 2 : 50;
+            xs.forEach((x, i) => {
+              const hit = document.createElement("div");
+              hit.className = "chart-hit";
+              hit.style.left = Math.max(0, x - half) + "%";
+              hit.style.width = half * 2 + "%";
+              hit.addEventListener("pointerenter", () => show(i, x));
+              hit.addEventListener("pointerdown", () => show(i, x));
+              plot.appendChild(hit);
+            });
+          } else {
+            plot.querySelectorAll(".chart-col").forEach((col) => {
+              const i = +col.dataset.col;
+              const at = () => {
+                const p = plot.getBoundingClientRect();
+                const c = col.getBoundingClientRect();
+                return ((c.left + c.width / 2 - p.left) / p.width) * 100;
+              };
+              col.addEventListener("pointerenter", () => show(i, at()));
+              col.addEventListener("pointerdown", () => show(i, at()));
+            });
+          }
+          plot.addEventListener("pointerleave", hide);
+          // On touch there's no pointerleave, so dismiss on the next tap
+          // anywhere else.
+          document.addEventListener("pointerdown", (e) => {
+            if (!plot.contains(e.target)) hide();
+          });
         }
 
         function syncToggle() {

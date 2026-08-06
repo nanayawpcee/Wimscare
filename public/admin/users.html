@@ -136,6 +136,34 @@
         background: #fae7e5;
         color: var(--red-ink);
       }
+
+      /* A directory row is identity-left / actions-right on a desktop. An
+         administrator sees up to four actions (View profile, Edit, Reset
+         password, Permissions), which collide once the row is phone-width.
+         Stack the row and let the buttons share the full width instead. */
+      @media (max-width: 900px) {
+        .dir-row {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 12px;
+          padding: 14px 12px;
+        }
+        .dir-row > div:last-child {
+          justify-content: flex-start !important;
+          gap: 8px !important;
+        }
+        .row-btn {
+          flex: 1 1 auto;
+          min-width: 0;
+          text-align: center;
+          /* The Permissions action is an <a>; without this it won't take a
+             flex basis or centre its label like the <button>s do. */
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          white-space: nowrap;
+        }
+      }
     </style>
   </head>
   <body>
@@ -423,7 +451,7 @@
           roles: ["admin", "supervisor", "accountant", "superadmin"],
         });
         if (!session) return;
-        WIMS.adminShell({ user: session.user, active: "users", title: "Users", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}] });
+        WIMS.adminShell({ user: session.user, active: "users", title: "Users" });
         const { user } = session;
         const canEdit = WIMS.can("manage_users");
         const canInvite = WIMS.can("invite_users");

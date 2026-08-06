@@ -880,14 +880,9 @@
     mount.querySelector('.m-signout').addEventListener('click', signOut);
   }
 
-  // The admin console's mobile shell. Same header/drawer chrome as the
-  // member portal (shared .m-* styles) but with the admin navigation, the
-  // user's real role, and a breadcrumb trail — the admin console nests
-  // deeper than the member portal's flat four sections, so "where am I"
-  // needs answering.
-  //
-  // `crumbs` is [{ label, href }] for ancestors; the current page is passed
-  // as plain text and rendered unlinked.
+  // The admin console's mobile shell — the same header/drawer chrome as the
+  // member portal (shared .m-* styles), with the admin navigation and the
+  // user's real role.
   const ADMIN_LINKS = [
     { key: 'home', label: 'Home', href: '/member/dashboard.html', blank: true },
     { key: 'dashboard', label: 'Admin Dashboard', href: '/admin/dashboard.html' },
@@ -909,7 +904,7 @@
   function adminShell(opts) {
     const mount = document.getElementById('mShell');
     if (!mount) return;
-    const { user, active, title, crumbs = [] } = opts;
+    const { user, active, title } = opts;
     let sub = opts.sub || 'Admin Console';
     if (activeBranding && activeBranding.shortName) sub = activeBranding.shortName;
     const brandLogo = brandLogoUrl() || '/assets/logo.png';
@@ -929,15 +924,6 @@
           <img class="m-logo" src="${brandLogo}" alt="${fmt.esc(sub)}">
         </a>
       </header>
-      <nav class="crumbs" aria-label="Breadcrumb">
-        ${crumbs
-          .map(
-            (c) =>
-              `<a href="${c.href}">${fmt.esc(c.label)}</a><span class="sep" aria-hidden="true">›</span>`,
-          )
-          .join('')}
-        <span class="current" aria-current="page">${fmt.esc(title)}</span>
-      </nav>
       <div class="m-overlay"></div>
       <aside class="m-drawer" aria-label="Admin navigation">
         <div class="m-who">
@@ -981,10 +967,27 @@
   // Marks a page as needing a wide viewport. The notice is injected once and
   // CSS decides when it takes over, so rotating or resizing the device works
   // without re-running anything.
-  function requireDesktop({ title, reason } = {}) {
+  // `keep` is a list of selectors for sections that DO work on a phone and
+  // should stay visible — so a page can be desktop-only for its wide tables
+  // while still letting the user do the one task that fits on a phone.
+  function requireDesktop({ title, reason, keep = [] } = {}) {
     const main = document.querySelector('main.main');
     if (!main || document.querySelector('.desktop-only')) return;
     document.body.classList.add('needs-desktop');
+
+    const kept = [];
+    keep.forEach((sel) => {
+      const node = main.querySelector(sel);
+      if (!node) return;
+      // The rule matches direct children of .main, so mark the top-level
+      // ancestor rather than whatever nested node the selector found.
+      let top = node;
+      while (top.parentElement && top.parentElement !== main) top = top.parentElement;
+      top.classList.add('mobile-ok');
+      kept.push(top);
+    });
+    if (kept.length) document.body.classList.add('has-mobile-ok');
+
     const el = document.createElement('div');
     el.className = 'desktop-only';
     el.innerHTML = `

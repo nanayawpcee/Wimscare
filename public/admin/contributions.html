@@ -168,6 +168,22 @@
       .bulk-results .ok {
         color: var(--green-ink);
       }
+
+      /* The record form is a two-column grid sized for a desktop. app.css has
+         a generic rule for inline grids under .main, but it doesn't win here,
+         so target the form by id — higher specificity, and in the page's own
+         stylesheet, which loads after app.css. */
+      @media (max-width: 900px) {
+        #recordForm {
+          grid-template-columns: 1fr !important;
+        }
+        #recordForm .field,
+        #recordForm select.field,
+        #recordForm input.field {
+          width: 100% !important;
+          box-sizing: border-box;
+        }
+      }
     </style>
   </head>
   <body>
@@ -498,7 +514,7 @@
           </div>
 
           <div
-            class="card"
+            class="card m-hide"
             id="bulkCard"
             style="display: flex; flex-direction: column"
           >
@@ -612,8 +628,12 @@
           roles: ["admin", "supervisor", "accountant", "superadmin"],
         });
         if (!session) return;
-        WIMS.adminShell({ user: session.user, active: "contributions", title: "Contributions", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}] });
-        WIMS.requireDesktop({ title: "Contributions needs a wider screen", reason: "Recording contributions, the member typeahead and the bulk CSV import all need side-by-side fields and a wide transaction table. Open the console on a desktop or tablet." });
+        WIMS.adminShell({ user: session.user, active: "contributions", title: "Contributions" });
+        WIMS.requireDesktop({
+          title: "More contribution tools on desktop",
+          reason: "You can record a contribution here. The full transaction table, filters, exports and bulk CSV import need more width than a phone can give — open the console on a desktop or tablet for those.",
+          keep: ["#recordForm"],
+        });
         const { user } = session;
 
         document.getElementById("sideAvatar").textContent = fmt.initials(user);

@@ -430,7 +430,7 @@
           roles: ["admin", "superadmin"],
         });
         if (!session) return;
-        WIMS.adminShell({ user: session.user, active: "claims", title: "Claim Type", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}, {"label": "Claims", "href": "/admin/claims.html"}, {"label": "Config", "href": "/admin/claims-config.html"}] });
+        WIMS.adminShell({ user: session.user, active: "claims", title: "Claim Type" });
         document.getElementById("sideAvatar").textContent = fmt.initials(
           session.user,
         );

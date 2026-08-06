@@ -138,7 +138,7 @@
           roles: ["admin", "superadmin"],
         });
         if (!session) return;
-        WIMS.adminShell({ user: session.user, active: "contributions", title: "Reversals", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}, {"label": "Contributions", "href": "/admin/contributions.html"}] });
+        WIMS.adminShell({ user: session.user, active: "contributions", title: "Reversals" });
         const { user } = session;
         document.getElementById("sideAvatar").textContent = fmt.initials(user);
         document.getElementById("sideName").textContent = fmt.name(user);

@@ -347,7 +347,7 @@
           roles: ["admin", "supervisor", "accountant", "superadmin"],
         });
         if (!session) return;
-        WIMS.adminShell({ user: session.user, active: "claims", title: "Claim Processing", crumbs: [{"label": "Dashboard", "href": "/admin/dashboard.html"}, {"label": "Claims", "href": "/admin/claims.html"}] });
+        WIMS.adminShell({ user: session.user, active: "claims", title: "Claim Processing" });
         const { user } = session;
         const isAdmin = ["admin", "superadmin"].includes(user.role);
         const isAccountant = user.role === "accountant";
