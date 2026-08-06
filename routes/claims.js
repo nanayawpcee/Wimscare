@@ -261,7 +261,7 @@ router.get('/:id', loadClaim, async (req, res, next) => {
 });
 
 // POST /api/claims/:id/documents — upload supporting documents (draft or submitted)
-router.post('/:id/documents', loadClaim, claimDocs.array('documents', 10), async (req, res, next) => {
+router.post('/:id/documents', loadClaim, claimDocs.array('documents', 5), async (req, res, next) => {
   try {
     const claim = req.claim;
     if (!['draft', 'submitted', 'under_review'].includes(claim.status)) {
