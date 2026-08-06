@@ -101,22 +101,29 @@
     if (!container) return;
     container.innerHTML = Array.from({ length: count }, () => `<div class="pg-skel" style="height:${height}px; margin-bottom:10px;"></div>`).join('');
   }
-  // A bar chart that's already laid out — real axis labels, real bar
-  // geometry — with only the bar fills shimmering. Heights are a fixed
-  // pattern rather than random so the chart doesn't visibly reshuffle if it
-  // repaints while still loading.
+  // Chart placeholder. The axis and month labels are already real (the page
+  // renders those itself) — only the plot shimmers. Heights follow a fixed
+  // pattern rather than random values so the chart doesn't visibly reshuffle
+  // if it repaints while still loading. `type` matches the chart that's about
+  // to render, so bars never flash in front of a line chart.
   const SKEL_BAR_HEIGHTS = [42, 58, 35, 70, 48, 62, 30, 55, 66, 40, 52, 45];
-  function skeletonChart(container, labels) {
+  function skeletonChart(container, count = 12, type = 'bar') {
     if (!container) return;
-    container.innerHTML = labels
-      .map(
-        (label, i) => `
-      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;">
+    const n = Array.isArray(count) ? count.length : count;
+    if (type === 'line') {
+      // A single band roughly where the line will sit — a fake polyline
+      // would imply data that isn't loaded yet.
+      container.innerHTML =
+        '<div class="pg-skel-bar" style="width:100%; height:46%; align-self:center; border-radius:10px;"></div>';
+      return;
+    }
+    container.innerHTML = Array.from(
+      { length: n },
+      (_, i) => `
+      <div style="flex:1; min-width:0; display:flex; align-items:flex-end; justify-content:center; height:100%;">
         <div class="pg-skel-bar" style="width:100%; max-width:38px; height:${SKEL_BAR_HEIGHTS[i % SKEL_BAR_HEIGHTS.length]}%;"></div>
-        <span style="font-size:0.7rem; font-weight:600; color:var(--faint);">${fmt.esc(label)}</span>
       </div>`,
-      )
-      .join('');
+    ).join('');
   }
 
   // ---- Session data cache -------------------------------------------------

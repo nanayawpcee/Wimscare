@@ -118,24 +118,30 @@
               <h2>Monthly contributions</h2>
               <p class="sub" id="chartSub"></p>
             </div>
-            <span
+            <div
               style="
-                font-size: 1.2rem;
-                font-weight: 700;
-                font-variant-numeric: tabular-nums;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                flex-wrap: wrap;
               "
-              id="chartTotal"
-            ></span>
+            >
+              <div class="chart-toggle" id="chartToggle" role="group" aria-label="Chart type">
+                <button type="button" data-type="bar">Bar</button>
+                <button type="button" data-type="line">Line</button>
+              </div>
+              <span
+                style="
+                  font-size: 1.2rem;
+                  font-weight: 700;
+                  font-variant-numeric: tabular-nums;
+                "
+                id="chartTotal"
+              ></span>
+            </div>
           </div>
-          <div
-            style="
-              display: flex;
-              align-items: flex-end;
-              gap: 10px;
-              height: 180px;
-            "
-            id="chartBars"
-          ></div>
+          <div class="chart-plot" id="chartBars"></div>
+          <div class="chart-labels" id="chartLabels"></div>
         </div>
 
         <div class="card" style="margin-bottom: 20px">
@@ -391,6 +397,115 @@
           "Active members",
         ];
 
+        // ---- Monthly contributions chart -------------------------------
+        // Twelve bars don't survive a 360px phone, so narrow screens always
+        // get the line. Wider screens keep the bars but can switch, and the
+        // choice sticks per browser.
+        const CHART_PREF_KEY = "wims.chartType";
+        const PHONE = "(max-width: 767px)";
+        const isPhone = () => window.matchMedia(PHONE).matches;
+        let chartType = localStorage.getItem(CHART_PREF_KEY) === "line" ? "line" : "bar";
+        let lastMonthly = null;
+        let lastMonthSel = "all";
+
+        const effectiveType = () => (isPhone() ? "line" : chartType);
+
+        function drawChart(monthly, monthValue) {
+          lastMonthly = monthly;
+          lastMonthSel = monthValue;
+          const plot = document.getElementById("chartBars");
+          const labels = document.getElementById("chartLabels");
+          const max = Math.max(...monthly, 1);
+
+          labels.innerHTML = MONTHS.map(
+            (m) => `<span>${m.slice(0, 3)}</span>`,
+          ).join("");
+
+          if (effectiveType() === "line") {
+            // Percentage coordinates in a 0-100 box, stretched to fit by
+            // preserveAspectRatio="none". vector-effect keeps the stroke an
+            // even 2px instead of stretching with the box.
+            // Inset horizontally so the end dots aren't sliced by the SVG
+            // edge, and leave headroom top and bottom so a peak or a zero
+            // month still sits inside the box.
+            const PAD_X = 3;
+            const span = 100 - PAD_X * 2;
+            const pts = monthly.map((amt, i) => {
+              const x =
+                monthly.length === 1 ? 50 : PAD_X + (i / (monthly.length - 1)) * span;
+              const y = 100 - (amt / max) * 92 - 4;
+              return [x, y];
+            });
+            const line = pts.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+            const area = `${pts[0][0].toFixed(2)},100 ${line} ${pts[pts.length - 1][0].toFixed(2)},100`;
+            plot.innerHTML = `
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" width="100%" height="100%" role="img"
+             aria-label="Monthly contributions for ${yearSel.value}">
+          <polygon points="${area}" fill="var(--primary)" opacity="0.10"></polygon>
+          <polyline points="${line}" fill="none" stroke="var(--primary)" stroke-width="2"
+                    stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline>
+          ${pts
+            .map(
+              ([x, y], i) =>
+                `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.6" fill="var(--primary)"
+                         vector-effect="non-scaling-stroke"><title>${MONTHS[i]}: ${fmt.gh(monthly[i])}</title></circle>`,
+            )
+            .join("")}
+        </svg>`;
+            // Circles inherit the box distortion, so scale them back to round.
+            const svg = plot.querySelector("svg");
+            const box = svg.getBoundingClientRect();
+            if (box.width && box.height) {
+              const rx = 100 / box.width;
+              const ry = 100 / box.height;
+              svg.querySelectorAll("circle").forEach((c) => {
+                const cx = parseFloat(c.getAttribute("cx"));
+                const cy = parseFloat(c.getAttribute("cy"));
+                c.setAttribute("transform", `translate(${cx} ${cy}) scale(${rx * 4} ${ry * 4}) translate(${-cx} ${-cy})`);
+              });
+            }
+            return;
+          }
+
+          plot.innerHTML = monthly
+            .map((amt, i) => {
+              const pct = Math.max(Math.round((amt / max) * 100), amt > 0 ? 3 : 1);
+              const active = monthValue === "all" || +monthValue - 1 === i;
+              return `
+        <div style="flex:1; min-width:0; display:flex; align-items:flex-end; justify-content:center; height:100%;" title="${MONTHS[i]}: ${fmt.gh(amt)}">
+          <div style="width:100%; max-width:38px; border-radius:6px 6px 0 0; height:${pct}%; background:${active ? "var(--primary)" : "var(--line)"};"></div>
+        </div>`;
+            })
+            .join("");
+        }
+
+        function syncToggle() {
+          document
+            .querySelectorAll("#chartToggle button")
+            .forEach((b) => b.classList.toggle("on", b.dataset.type === chartType));
+        }
+        document.querySelectorAll("#chartToggle button").forEach((btn) =>
+          btn.addEventListener("click", () => {
+            chartType = btn.dataset.type;
+            localStorage.setItem(CHART_PREF_KEY, chartType);
+            syncToggle();
+            if (lastMonthly) drawChart(lastMonthly, lastMonthSel);
+          }),
+        );
+        syncToggle();
+        // Crossing the phone breakpoint (rotation, window resize) swaps the
+        // chart type, and the line's dots need re-rounding for the new box.
+        window.matchMedia(PHONE).addEventListener("change", () => {
+          if (lastMonthly) drawChart(lastMonthly, lastMonthSel);
+        });
+        let chartResizeTimer;
+        window.addEventListener("resize", () => {
+          clearTimeout(chartResizeTimer);
+          chartResizeTimer = setTimeout(() => {
+            if (lastMonthly && effectiveType() === "line") drawChart(lastMonthly, lastMonthSel);
+          }, 150);
+        });
+
         // One cache entry per year/month view. Served from cache on
         // navigation back to this page and refreshed in the background every
         // 3 minutes, so another admin's activity shows up on its own.
@@ -401,11 +516,16 @@
           if (!WIMS.cache.peek(key)) {
             WIMS.skeletonCards(document.getElementById("statCards"), STAT_LABELS);
             WIMS.skeletonRows(document.getElementById("recentRows"), 5);
-            // Chart renders its axis and month labels straight away; only the
-            // bars shimmer until the figures arrive.
+            // Month labels are real from the start; only the plot shimmers.
+            // The placeholder matches the chart type that's about to render,
+            // so bars don't flash before a line chart appears.
+            document.getElementById("chartLabels").innerHTML = MONTHS.map(
+              (m) => `<span>${m.slice(0, 3)}</span>`,
+            ).join("");
             WIMS.skeletonChart(
               document.getElementById("chartBars"),
-              MONTHS.map((m) => m.slice(0, 3)),
+              MONTHS.length,
+              effectiveType(),
             );
           }
           const data = await WIMS.cache.load(key, () =>
@@ -472,21 +592,7 @@
             )
             .join("");
 
-          const max = Math.max(...data.monthly, 1);
-          document.getElementById("chartBars").innerHTML = data.monthly
-            .map((amt, i) => {
-              const pct = Math.max(
-                Math.round((amt / max) * 100),
-                amt > 0 ? 3 : 1,
-              );
-              const active = month === "all" || +month - 1 === i;
-              return `
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;" title="${MONTHS[i]}: ${fmt.gh(amt)}">
-          <div style="width:100%; max-width:38px; border-radius:6px 6px 0 0; height:${pct}%; background:${active ? "var(--primary)" : "var(--line)"};"></div>
-          <span style="font-size:0.7rem; font-weight:600; color:var(--faint);">${MONTHS[i].slice(0, 3)}</span>
-        </div>`;
-            })
-            .join("");
+          drawChart(data.monthly, month);
           document.getElementById("chartSub").textContent =
             `Total amount recorded per month, ${year}`;
           document.getElementById("chartTotal").textContent = fmt.gh(

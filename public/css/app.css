@@ -297,6 +297,79 @@ h3 {
   }
 }
 
+/* ================================================================
+   Monthly contributions chart. Month labels sit in their own row
+   rather than inside each bar, so bar and line modes share exactly
+   the same axis and neither can push the card wider than the screen.
+   ================================================================ */
+.chart-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 180px;
+}
+.chart-labels {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+.chart-labels span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--faint);
+  white-space: nowrap;
+  /* Visible, not hidden: where alternate labels are hidden below, a label
+     wider than its own column can bleed into that empty space rather than
+     being clipped mid-word. */
+  overflow: visible;
+}
+/* A 360px phone can't fit twelve 3-letter labels. Hide alternate ones —
+   visibility (not display) so each column keeps its slot and the
+   remaining labels stay aligned with their bar/point. */
+@media (max-width: 560px) {
+  .chart-plot,
+  .chart-labels {
+    gap: 5px;
+  }
+  .chart-labels span:nth-child(even) {
+    visibility: hidden;
+  }
+}
+
+/* Bar / line switch. Hidden on phones, which are always line. */
+.chart-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.chart-toggle button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chart-toggle button.on {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(15, 44, 63, 0.12);
+}
+@media (max-width: 767px) {
+  .chart-toggle {
+    display: none;
+  }
+}
+
 .stat .label {
   color: var(--faint);
   font-size: 0.8rem;
@@ -1269,6 +1342,13 @@ textarea.field {
   .stat-grid {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+  }
+  /* A GH¢ amount at 1.5rem wraps to three lines in a half-width tile on a
+     360px phone. Placed here (after the base .stat .value rule) so it
+     actually wins — an equal-specificity override earlier in the file
+     would be overridden by the base declaration below it. */
+  .stat .value {
+    font-size: 1.2rem;
   }
   .card {
     border-radius: 16px;
