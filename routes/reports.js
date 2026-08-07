@@ -170,27 +170,45 @@ router.get('/tab', async (req, res, next) => {
     to.setHours(23, 59, 59, 999);
     const dateLabel = `${from.toISOString().slice(0, 10)} – ${to.toISOString().slice(0, 10)}`;
 
+    // Optional department filter. Only members carry a department, so for
+    // contributions and claims it's resolved once to that department's
+    // member ids and applied by id rather than joining on every pipeline.
+    // An unrecognised department yields an empty id list — an empty report,
+    // which is the honest answer, not an unfiltered one.
+    const department = String(req.query.department || '').trim();
+    const deptScope = department ? { department } : {};
+    let deptMemberIds = null;
+    if (department) {
+      const members = await User.find({ organizationId: orgId, department }).select('_id').lean();
+      deptMemberIds = members.map((m) => m._id);
+    }
+    const byDeptMember = deptMemberIds ? { memberId: { $in: deptMemberIds } } : {};
+    // Appended to every title so an exported report says what it was filtered to.
+    const deptLabel = department ? ` · ${department}` : '';
+
     if (type === 'members') {
       const [members, memberCount, activeCount, newCount, suspendedCount] = await Promise.all([
         User.aggregate([
-          { $match: { organizationId: orgId } },
-          { $group: { _id: { $ifNull: ['$department', 'Unassigned'] }, members: { $sum: 1 }, active: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } } } },
+          { $match: { organizationId: orgId, ...deptScope } },
+          // Empty-string departments are as unassigned as missing ones —
+          // without this they form their own nameless row in the report.
+          { $group: { _id: { $cond: [{ $in: [{ $ifNull: ['$department', ''] }, ['', null]] }, 'Unassigned', '$department'] }, members: { $sum: 1 }, active: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } } } },
           { $sort: { members: -1 } },
         ]),
-        User.countDocuments({ organizationId: orgId }),
-        User.countDocuments({ organizationId: orgId, status: 'active' }),
-        User.countDocuments({ organizationId: orgId, createdAt: { $gte: from, $lte: to } }),
-        User.countDocuments({ organizationId: orgId, status: 'suspended' }),
+        User.countDocuments({ organizationId: orgId, ...deptScope }),
+        User.countDocuments({ organizationId: orgId, ...deptScope, status: 'active' }),
+        User.countDocuments({ organizationId: orgId, ...deptScope, createdAt: { $gte: from, $lte: to } }),
+        User.countDocuments({ organizationId: orgId, ...deptScope, status: 'suspended' }),
       ]);
       const contribByDept = await Contribution.aggregate([
-        { $match: { organizationId: orgId, status: { $ne: 'reversed' } } },
+        { $match: { organizationId: orgId, status: { $ne: 'reversed' }, ...byDeptMember } },
         { $lookup: { from: 'users', localField: 'memberId', foreignField: '_id', as: 'member' } },
         { $unwind: { path: '$member', preserveNullAndEmptyArrays: true } },
-        { $group: { _id: { $ifNull: ['$member.department', 'Unassigned'] }, total: { $sum: '$amount' } } },
+        { $group: { _id: { $cond: [{ $in: [{ $ifNull: ['$member.department', ''] }, ['', null]] }, 'Unassigned', '$member.department'] }, total: { $sum: '$amount' } } },
       ]);
       const totalByDept = Object.fromEntries(contribByDept.map((c) => [c._id, c.total]));
       return res.json({
-        title: `Members by department, ${dateLabel}`,
+        title: `Members by department, ${dateLabel}${deptLabel}`,
         summary: [
           { label: 'Total members', value: String(memberCount), sub: 'All time' },
           { label: 'Active', value: String(activeCount), sub: memberCount ? `${Math.round((activeCount / memberCount) * 100)}% of total` : '—' },
@@ -204,20 +222,20 @@ router.get('/tab', async (req, res, next) => {
 
     if (type === 'contributions') {
       const monthlyAgg = await Contribution.aggregate([
-        { $match: { organizationId: orgId, status: { $ne: 'reversed' }, contributionDate: { $gte: from, $lte: to } } },
+        { $match: { organizationId: orgId, status: { $ne: 'reversed' }, contributionDate: { $gte: from, $lte: to }, ...byDeptMember } },
         { $group: { _id: { y: '$year', m: '$month' }, total: { $sum: '$amount' }, count: { $sum: 1 }, members: { $addToSet: '$memberId' } } },
         { $sort: { '_id.y': -1, '_id.m': -1 } },
       ]);
       const total = monthlyAgg.reduce((a, m) => a + m.total, 0);
       const records = monthlyAgg.reduce((a, m) => a + m.count, 0);
       const byMethod = await Contribution.aggregate([
-        { $match: { organizationId: orgId, status: { $ne: 'reversed' }, contributionDate: { $gte: from, $lte: to } } },
+        { $match: { organizationId: orgId, status: { $ne: 'reversed' }, contributionDate: { $gte: from, $lte: to }, ...byDeptMember } },
         { $group: { _id: '$method', total: { $sum: '$amount' } } },
         { $sort: { total: -1 } },
       ]);
       const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
       return res.json({
-        title: `Contributions by month, ${dateLabel}`,
+        title: `Contributions by month, ${dateLabel}${deptLabel}`,
         summary: [
           { label: 'Period total', value: gh(total), sub: dateLabel },
           { label: 'Records', value: String(records), sub: 'In period' },
@@ -259,7 +277,7 @@ router.get('/tab', async (req, res, next) => {
 
     if (type === 'claims') {
       const byType = await Claim.aggregate([
-        { $match: { organizationId: orgId, status: { $nin: ['draft'] }, createdAt: { $gte: from, $lte: to } } },
+        { $match: { organizationId: orgId, status: { $nin: ['draft'] }, createdAt: { $gte: from, $lte: to }, ...byDeptMember } },
         { $group: { _id: '$claimTypeId', count: { $sum: 1 }, approved: { $sum: { $cond: [{ $in: ['$status', ['approved', 'paid']] }, 1, 0] } }, total: { $sum: { $cond: [{ $in: ['$status', ['approved', 'paid']] }, { $ifNull: ['$amountApproved', '$amountRequested'] }, 0] } } } },
         { $sort: { total: -1 } },
       ]);
@@ -268,9 +286,9 @@ router.get('/tab', async (req, res, next) => {
       const totalCount = byType.reduce((a, t) => a + t.count, 0);
       const totalApproved = byType.reduce((a, t) => a + t.approved, 0);
       const totalPaid = byType.reduce((a, t) => a + t.total, 0);
-      const rejected = await Claim.countDocuments({ organizationId: orgId, status: 'rejected', createdAt: { $gte: from, $lte: to } });
+      const rejected = await Claim.countDocuments({ organizationId: orgId, status: 'rejected', createdAt: { $gte: from, $lte: to }, ...byDeptMember });
       return res.json({
-        title: `Claims by type, ${dateLabel}`,
+        title: `Claims by type, ${dateLabel}${deptLabel}`,
         summary: [
           { label: 'Period total', value: gh(totalPaid), sub: `${totalCount} claims` },
           { label: 'Approved / paid', value: String(totalApproved), sub: totalCount ? `${Math.round((totalApproved / totalCount) * 100)}% approval rate` : '—' },

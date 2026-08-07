@@ -380,6 +380,33 @@
           <div>
             <label class="field">Department</label>
             <select class="field" id="fDept"></select>
+            <div
+              id="fDeptNew"
+              style="display: none; gap: 6px; margin-top: 6px"
+            >
+              <input
+                class="field"
+                id="fDeptNewName"
+                placeholder="New department name"
+                style="flex: 1 1 auto; min-width: 0"
+              />
+              <button
+                type="button"
+                class="tbl-btn"
+                id="fDeptNewSave"
+                style="white-space: nowrap"
+              >
+                Add
+              </button>
+              <button
+                type="button"
+                class="tbl-btn"
+                id="fDeptNewCancel"
+                style="white-space: nowrap"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
           <div>
             <label class="field">Role</label>
@@ -763,32 +790,77 @@
               ? `<option value="${ADD_NEW}">+ Add a new department…</option>`
               : "");
           deptSelect.value = current || "";
+          // Seed the restore point here rather than relying on a focus event,
+          // so it's correct from the moment the record opens.
+          deptSelect.dataset.previous = current || "";
         }
 
-        // Picking "add new" prompts, saves to the organization, then selects
-        // the result. Any bail-out restores the previous selection so the
-        // sentinel value can never be submitted as a department name.
-        deptSelect.addEventListener("change", async () => {
-          if (deptSelect.value !== ADD_NEW) return;
+        // Picking "add new" reveals an inline field rather than a browser
+        // prompt() — prompt is suppressed in some browsers and can't be typed
+        // into at all when it is.
+        const deptNewWrap = document.getElementById("fDeptNew");
+        const deptNewName = document.getElementById("fDeptNewName");
+
+        function closeDeptNew(select) {
+          deptNewWrap.style.display = "none";
+          deptNewName.value = "";
+          renderDepartments(select || "");
+        }
+
+        deptSelect.addEventListener("change", () => {
+          if (deptSelect.value !== ADD_NEW) {
+            deptNewWrap.style.display = "none";
+            return;
+          }
+          deptNewWrap.style.display = "flex";
+          deptNewName.focus();
+        });
+
+        async function saveNewDepartment() {
+          const name = deptNewName.value.trim();
+          // Restore the selection the sentinel replaced, so ADD_NEW can never
+          // be submitted as a department name.
           const previous = deptSelect.dataset.previous || "";
-          const name = (window.prompt("New department name") || "").trim();
-          if (!name) return renderDepartments(previous);
+          if (!name) return closeDeptNew(previous);
           try {
             const { departments: list } = await API.post(
               "/api/organization/departments",
               { name },
             );
             departments = list;
-            renderDepartments(name);
+            closeDeptNew(name);
             toast(`“${name}” added`);
           } catch (err) {
             toast(err.message, true);
-            renderDepartments(previous);
+            deptNewName.focus();
+          }
+        }
+
+        document
+          .getElementById("fDeptNewSave")
+          .addEventListener("click", saveNewDepartment);
+        document
+          .getElementById("fDeptNewCancel")
+          .addEventListener("click", () =>
+            closeDeptNew(deptSelect.dataset.previous || ""),
+          );
+        // Enter must not submit the surrounding edit form.
+        deptNewName.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            saveNewDepartment();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            closeDeptNew(deptSelect.dataset.previous || "");
           }
         });
-        // Remember the selection so the handler above can restore it.
+
+        // Remember the selection before it changes, so the handlers above can
+        // restore it. `focus` alone misses keyboard-driven changes on some
+        // browsers, so track it whenever a real value is chosen too.
         deptSelect.addEventListener("focus", () => {
-          deptSelect.dataset.previous = deptSelect.value;
+          if (deptSelect.value !== ADD_NEW)
+            deptSelect.dataset.previous = deptSelect.value;
         });
 
         // --- Modal ---

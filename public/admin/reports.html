@@ -129,7 +129,20 @@
               >
               <input class="field" type="date" id="toDate" />
             </div>
-            <div></div>
+            <div id="deptFilterWrap">
+              <label
+                style="
+                  display: block;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  margin-bottom: 6px;
+                "
+                >Department</label
+              >
+              <select class="field" id="deptFilter">
+                <option value="">All departments</option>
+              </select>
+            </div>
             <button
               type="button"
               class="btn"
@@ -269,15 +282,61 @@
         document.getElementById("toDate").value = today;
         document.getElementById("runBtn").addEventListener("click", run);
 
+        // --- Department filter ---
+        // Only members carry a department, so the filter applies to the
+        // reports built from members and their activity. It's hidden for
+        // Accounts and Audit logs, where it would silently do nothing.
+        const deptFilter = document.getElementById("deptFilter");
+        const deptFilterWrap = document.getElementById("deptFilterWrap");
+        const DEPT_TYPES = ["members", "contributions", "claims"];
+
+        async function loadDepartmentFilter() {
+          try {
+            const { departments } = await API.get(
+              "/api/organization/departments",
+            );
+            // Departments members are actually assigned to may include values
+            // typed in before the list existed; the filter offers the list,
+            // and "Unassigned" for members with none.
+            deptFilter.innerHTML =
+              '<option value="">All departments</option>' +
+              departments
+                .map((d) => `<option value="${fmt.esc(d)}">${fmt.esc(d)}</option>`)
+                .join("");
+          } catch {
+            deptFilterWrap.style.display = "none";
+          }
+        }
+
+        // Above 900px the filter row is a 4-column grid and this element is
+        // also the spacer that keeps "Run report" in its own column, so it
+        // hides with visibility and holds its place. At or below 900px
+        // app.css collapses the row to one column, where holding a place
+        // just leaves a blank gap — so there it hides with display.
+        const STACKED = window.matchMedia("(max-width: 900px)");
+        function syncDeptFilterVisibility() {
+          const applies = DEPT_TYPES.includes(activeType);
+          deptFilterWrap.style.display =
+            !applies && STACKED.matches ? "none" : "";
+          deptFilterWrap.style.visibility = applies ? "" : "hidden";
+          // A filter that no longer applies must not keep narrowing the next
+          // report the user runs.
+          if (!applies) deptFilter.value = "";
+        }
+        STACKED.addEventListener("change", syncDeptFilterVisibility);
+        deptFilter.addEventListener("change", run);
+
         let lastRows = [];
         let lastColumns = [];
 
         async function run() {
+          syncDeptFilterVisibility();
           const params = new URLSearchParams({
             type: activeType,
             from: document.getElementById("fromDate").value,
             to: document.getElementById("toDate").value,
           });
+          if (deptFilter.value) params.set("department", deptFilter.value);
           WIMS.skeletonCards(document.getElementById("summaryCards"), 4);
           document.getElementById("resultTable").style.display = "";
           document.getElementById("emptyState").style.display = "none";
@@ -351,6 +410,7 @@
           toast("Downloaded as CSV (opens in Excel)");
         });
 
+        await loadDepartmentFilter();
         await run();
       })();
     </script>
