@@ -1,8 +1,23 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { hasPermission } = require('../utils/permissions');
+const { hasAcceptedCurrentTerms } = require('../utils/terms');
 
 const COOKIE_NAME = process.env.COOKIE_NAME || 'wims_token';
+
+// The only protected endpoints reachable without the current Terms & Data
+// Policy on file — each one is part of getting out of that state:
+//   /me             reports the flag the modal keys off
+//   /accept-terms   is the way to satisfy it
+//   /change-password because runSessionGates resolves mustChangePassword
+//                   FIRST; blocking it would deadlock a user carrying both
+//                   flags — they could never reach the terms modal.
+// /api/auth/logout doesn't use protect at all, so signing out always works.
+const TERMS_EXEMPT = new Set([
+  '/api/auth/me',
+  '/api/auth/accept-terms',
+  '/api/auth/change-password',
+]);
 
 function signToken(user) {
   // organizationId may arrive populated (a full Organization doc, e.g. from
@@ -116,6 +131,16 @@ async function protect(req, res, next) {
       if (!['admin', 'superadmin'].includes(user.role) && orgStatus.maintenance) {
         return res.status(503).json({ error: 'The system is under maintenance — please try again later', maintenance: true });
       }
+    }
+
+    // Terms & Data Policy. The modal in public/js/app.js is the way a user
+    // meets this, but the check lives here too so removing the modal in
+    // devtools — or a tab whose scripts already ran — doesn't buy access.
+    if (!TERMS_EXEMPT.has(req.originalUrl.split('?')[0]) && !hasAcceptedCurrentTerms(user)) {
+      return res.status(403).json({
+        error: 'Please accept the updated Terms & Data Policy to continue',
+        termsRequired: true,
+      });
     }
     next();
   } catch (err) {

@@ -50,6 +50,18 @@ const userSchema = new mongoose.Schema(
     // requireSession). A version bump re-prompts everyone.
     acceptedTermsAt: { type: Date },
     acceptedTermsVersion: { type: String },
+    // Append-only record of every version this user has accepted. The two
+    // fields above are the current-state denormalization the gate compares
+    // against; this is the history behind them, for the question "prove they
+    // accepted v1 and then v2" that a single overwritten field can't answer.
+    // Never rewritten — only pushed to (see recordTermsAcceptance).
+    termsAcceptances: [
+      {
+        _id: false,
+        version: { type: String, required: true },
+        at: { type: Date, required: true },
+      },
+    ],
     memberNumber: { type: String, trim: true },
     department: { type: String, trim: true },
     avatarPath: { type: String },

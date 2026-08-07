@@ -505,7 +505,7 @@
     // is the catch-up path for every account that predates the gate, or
     // whenever the Terms & Data Policy version is bumped — blocks until
     // accepted (or they sign out), on every page, regardless of theme.
-    if (!me.termsAccepted) await showTermsGate();
+    if (!me.termsAccepted) await showTermsGate(me.termsSummary);
   }
 
   function bounceToLogin(err) {
@@ -579,10 +579,20 @@
 
   // Blocking modal that stands alone (own injected styles) so it renders
   // consistently whether the host page uses app.css or the developer
-  // console's own theme. Resolves once the user accepts; signing out
-  // navigates away instead of resolving.
-  function showTermsGate() {
-    return new Promise((resolve) => {
+  // console's own theme. `summary` describes what changed in the version
+  // being accepted and comes from the server (utils/terms.js) so it can't
+  // drift out of step with TERMS_VERSION.
+  //
+  // Accepting reloads rather than resolving: the API refuses everything but
+  // the terms endpoints while this is up, so a page that started fetching
+  // before the gate appeared has failed requests behind it. A reload is the
+  // one thing that reliably leaves every page in a good state.
+  //
+  // The returned promise therefore never settles — both ways out of this
+  // modal (accept, or sign out) navigate. That's what holds runSessionGates,
+  // and everything awaiting it, until the page is replaced.
+  function showTermsGate(summary) {
+    return new Promise(() => {
       const style = document.createElement('style');
       style.textContent = `
         .wims-terms-backdrop { position:fixed; inset:0; z-index:9999; background:rgba(15,44,63,0.55); display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; font-family:'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -605,7 +615,7 @@
       backdrop.innerHTML = `
         <div class="wims-terms-modal">
           <h3>Please review our Terms &amp; Data Policy</h3>
-          <p>We've updated how we describe account and data handling on WIMScare — including what happens to your records if an account is ever deleted. Please review and accept before continuing.</p>
+          <p>${fmt.esc(summary || "We've updated our Terms & Data Policy. Please review and accept before continuing.")}</p>
           <div class="wims-terms-check">
             <input type="checkbox" id="wimsTermsCheck" style="margin-top:3px; flex-shrink:0;">
             <label for="wimsTermsCheck">I agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms &amp; Data Policy</a>.</label>
@@ -626,9 +636,9 @@
         continueBtn.textContent = 'Saving…';
         try {
           await API.post('/api/auth/accept-terms', {});
-          backdrop.remove();
-          style.remove();
-          resolve();
+          clearSessionCache(); // the cached copy still says "not accepted"
+          window.location.reload();
+          // Deliberately never resolves — the reload replaces this page.
         } catch (err) {
           continueBtn.disabled = false;
           continueBtn.textContent = 'Continue';

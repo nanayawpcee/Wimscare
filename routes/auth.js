@@ -12,7 +12,7 @@ const { audit } = require('../utils/audit');
 const { effectivePermissions } = require('../utils/permissions');
 const { seedDefaultFundAccounts } = require('../utils/fundAccounts');
 const { verifyMonthlyPassword } = require('../utils/superadminCredentials');
-const { TERMS_VERSION } = require('../utils/terms');
+const { TERMS_SUMMARY, acceptance, hasAcceptedCurrentTerms } = require('../utils/terms');
 
 const router = express.Router();
 
@@ -85,13 +85,14 @@ router.post('/register', async (req, res, next) => {
       const exists = await User.findOne({ email: invite.email, organizationId: invite.organizationId });
       if (exists) return res.status(409).json({ error: 'An account with this email already exists in this organization' });
 
+      const inviteAcceptance = acceptance();
       const user = new User({
         organizationId: invite.organizationId,
         firstName, lastName, email, phone,
         role: invite.role,
         status: 'active',
-        acceptedTermsAt: new Date(),
-        acceptedTermsVersion: TERMS_VERSION,
+        ...inviteAcceptance.fields,
+        termsAcceptances: [inviteAcceptance.entry],
         // Accepting an invitation signs the user straight in, so this is a
         // real sign-in and has to be stamped like one — otherwise the account
         // reads as "never signed in" until their second visit.
@@ -112,10 +113,11 @@ router.post('/register', async (req, res, next) => {
     const code = organizationName.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').slice(0, 24) + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
     const org = await Organization.create({ name: organizationName.trim(), code, contactEmail: email });
 
+    const selfServeAcceptance = acceptance();
     const user = new User({
       organizationId: org._id, firstName, lastName, email, phone, role: 'admin', status: 'active',
-      acceptedTermsAt: new Date(),
-      acceptedTermsVersion: TERMS_VERSION,
+      ...selfServeAcceptance.fields,
+      termsAcceptances: [selfServeAcceptance.entry],
       // Self-serve registration also signs the user in immediately.
       lastLoginAt: new Date(),
     });
@@ -312,8 +314,9 @@ router.post('/activate', async (req, res, next) => {
     user.status = 'active';
     user.activationToken = undefined;
     user.activationExpires = undefined;
-    user.acceptedTermsAt = new Date();
-    user.acceptedTermsVersion = TERMS_VERSION;
+    const activationAcceptance = acceptance();
+    Object.assign(user, activationAcceptance.fields);
+    user.termsAcceptances.push(activationAcceptance.entry);
     // Activation ends with a signed-in session, so it counts as a sign-in.
     user.lastLoginAt = new Date();
     await user.save();
@@ -387,9 +390,11 @@ router.get('/me', protect, async (req, res) => {
   const { planSummary } = require('../utils/plans');
   const plan = org ? await planSummary(org._id) : null;
   // Computed centrally so a TERMS_VERSION bump alone re-prompts everyone —
-  // public/js/app.js just reads this flag, no version string of its own.
-  const termsAccepted = req.user.acceptedTermsVersion === TERMS_VERSION;
-  res.json({ user: withPermissions(req.user), organization: org, plan, termsAccepted, mustChangePassword: !!req.user.mustChangePassword });
+  // public/js/app.js just reads this flag, no version string of its own. The
+  // summary rides along so the modal describes THIS version's change rather
+  // than a blurb frozen into the frontend.
+  const termsAccepted = hasAcceptedCurrentTerms(req.user);
+  res.json({ user: withPermissions(req.user), organization: org, plan, termsAccepted, termsSummary: TERMS_SUMMARY, mustChangePassword: !!req.user.mustChangePassword });
 });
 
 // POST /api/auth/logout
@@ -424,9 +429,15 @@ router.post('/change-password', protect, async (req, res, next) => {
 // this is the catch-up path public/js/app.js prompts for at sign-in.
 router.post('/accept-terms', protect, async (req, res, next) => {
   try {
+    // Idempotent: re-accepting a version already on file is a no-op rather
+    // than a second history row, so a double-submit can't inflate the record.
+    if (hasAcceptedCurrentTerms(req.user)) {
+      return res.json({ user: withPermissions(req.user) });
+    }
+    const { fields, entry } = acceptance();
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { $set: { acceptedTermsAt: new Date(), acceptedTermsVersion: TERMS_VERSION } },
+      { $set: fields, $push: { termsAcceptances: entry } },
       { new: true }
     );
     res.json({ user: withPermissions(user) });
