@@ -379,7 +379,7 @@
           </div>
           <div>
             <label class="field">Department</label>
-            <input class="field" id="fDept" />
+            <select class="field" id="fDept"></select>
           </div>
           <div>
             <label class="field">Role</label>
@@ -725,6 +725,72 @@
           }
         });
 
+        // --- Departments ---
+        // The list is the organization's (utils/departments.js supplies the
+        // hospital defaults until an administrator customizes it). Fetched
+        // once; adding a department updates this copy rather than refetching.
+        const deptSelect = document.getElementById("fDept");
+        const ADD_NEW = "__add__";
+        let departments = [];
+        const isActualAdminUser = ["admin", "superadmin"].includes(user.role);
+
+        async function loadDepartments() {
+          try {
+            const { departments: list } = await API.get(
+              "/api/organization/departments",
+            );
+            departments = list;
+          } catch {
+            departments = []; // the field still works, just unpopulated
+          }
+        }
+
+        // `current` keeps a value assigned before this list existed (or one
+        // since removed) selectable, so opening a member's record can never
+        // silently reassign their department.
+        function renderDepartments(current) {
+          const known = departments.slice();
+          if (current && !known.some((d) => d === current)) known.unshift(current);
+          deptSelect.innerHTML =
+            '<option value="">— None —</option>' +
+            known
+              .map(
+                (d) =>
+                  `<option value="${fmt.esc(d)}"${d === current ? " selected" : ""}>${fmt.esc(d)}</option>`,
+              )
+              .join("") +
+            (isActualAdminUser
+              ? `<option value="${ADD_NEW}">+ Add a new department…</option>`
+              : "");
+          deptSelect.value = current || "";
+        }
+
+        // Picking "add new" prompts, saves to the organization, then selects
+        // the result. Any bail-out restores the previous selection so the
+        // sentinel value can never be submitted as a department name.
+        deptSelect.addEventListener("change", async () => {
+          if (deptSelect.value !== ADD_NEW) return;
+          const previous = deptSelect.dataset.previous || "";
+          const name = (window.prompt("New department name") || "").trim();
+          if (!name) return renderDepartments(previous);
+          try {
+            const { departments: list } = await API.post(
+              "/api/organization/departments",
+              { name },
+            );
+            departments = list;
+            renderDepartments(name);
+            toast(`“${name}” added`);
+          } catch (err) {
+            toast(err.message, true);
+            renderDepartments(previous);
+          }
+        });
+        // Remember the selection so the handler above can restore it.
+        deptSelect.addEventListener("focus", () => {
+          deptSelect.dataset.previous = deptSelect.value;
+        });
+
         // --- Modal ---
         const backdrop = document.getElementById("modalBackdrop");
         const modalError = document.getElementById("modalError");
@@ -745,7 +811,7 @@
           document.getElementById("fEmail").value = u.email;
           document.getElementById("fPhone").value = u.phone || "";
           document.getElementById("fMemberNo").value = u.memberNumber || "";
-          document.getElementById("fDept").value = u.department || "";
+          renderDepartments(u.department || "");
           document.getElementById("fRole").value = u.role;
           document.getElementById("fStatus").value = u.status;
 
@@ -791,7 +857,10 @@
                 lastName: document.getElementById("fLast").value.trim(),
                 phone: document.getElementById("fPhone").value.trim(),
                 memberNumber: document.getElementById("fMemberNo").value.trim(),
-                department: document.getElementById("fDept").value.trim(),
+                // The "add new" sentinel is resolved by its own handler; if
+                // it somehow survives, send no change rather than a literal.
+                department:
+                  deptSelect.value === ADD_NEW ? undefined : deptSelect.value,
               };
               const roleEl = document.getElementById("fRole");
               const statusEl = document.getElementById("fStatus");
@@ -893,6 +962,7 @@
           }
         };
 
+        await loadDepartments();
         await load();
         await loadDeletionBanner();
       })();

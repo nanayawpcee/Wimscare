@@ -25,6 +25,11 @@ const organizationSchema = new mongoose.Schema(
       allowDrafts: { type: Boolean, default: true },
       notifyChain: { type: Boolean, default: false },
     },
+    // Member departments offered when assigning a user, and the dimension
+    // reports group by. Absent until an administrator customizes the list,
+    // at which point it replaces the shared defaults wholesale — see
+    // utils/departments.js departmentsFor().
+    departments: { type: [String], default: undefined },
     status: { type: String, enum: ['active', 'suspended', 'archived'], default: 'active' },
     // Deletion request — the admin asks, the superadmin decides (same
     // request/fulfil shape as License renewal/plan-upgrade requests).

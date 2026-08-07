@@ -1,10 +1,12 @@
 const express = require('express');
 const Organization = require('../models/Organization');
 const License = require('../models/License');
+const User = require('../models/User');
 const { protect, requireRoles, requireOrg, requireFeature } = require('../middleware/auth');
 const { logoUpload, processLogo } = require('../middleware/upload');
 const storage = require('../utils/storage');
 const { audit } = require('../utils/audit');
+const { departmentsFor, normalizeDepartment } = require('../utils/departments');
 
 const router = express.Router();
 
@@ -18,6 +20,73 @@ router.get('/', async (req, res, next) => {
     const organization = await Organization.findById(req.orgId).select(PROFILE_FIELDS);
     if (!organization) return res.status(404).json({ error: 'Organization not found' });
     res.json({ organization });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/organization/departments — the list the Users form offers. Any
+// signed-in member of the organization may read it; only an administrator
+// may change it.
+router.get('/departments', async (req, res, next) => {
+  try {
+    const org = await Organization.findById(req.orgId).select('departments');
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+    res.json({ departments: departmentsFor(org), customized: Array.isArray(org.departments) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/organization/departments — add one. The first custom addition
+// promotes the shared defaults into the organization's own list, so adding
+// never has the side effect of losing the departments already in use.
+router.post('/departments', requireRoles('admin'), async (req, res, next) => {
+  try {
+    const name = normalizeDepartment(req.body.name);
+    if (!name) return res.status(400).json({ error: 'Department name is required' });
+
+    const org = await Organization.findById(req.orgId).select('departments');
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+
+    const current = departmentsFor(org);
+    if (current.some((d) => d.toLowerCase() === name.toLowerCase())) {
+      return res.status(409).json({ error: `“${name}” is already on the list` });
+    }
+
+    org.departments = [...current, name];
+    await org.save();
+    audit(req, 'organization.department_added', { entityType: 'Organization', entityId: org._id, detail: { name } });
+    res.status(201).json({ departments: departmentsFor(org) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/organization/departments/:name — remove one. Refused while
+// members are still assigned to it, so a department can't vanish from under
+// the reports that group by it.
+router.delete('/departments/:name', requireRoles('admin'), async (req, res, next) => {
+  try {
+    const name = normalizeDepartment(req.params.name);
+    const org = await Organization.findById(req.orgId).select('departments');
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+
+    const inUse = await User.countDocuments({ organizationId: req.orgId, department: name });
+    if (inUse) {
+      return res.status(409).json({
+        error: `${inUse} ${inUse === 1 ? 'member is' : 'members are'} still assigned to “${name}” — reassign them first`,
+      });
+    }
+
+    const current = departmentsFor(org);
+    const next_ = current.filter((d) => d.toLowerCase() !== name.toLowerCase());
+    if (next_.length === current.length) return res.status(404).json({ error: 'Department not found' });
+
+    org.departments = next_;
+    await org.save();
+    audit(req, 'organization.department_removed', { entityType: 'Organization', entityId: org._id, detail: { name } });
+    res.json({ departments: departmentsFor(org) });
   } catch (err) {
     next(err);
   }
