@@ -7,6 +7,7 @@ const { logoUpload, processLogo } = require('../middleware/upload');
 const storage = require('../utils/storage');
 const { audit } = require('../utils/audit');
 const { departmentsFor, normalizeDepartment } = require('../utils/departments');
+const { validSessionTimeout, MIN_SESSION_TIMEOUT_MINUTES, MAX_SESSION_TIMEOUT_MINUTES } = require('../utils/sessionPolicy');
 
 const router = express.Router();
 
@@ -212,8 +213,10 @@ router.patch('/system-settings', requireRoles('admin'), async (req, res, next) =
   try {
     const $set = {};
     if (req.body.sessionTimeoutMinutes !== undefined) {
-      const n = Number(req.body.sessionTimeoutMinutes);
-      if (!(n >= 5 && n <= 480)) return res.status(400).json({ error: 'Session timeout must be between 5 and 480 minutes' });
+      const n = validSessionTimeout(req.body.sessionTimeoutMinutes);
+      if (n === null) {
+        return res.status(400).json({ error: `Session timeout must be between ${MIN_SESSION_TIMEOUT_MINUTES} and ${MAX_SESSION_TIMEOUT_MINUTES} minutes` });
+      }
       $set['systemSettings.sessionTimeoutMinutes'] = n;
     }
     for (const key of ['auditLogEnabled', 'maintenanceMode', 'emailAlerts', 'strictEligibility']) {

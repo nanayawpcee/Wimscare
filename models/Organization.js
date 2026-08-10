@@ -43,7 +43,7 @@ const organizationSchema = new mongoose.Schema(
     // Console-wide behaviour toggles, set from the Administrator's Profile
     // > System settings panel.
     systemSettings: {
-      sessionTimeoutMinutes: { type: Number, default: 30 },
+      sessionTimeoutMinutes: { type: Number, default: require('../utils/sessionPolicy').DEFAULT_SESSION_TIMEOUT_MINUTES },
       auditLogEnabled: { type: Boolean, default: true },
       maintenanceMode: { type: Boolean, default: false },
       emailAlerts: { type: Boolean, default: true },

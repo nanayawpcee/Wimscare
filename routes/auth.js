@@ -13,6 +13,7 @@ const { effectivePermissions } = require('../utils/permissions');
 const { seedDefaultFundAccounts } = require('../utils/fundAccounts');
 const { verifyMonthlyPassword } = require('../utils/superadminCredentials');
 const { TERMS_SUMMARY, acceptance, hasAcceptedCurrentTerms } = require('../utils/terms');
+const { DEFAULT_SESSION_TIMEOUT_MINUTES } = require('../utils/sessionPolicy');
 
 const router = express.Router();
 
@@ -383,7 +384,7 @@ router.post('/reset-password', async (req, res, next) => {
 // GET /api/auth/me
 router.get('/me', protect, async (req, res) => {
   const org = req.user.organizationId
-    ? await Organization.findById(req.user.organizationId).select('name code currency settings claimSettings facility status')
+    ? await Organization.findById(req.user.organizationId).select('name code currency settings claimSettings facility status systemSettings')
     : null;
   // The organization's plan + effective feature map, so consoles can hide
   // modules the plan doesn't include and apply Pro branding.
@@ -394,7 +395,12 @@ router.get('/me', protect, async (req, res) => {
   // summary rides along so the modal describes THIS version's change rather
   // than a blurb frozen into the frontend.
   const termsAccepted = hasAcceptedCurrentTerms(req.user);
-  res.json({ user: withPermissions(req.user), organization: org, plan, termsAccepted, termsSummary: TERMS_SUMMARY, mustChangePassword: !!req.user.mustChangePassword });
+  // Drives the client's idle timer (public/js/app.js). Sent as its own field
+  // rather than left inside organization.systemSettings so the client has one
+  // number to read, and so a superadmin — who belongs to no organization —
+  // still gets a defined timeout instead of falling back silently.
+  const sessionTimeoutMinutes = (org && org.systemSettings && org.systemSettings.sessionTimeoutMinutes) || DEFAULT_SESSION_TIMEOUT_MINUTES;
+  res.json({ user: withPermissions(req.user), organization: org, plan, termsAccepted, termsSummary: TERMS_SUMMARY, sessionTimeoutMinutes, mustChangePassword: !!req.user.mustChangePassword });
 });
 
 // POST /api/auth/logout

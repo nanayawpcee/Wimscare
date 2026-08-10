@@ -1023,7 +1023,11 @@
                 await API.patch("/api/organization/system-settings", {
                   sessionTimeoutMinutes: e.target.value,
                 });
-                toast("Session timeout saved");
+                // Apply it to this tab's idle timer now rather than waiting
+                // for the next sign-in; other tabs pick it up on their next
+                // session check, since the value is shared in localStorage.
+                WIMS.rememberIdleTimeout(e.target.value);
+                toast(`Session timeout saved — signs out after ${Number(e.target.value)} minutes idle`);
               } catch (err) {
                 toast(err.message, true);
               }

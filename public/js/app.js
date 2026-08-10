@@ -1,5 +1,32 @@
 /* Shared frontend helpers: API client, session guard, formatting, toasts. */
 (function () {
+  const DEV_ORG_KEY = 'wims.devOrg';
+
+  // "Open as superadmin" keeps the chosen organization in sessionStorage,
+  // which is per-tab — and a tab opened from a link does NOT inherit it,
+  // because target="_blank" implies rel="noopener" in current browsers and a
+  // noopener context starts with empty sessionStorage. So links that lead out
+  // of the console into another tab carry the id in the URL and it's adopted
+  // here, before the first API call needs it for the X-Org-Id header.
+  //
+  // Harmless for everyone else: the server only honours X-Org-Id for a
+  // superadmin (middleware/auth.js protect), and the client-side gate checks
+  // the role too, so a crafted URL buys a non-superadmin nothing.
+  (function adoptDevOrgFromUrl() {
+    try {
+      const params = new URLSearchParams(location.search);
+      const devOrg = params.get('devOrg');
+      if (!devOrg) return;
+      sessionStorage.setItem(DEV_ORG_KEY, devOrg);
+      // Strip it so it isn't carried into bookmarks, shares or the referrer.
+      params.delete('devOrg');
+      const qs = params.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    } catch {
+      /* private mode — the link simply won't carry the org */
+    }
+  })();
+
   const API = {
     async request(path, { method = 'GET', body, formData, headers = {} } = {}) {
       const opts = { method, credentials: 'include', headers: { ...headers } };
@@ -350,16 +377,52 @@
   }
 
   // ---- Idle timeout -------------------------------------------------------
-  // Signs the user out after IDLE_MS with no interaction. Last-activity lives
-  // in localStorage so it's shared across tabs: working in one tab keeps the
-  // others alive, and the session only expires when the user has been idle
-  // everywhere. Writes are throttled so ordinary mousemove doesn't hammer
-  // storage.
-  const IDLE_MS = 30 * 60 * 1000;
+  // Signs the user out after the organization's session timeout with no
+  // interaction. Last-activity lives in localStorage so it's shared across
+  // tabs: working in one tab keeps the others alive, and the session only
+  // expires when the user has been idle everywhere. Writes are throttled so
+  // ordinary mousemove doesn't hammer storage.
+  //
+  // The limit itself is set per organization (Profile → System settings) and
+  // arrives on /api/auth/me. But the very first idle check runs BEFORE that
+  // call — a page left open past the limit must not render org data while it
+  // waits — so the resolved value is cached in localStorage and read back at
+  // startup, falling back to the same default the server uses. Bounds are
+  // re-checked here: a stale or hand-edited cache must not be able to widen
+  // the window past what the server would accept.
+  const IDLE_DEFAULT_MINUTES = 30;
+  const IDLE_MIN_MINUTES = 5;
+  const IDLE_MAX_MINUTES = 480;
+  const IDLE_KEY = 'wims.idleMinutes';
   const IDLE_CHECK_MS = 15 * 1000;
   const ACTIVITY_WRITE_MS = 10 * 1000;
   const ACTIVITY_KEY = 'wims.lastActivity';
   let lastActivityWrite = 0;
+
+  function idleMs() {
+    let minutes = IDLE_DEFAULT_MINUTES;
+    try {
+      const stored = Number(localStorage.getItem(IDLE_KEY));
+      if (Number.isFinite(stored) && stored >= IDLE_MIN_MINUTES && stored <= IDLE_MAX_MINUTES) {
+        minutes = stored;
+      }
+    } catch {
+      /* private mode — the default stands */
+    }
+    return minutes * 60 * 1000;
+  }
+
+  // Called with each server-confirmed session, so changing the setting takes
+  // effect on the next page load in every tab rather than needing a re-login.
+  function rememberIdleTimeout(minutes) {
+    const n = Number(minutes);
+    if (!Number.isFinite(n) || n < IDLE_MIN_MINUTES || n > IDLE_MAX_MINUTES) return;
+    try {
+      localStorage.setItem(IDLE_KEY, String(n));
+    } catch {
+      /* private mode — falls back to the default */
+    }
+  }
 
   function markActivity() {
     const now = Date.now();
@@ -384,6 +447,8 @@
     forgetTab();
     try {
       localStorage.removeItem(ACTIVITY_KEY);
+      // Same reasoning as signOut: the limit belonged to that organization.
+      localStorage.removeItem(IDLE_KEY);
     } catch {
       /* ignore */
     }
@@ -403,7 +468,7 @@
       window.addEventListener(evt, markActivity, { passive: true }),
     );
     const check = () => {
-      if (Date.now() - lastActivityAt() >= IDLE_MS) expireIdleSession();
+      if (Date.now() - lastActivityAt() >= idleMs()) expireIdleSession();
     };
     setInterval(check, IDLE_CHECK_MS);
     // Coming back to a tab that sat in the background past the limit should
@@ -442,6 +507,9 @@
     }
   }
   function writeSessionCache(me) {
+    // Only ever called with a server-confirmed session, which makes it the
+    // right place to refresh the idle limit the next page load will start from.
+    rememberIdleTimeout(me.sessionTimeoutMinutes);
     try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(me));
     } catch {
@@ -450,6 +518,30 @@
   }
   function clearSessionCache() {
     sessionStorage.removeItem(SESSION_KEY);
+  }
+
+  // Links from the admin console into the member portal open in a new tab,
+  // which won't inherit sessionStorage (see adoptDevOrgFromUrl). When a
+  // superadmin is browsing an organization, stamp the id onto those links so
+  // the new tab can pick it up — without it the member pages' role gate
+  // rejects a superadmin and bounces them back to the developer portal.
+  //
+  // Runs on every session apply, and again after adminShell renders the
+  // drawer, since that markup doesn't exist at first call.
+  function decorateDevOrgLinks() {
+    let devOrg;
+    try {
+      devOrg = sessionStorage.getItem(DEV_ORG_KEY);
+    } catch {
+      return;
+    }
+    if (!devOrg) return;
+    document.querySelectorAll('a[href^="/member/"]').forEach((a) => {
+      const url = new URL(a.getAttribute('href'), location.origin);
+      if (url.searchParams.get('devOrg') === devOrg) return; // already stamped
+      url.searchParams.set('devOrg', devOrg);
+      a.setAttribute('href', url.pathname + url.search + url.hash);
+    });
   }
 
   // Where a user of this role belongs when they've landed somewhere they
@@ -489,6 +581,7 @@
     // enforces with 403s regardless).
     applyPlanGates();
     setTimeout(applyPlanGates, 0);
+    decorateDevOrgLinks();
     return currentSession;
   }
 
@@ -535,7 +628,7 @@
     }
     // Idle past the limit — expire before rendering anything, so a page left
     // open (or reopened) after the timeout never shows org data.
-    if (Date.now() - lastActivityAt() >= IDLE_MS) {
+    if (Date.now() - lastActivityAt() >= idleMs()) {
       await expireIdleSession();
       return null;
     }
@@ -818,6 +911,10 @@
     forgetTab();
     try {
       localStorage.removeItem(ACTIVITY_KEY);
+      // The limit belongs to the organization that was signed in, not to this
+      // browser — drop it so the next sign-in starts from the default rather
+      // than briefly inheriting a wider window from a different tenant.
+      localStorage.removeItem(IDLE_KEY);
     } catch {
       /* ignore */
     }
@@ -972,6 +1069,9 @@
     // the drawer and the desktop sidebar are gated by the same rule rather
     // than a second copy of the feature list that could drift out of sync.
     applyPlanGates();
+    // Same reason: the drawer's Home link didn't exist when the session was
+    // applied, so it hasn't been stamped with the open organization yet.
+    decorateDevOrgLinks();
   }
 
   // Marks a page as needing a wide viewport. The notice is injected once and
@@ -1128,5 +1228,5 @@
     return { accepted, error: problems.join(' ') };
   }
 
-  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, adminShell, requireDesktop, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache, markTabSession, UPLOAD_LIMITS, humanBytes, checkFiles };
+  window.WIMS = { API, fmt, pill, toast, requireSession, can, feature, applyBranding, signOut, greeting, todayLong, memberShell, adminShell, requireDesktop, wirePasswordToggle, bindField, skeletonCards, skeletonRows, skeletonBlocks, skeletonChart, cache, markTabSession, UPLOAD_LIMITS, humanBytes, checkFiles, rememberIdleTimeout };
 })();
