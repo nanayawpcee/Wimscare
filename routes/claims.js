@@ -53,13 +53,18 @@ async function notifyMember(claim) {
 // GET /api/claims — staff see all, members see their own
 router.get('/', async (req, res, next) => {
   try {
-    const { status, memberId, claimTypeId, page = 1, limit = 20 } = req.query;
+    const { status, memberId, claimTypeId, page = 1, limit = 20, mine } = req.query;
     const filter = orgFilter(req);
-    if (STAFF.includes(req.user.role)) {
+    // `mine=1` — the member portal asking for the signed-in user's own claims.
+    // Staff otherwise get the org-wide list, which is right for the admin
+    // console and wrong for the member portal (see contributions.js).
+    const ownOnly = mine === '1' || mine === 'true';
+    if (STAFF.includes(req.user.role) && !ownOnly) {
       if (memberId) filter.memberId = memberId;
       // staff lists never include other people's drafts
       filter.status = status ? status : { $ne: 'draft' };
     } else {
+      // Your own drafts belong in your own list, so no draft exclusion here.
       filter.memberId = req.user._id;
       if (status) filter.status = status;
     }

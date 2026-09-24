@@ -610,6 +610,9 @@
           const params = new URLSearchParams({
             page: contribState.page,
             limit: 15,
+            // This is the member portal, so always the signed-in user's own
+            // contributions — staff accounts default to an org-wide view.
+            mine: 1,
             ...contribPeriodParams(),
           });
           // Only the default view is cached; a filtered or paged query is

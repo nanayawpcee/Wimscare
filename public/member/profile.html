@@ -411,7 +411,7 @@
             }
             document.getElementById("panelActions").innerHTML = "";
             WIMS.cache
-              .load(CLAIMS_KEY, () => API.get("/api/claims?limit=50"))
+              .load(CLAIMS_KEY, () => API.get("/api/claims?limit=50&mine=1"))
               .then(({ items }) => {
               if (active !== "packages") return;
               const enjoyed = items.filter((c) =>

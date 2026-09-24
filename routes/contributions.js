@@ -59,10 +59,19 @@ async function postContributionToLedger(contribution, ledgerAccount, actorId) {
 
 // Shared list filter for the list endpoint and the exports.
 async function buildListFilter(req) {
-  const { memberId, year, month, status, q, from, to } = req.query;
+  const { memberId, year, month, status, q, from, to, mine } = req.query;
   const filter = orgFilter(req);
   const isStaff = ['admin', 'supervisor', 'accountant', 'superadmin'].includes(req.user.role);
-  filter.memberId = isStaff ? memberId || undefined : req.user._id;
+  // `mine=1` is the member portal asking for the signed-in user's own records.
+  // It binds for every role: staff hold an org-wide view by default, so
+  // without this an administrator opening the member portal sees the whole
+  // organisation's contributions listed as their own. Resolved server-side
+  // from the session, so it cannot be pointed at another member.
+  if (mine === '1' || mine === 'true') {
+    filter.memberId = req.user._id;
+  } else {
+    filter.memberId = isStaff ? memberId || undefined : req.user._id;
+  }
   if (!filter.memberId) delete filter.memberId;
   if (year) filter.year = Number(year);
   if (month) filter.month = Number(month);

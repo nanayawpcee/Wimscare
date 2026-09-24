@@ -3,5 +3,4 @@ node_modules/
 uploads/
 backups/
 .DS_Store
-.claude/
 docs/
